@@ -62,4 +62,3 @@ npm run dev
 All pages include mock data fallbacks — the UI is fully functional
 even before the backend is connected. Live data loads automatically
 once `NEXT_PUBLIC_API_URL` points to a running backend.
-# nlc_frontend

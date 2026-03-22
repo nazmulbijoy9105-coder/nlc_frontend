@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 import Cookies from 'js-cookie'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nlc-backend.vercel.app'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com'
 
 const api: AxiosInstance = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
@@ -37,7 +37,7 @@ export const authApi = {
     api.post('/auth/login', { email, password }),
 
   verify2FA: (temp_token: string, totp_code: string) =>
-    api.post('/auth/verify-totp', { temp_token, totp_code }),
+    api.post('/auth/2fa/verify', { temp_token, totp_code }),
 
   refresh: (refresh_token: string) =>
     api.post('/auth/refresh', { refresh_token }),
@@ -66,7 +66,7 @@ export const companiesApi = {
 // ── Filings ───────────────────────────────────────────────────────────────────
 export const filingsApi = {
   list: (params?: { company_id?: string; status?: string }) =>
-    api.get('/filings', { params }),
+    api.get('/filings/agm', { params }),
 
   get: (id: string) => api.get(`/filings/${id}`),
 
@@ -83,7 +83,7 @@ export const documentsApi = {
 
   get: (id: string) => api.get(`/documents/${id}`),
 
-  draft: (data: Record<string, unknown>) => api.post('/documents/draft', data),
+  draft: (data: Record<string, unknown>) => api.post('/documents/generate', data),
 
   approve: (id: string) => api.post(`/documents/${id}/approve`),
 
@@ -92,7 +92,7 @@ export const documentsApi = {
 
 // ── Rescue ────────────────────────────────────────────────────────────────────
 export const rescueApi = {
-  pipeline: () => api.get('/rescue/pipeline'),
+  pipeline: () => api.get('/rescue/plans'),
 
   get: (id: string) => api.get(`/rescue/${id}`),
 
@@ -102,7 +102,7 @@ export const rescueApi = {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export const dashboardApi = {
-  stats: () => api.get('/admin/dashboard-stats'),
-  recentActivity: () => api.get('/admin/activity-log'),
-  upcomingDeadlines: () => api.get('/filings/upcoming-deadlines'),
+  stats: () => api.get('/companies/dashboard/kpis'),
+  recentActivity: () => api.get('/admin/logs/recent'),
+  upcomingDeadlines: () => api.get('/filings/agm/upcoming'),
 }

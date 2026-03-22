@@ -4,42 +4,57 @@ import { documentsApi } from '@/lib/api'
 import { BandBadge, SectionHeader } from '@/components/ui'
 import Topbar from '@/components/Topbar'
 
-const MOCK = [
-  { id: '1', company_name: 'Global Academy Hub Ltd.', title: 'Annual Return Cover Letter', template_code: 'AR-COVER-01', ai_model: 'Claude Sonnet', status: 'APPROVED', created_at: '10 Mar 2026' },
-  { id: '2', company_name: 'Purba Bangla Commerce', title: 'Rescue Notice — RJSC', template_code: 'RESCUE-01', ai_model: 'Claude Sonnet', status: 'PENDING_REVIEW', created_at: '22 Mar 2026' },
-  { id: '3', company_name: 'Sahara Crafts Partnership', title: 'AGM Notice', template_code: 'AGM-NOTICE-01', ai_model: 'Claude Sonnet', status: 'DRAFT', created_at: '23 Mar 2026' },
-  { id: '4', company_name: 'Dhaka Trade House Ltd.', title: 'Violation Remediation Notice', template_code: 'REMEDY-01', ai_model: 'Claude Sonnet', status: 'DRAFT', created_at: '23 Mar 2026' },
-]
+interface Doc {
+  id: string
+  company_name?: string
+  company_id?: string
+  title?: string
+  template_name?: string
+  document_type?: string
+  status?: string
+  human_approved?: boolean
+  created_at?: string
+  is_client_visible?: boolean
+}
+
+const docStatus = (d: Doc) => {
+  if (d.status) return d.status
+  if (d.human_approved) return 'APPROVED'
+  return 'DRAFT'
+}
 
 export default function DocumentsPage() {
-  const [docs, setDocs] = useState(MOCK)
+  const [docs, setDocs] = useState<Doc[]>([])
   const [filter, setFilter] = useState('ALL')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    documentsApi.list().then(r => setDocs(r.data?.items || r.data)).catch(() => {})
+    setLoading(true)
+    documentsApi.list()
+      .then(r => setDocs(r.data?.items || r.data || []))
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
-
-  const filtered = filter === 'ALL' ? docs : docs.filter(d => d.status === filter)
 
   const handleApprove = async (id: string) => {
     try {
       await documentsApi.approve(id)
-      setDocs(prev => prev.map(d => d.id === id ? { ...d, status: 'APPROVED' } : d))
-    } catch {}
+      setDocs(prev => prev.map(d => d.id === id ? { ...d, human_approved: true, status: 'APPROVED' } : d))
+    } catch (e) { console.error(e) }
   }
+
+  const withStatus = docs.map(d => ({ ...d, _status: docStatus(d) }))
+  const filtered = filter === 'ALL' ? withStatus : withStatus.filter(d => d._status === filter)
 
   return (
     <>
       <Topbar title="Documents" />
       <div style={{ padding: 28 }}>
-
-        {/* Warning banner */}
         <div style={{ background: 'var(--gold-dim)', border: '1px solid var(--gold-line)', padding: '12px 16px', marginBottom: 20, fontSize: 12, color: 'var(--gold)' }}>
-          ⚠ All AI-generated documents require mandatory human legal review and approval before release to clients.
+          ⚠ AI Constitution Article 3 — All AI-generated documents require mandatory human legal review and approval before release to clients.
         </div>
 
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
           {['ALL','DRAFT','PENDING_REVIEW','APPROVED'].map(s => (
             <button key={s} onClick={() => setFilter(s)}
               style={{
@@ -48,47 +63,51 @@ export default function DocumentsPage() {
                 border: `1px solid ${filter === s ? 'var(--gold-line)' : 'var(--navy-border)'}`,
                 color: filter === s ? 'var(--gold)' : 'var(--white-3)', cursor: 'pointer'
               }}>
-              {s.replace(/_/g, ' ')} ({(s === 'ALL' ? docs : docs.filter(d => d.status === s)).length})
+              {s.replace(/_/g,' ')} ({(s === 'ALL' ? docs : docs.filter(d => docStatus(d) === s)).length})
             </button>
           ))}
-          <div style={{ flex: 1 }} />
-          <button className="nlc-btn-sm">+ Draft New</button>
         </div>
 
         <SectionHeader title="AI-Drafted Documents" />
 
-        <table className="nlc-table">
-          <thead>
-            <tr><th>Document</th><th>Company</th><th>AI Model</th><th>Status</th><th>Created</th><th></th></tr>
-          </thead>
-          <tbody>
-            {filtered.map(d => (
-              <tr key={d.id}>
-                <td>
-                  <div style={{ fontWeight: 500, fontSize: 13 }}>{d.title}</div>
-                  <div style={{ fontSize: 11, color: 'var(--white-3)', marginTop: 2 }}>{d.template_code}</div>
-                </td>
-                <td style={{ fontSize: 13 }}>{d.company_name}</td>
-                <td style={{ fontSize: 11, color: 'var(--white-3)' }}>{d.ai_model}</td>
-                <td><BandBadge band={d.status} /></td>
-                <td style={{ fontSize: 11, color: 'var(--white-3)' }}>{d.created_at}</td>
-                <td style={{ display: 'flex', gap: 6 }}>
-                  {d.status === 'PENDING_REVIEW' && (
-                    <button onClick={() => handleApprove(d.id)} style={{ padding: '4px 10px', fontSize: 10, background: 'var(--green-bg)', border: '1px solid rgba(26,122,82,.3)', color: '#5dd4a0', cursor: 'pointer' }}>
-                      Approve
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--white-3)', fontSize: 13 }}>Loading documents...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--white-3)', fontSize: 13 }}>
+            {docs.length === 0 ? 'No documents yet. Generate a document from the Companies page.' : 'No documents match this filter.'}
+          </div>
+        ) : (
+          <table className="nlc-table">
+            <thead>
+              <tr><th>Document</th><th>Company</th><th>Status</th><th>Created</th><th></th></tr>
+            </thead>
+            <tbody>
+              {filtered.map(d => (
+                <tr key={d.id}>
+                  <td>
+                    <div style={{ fontWeight: 500, fontSize: 13 }}>{d.title || d.document_type}</div>
+                    <div style={{ fontSize: 11, color: 'var(--white-3)', marginTop: 2 }}>{d.template_name}</div>
+                  </td>
+                  <td style={{ fontSize: 13 }}>{d.company_name || d.company_id}</td>
+                  <td><BandBadge band={d._status} /></td>
+                  <td style={{ fontSize: 11, color: 'var(--white-3)' }}>
+                    {d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB') : '—'}
+                  </td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    {d._status === 'PENDING_REVIEW' && (
+                      <button onClick={() => handleApprove(d.id)}
+                        style={{ padding: '4px 10px', fontSize: 10, background: 'var(--green-bg)', border: '1px solid rgba(26,122,82,.3)', color: '#5dd4a0', cursor: 'pointer' }}>
+                        Approve
+                      </button>
+                    )}
+                    <button style={{ padding: '4px 10px', fontSize: 10, background: 'transparent', border: '1px solid var(--navy-border)', color: 'var(--white-2)', cursor: 'pointer' }}>
+                      {d._status === 'APPROVED' ? 'Download' : 'View'}
                     </button>
-                  )}
-                  <button style={{ padding: '4px 10px', fontSize: 10, background: 'transparent', border: '1px solid var(--navy-border)', color: 'var(--white-2)', cursor: 'pointer' }}>
-                    {d.status === 'APPROVED' ? 'Download' : 'View'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--white-3)', fontSize: 13 }}>No documents found.</div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </>
