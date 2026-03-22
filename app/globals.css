@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #0a1628;
+  --navy-2: #112040;
+  --navy-3: #1a2f55;
+  --navy-border: #2a3f6b;
+  --gold: #c8a84b;
+  --gold-2: #dfc06a;
+  --gold-dim: rgba(200,168,75,0.12);
+  --gold-line: rgba(200,168,75,0.3);
+  --nlc-white: #f4f1ea;
+  --white-2: rgba(244,241,234,0.7);
+  --white-3: rgba(244,241,234,0.35);
+  --white-4: rgba(244,241,234,0.08);
+  --green: #1a7a52;
+  --green-bg: rgba(26,122,82,0.15);
+  --yellow-bg: rgba(160,120,32,0.15);
+  --red-bg: rgba(160,48,48,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--navy);
+  color: var(--nlc-white);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--navy); }
+::-webkit-scrollbar-thumb { background: var(--navy-border); }
+
+/* NLC utility classes */
+.font-garamond { font-family: 'EB Garamond', Georgia, serif; }
+.font-cormorant { font-family: 'Cormorant Garamond', Georgia, serif; }
+
+.nlc-input {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--navy);
+  border: 1px solid var(--navy-border);
+  color: var(--nlc-white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s;
+}
+.nlc-input:focus { border-color: var(--gold-line); }
+.nlc-input::placeholder { color: var(--white-3); }
+
+.nlc-btn-gold {
+  width: 100%;
+  padding: 12px;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.nlc-btn-gold:hover { background: var(--gold-2); }
+.nlc-btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nlc-btn-sm {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--gold-line);
+  color: var(--gold);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.nlc-btn-sm:hover { background: var(--gold-dim); }
+
+.badge-green { background: var(--green-bg); color: #5dd4a0; border: 1px solid rgba(26,122,82,.3); }
+.badge-yellow { background: var(--yellow-bg); color: #e0b84a; border: 1px solid rgba(160,120,32,.3); }
+.badge-red { background: var(--red-bg); color: #e07070; border: 1px solid rgba(160,48,48,.3); }
+.badge-neutral { background: var(--navy-border); color: var(--white-2); }
+
+.nlc-card {
+  background: var(--navy-2);
+  border: 1px solid var(--navy-border);
+}
+
+.nlc-table { width: 100%; border-collapse: collapse; }
+.nlc-table th {
+  font-size: 9px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--white-3);
+  padding: 8px 14px; text-align: left;
+  border-bottom: 1px solid var(--navy-border);
+}
+.nlc-table td {
+  padding: 12px 14px; font-size: 13px;
+  border-bottom: 1px solid rgba(42,63,107,.4);
+  vertical-align: middle;
+}
+.nlc-table tr:hover td { background: var(--white-4); }
