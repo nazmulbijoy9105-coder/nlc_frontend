@@ -19,4 +19,4 @@ class ApiClient {
     return res.json();
   }
 }
-export const api = new ApiClient(API_BASE);
+export const api = new ApiClient(process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com");
