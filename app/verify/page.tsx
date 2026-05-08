@@ -32,14 +32,12 @@ export default function VerifyPage() {
     setLoading(true); setError('')
     try {
       const res = await authApi.verify2FA(temp_token, totp_code)
-      const { access_token, refresh_token, user } = res.data
+      const { access_token, refresh_token, user } = res
       setTokens(access_token, refresh_token)
       setUser(user)
       router.push('/dashboard')
     } catch (err: unknown) {
-      if (axios.isAxiosError(err))
-        setError(err.response?.data?.detail || 'Invalid code. Please try again.')
-      else setError('Network error.')
+      setError(err instanceof Error ? err.message : 'Invalid code. Please try again.')
       setCode(['', '', '', '', '', ''])
       inputs.current[0]?.focus()
     } finally { setLoading(false) }

@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
 import { setTempToken } from '@/lib/auth'
-import axios from 'axios'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,9 +20,7 @@ export default function LoginPage() {
       setTempToken(temp_token)
       router.push('/verify')
     } catch (err: unknown) {
-      if (axios.isAxiosError(err))
-        setError(err instanceof Error ? err.message : "Login failed" || 'Login failed. Check credentials.')
-      else setError('Network error. Please try again.')
+      setError(err instanceof Error ? err.message : 'Login failed.')
     } finally { setLoading(false) }
   }
 
