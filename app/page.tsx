@@ -17,12 +17,12 @@ export default function LoginPage() {
     setLoading(true); setError('')
     try {
       const res = await authApi.login(email, password)
-      const { temp_token } = res.data
+      const { temp_token } = res
       setTempToken(temp_token)
       router.push('/verify')
     } catch (err: unknown) {
       if (axios.isAxiosError(err))
-        setError(err.response?.data?.detail || 'Login failed. Check credentials.')
+        setError(err instanceof Error ? err.message : "Login failed" || 'Login failed. Check credentials.')
       else setError('Network error. Please try again.')
     } finally { setLoading(false) }
   }
