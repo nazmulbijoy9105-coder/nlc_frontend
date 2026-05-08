@@ -55,10 +55,10 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  getStats: () => api.get<any>('/api/v1/companies/dashboard'),
-  stats: () => api.get<any>('/api/v1/companies/dashboard'),
+  getStats: () => api.get<any>('/api/v1/companies/dashboard/kpis'),
+  stats: () => api.get<any>('/api/v1/companies/dashboard/kpis'),
   recentActivity: () => api.get<any>('/api/v1/admin/activity'),
-  upcomingDeadlines: () => api.get<any>('/api/v1/filings/deadlines'),
+  upcomingDeadlines: () => api.get<any>('/api/v1/companies/dashboard/deadlines'),
 };
 
 export const companiesApi = {
