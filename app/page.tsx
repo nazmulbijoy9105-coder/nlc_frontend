@@ -17,7 +17,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(email, password)
       const { temp_token } = res
-      setTempToken(temp_token)
+      setTempToken(temp_token || "")
       router.push('/verify')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed.')
