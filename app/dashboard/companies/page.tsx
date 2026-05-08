@@ -33,7 +33,7 @@ export default function CompaniesPage() {
   useEffect(() => {
     setLoading(true)
     companiesApi.list()
-      .then(r => {
+      .then((r: any) => {
         const data = r?.items || r || []
         setCompanies(data)
         if (data.length > 0) setSelected(data[0])
@@ -44,8 +44,8 @@ export default function CompaniesPage() {
 
   useEffect(() => {
     if (!selected) return
-    companiesApi.modules(selected.id).then(r => setModules(r || [])).catch(() => setModules([]))
-    companiesApi.violations(selected.id).then(r => {
+    companiesApi.modules(selected.id).then((r: any) => setModules(r || [])).catch(() => setModules([]))
+    companiesApi.violations(selected.id).then((r: any) => {
       const d = r
       setViolations(d?.active_flags || d || [])
     }).catch(() => setViolations([]))

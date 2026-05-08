@@ -31,7 +31,7 @@ export default function DocumentsPage() {
   useEffect(() => {
     setLoading(true)
     documentsApi.list()
-      .then(r => setDocs(r?.items || r || []))
+      .then((r: any) => setDocs(r?.items || r || []))
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])

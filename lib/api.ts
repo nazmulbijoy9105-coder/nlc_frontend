@@ -59,8 +59,8 @@ export const dashboardApi = {
 };
 
 export const companiesApi = {
-  list: () => api.get('/api/v1/companies'),
-  get: (id) => api.get('/api/v1/companies/' + id),
+  list: () => api.get<{items?: unknown[]} | unknown[]>('/api/v1/companies'),
+  get: (id: string) => api.get<unknown>('/api/v1/companies/' + id),
 };
 
 export const filingsApi = {
