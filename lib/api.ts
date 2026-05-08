@@ -53,3 +53,24 @@ export const authApi = {
   logout: () =>
     api.post("/api/v1/auth/logout"),
 };
+
+export const dashboardApi = {
+  getStats: () => api.get('/api/v1/companies/dashboard'),
+};
+
+export const companiesApi = {
+  list: () => api.get('/api/v1/companies'),
+  get: (id) => api.get('/api/v1/companies/' + id),
+};
+
+export const filingsApi = {
+  list: (companyId) => api.get('/api/v1/filings?company_id=' + companyId),
+};
+
+export const documentsApi = {
+  list: () => api.get('/api/v1/documents'),
+};
+
+export const rescueApi = {
+  list: () => api.get('/api/v1/rescue'),
+};
