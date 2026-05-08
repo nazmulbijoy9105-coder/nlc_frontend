@@ -3,7 +3,6 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
 import { getTempToken, setTokens, setUser } from '@/lib/auth'
-import axios from 'axios'
 
 export default function VerifyPage() {
   const router = useRouter()
