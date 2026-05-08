@@ -33,7 +33,7 @@ export default function VerifyPage() {
       const res = await authApi.verify2FA(temp_token, totp_code)
       const { access_token, refresh_token, user } = res
       setTokens(access_token, refresh_token)
-      setUser(user)
+      setUser(user as Record<string, unknown>)
       router.push('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid code. Please try again.')
