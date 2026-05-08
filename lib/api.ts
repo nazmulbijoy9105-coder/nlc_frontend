@@ -55,12 +55,18 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  getStats: () => api.get('/api/v1/companies/dashboard'),
+  getStats: () => api.get<any>('/api/v1/companies/dashboard'),
+  stats: () => api.get<any>('/api/v1/companies/dashboard'),
+  recentActivity: () => api.get<any>('/api/v1/admin/activity'),
+  upcomingDeadlines: () => api.get<any>('/api/v1/filings/deadlines'),
 };
 
 export const companiesApi = {
-  list: () => api.get<{items?: unknown[]} | unknown[]>('/api/v1/companies'),
-  get: (id: string) => api.get<unknown>('/api/v1/companies/' + id),
+  list: () => api.get<any>('/api/v1/companies'),
+  get: (id: string) => api.get<any>('/api/v1/companies/' + id),
+  modules: (id: string) => api.get<any>('/api/v1/companies/' + id + '/modules'),
+  violations: (id: string) => api.get<any>('/api/v1/companies/' + id + '/violations'),
+  evaluate: (id: string) => api.post<any>('/api/v1/companies/' + id + '/evaluate'),
 };
 
 export const filingsApi = {
@@ -68,9 +74,11 @@ export const filingsApi = {
 };
 
 export const documentsApi = {
-  list: () => api.get('/api/v1/documents'),
+  list: () => api.get<any>('/api/v1/documents'),
+  approve: (id: string) => api.post<any>('/api/v1/documents/' + id + '/approve'),
 };
 
 export const rescueApi = {
-  list: () => api.get('/api/v1/rescue'),
+  list: () => api.get<any>('/api/v1/rescue'),
+  pipeline: () => api.get<any>('/api/v1/rescue/pipeline'),
 };
