@@ -36,7 +36,7 @@ export default function FilingsPage() {
   useEffect(() => {
     setLoading(true)
     filingsApi.list()
-      .then(r => setFilings(r.data?.items || r.data || []))
+      .then(r => setFilings(r?.items || r || []))
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])

@@ -60,9 +60,9 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState<ActivityLog[]>(MOCK_ACTIVITY)
 
   useEffect(() => {
-    dashboardApi.stats().then(r => setStats(r.data)).catch(() => {})
-    dashboardApi.upcomingDeadlines().then(r => setDeadlines(r.data)).catch(() => {})
-    dashboardApi.recentActivity().then(r => setActivity(r.data)).catch(() => {})
+    dashboardApi.stats().then(r => setStats(r)).catch(() => {})
+    dashboardApi.upcomingDeadlines().then(r => setDeadlines(r)).catch(() => {})
+    dashboardApi.recentActivity().then(r => setActivity(r)).catch(() => {})
   }, [])
 
   const dotColor: Record<string, string> = { EVALUATION: 'var(--gold)', DOCUMENT: 'var(--green)', VIOLATION: '#a03030', SYSTEM: 'var(--gold)', FILING: 'var(--gold)' }

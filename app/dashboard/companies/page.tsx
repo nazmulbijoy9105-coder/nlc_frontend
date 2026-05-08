@@ -34,7 +34,7 @@ export default function CompaniesPage() {
     setLoading(true)
     companiesApi.list()
       .then(r => {
-        const data = r.data?.items || r.data || []
+        const data = r?.items || r || []
         setCompanies(data)
         if (data.length > 0) setSelected(data[0])
       })
@@ -44,9 +44,9 @@ export default function CompaniesPage() {
 
   useEffect(() => {
     if (!selected) return
-    companiesApi.modules(selected.id).then(r => setModules(r.data || [])).catch(() => setModules([]))
+    companiesApi.modules(selected.id).then(r => setModules(r || [])).catch(() => setModules([]))
     companiesApi.violations(selected.id).then(r => {
-      const d = r.data
+      const d = r
       setViolations(d?.active_flags || d || [])
     }).catch(() => setViolations([]))
   }, [selected?.id])
@@ -57,7 +57,7 @@ export default function CompaniesPage() {
     try {
       await companiesApi.evaluate(selected.id)
       const r = await companiesApi.list()
-      const data = r.data?.items || r.data || []
+      const data = r?.items || r || []
       setCompanies(data)
       const updated = data.find((c: Company) => c.id === selected.id)
       if (updated) setSelected(updated)

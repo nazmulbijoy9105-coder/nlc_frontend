@@ -21,7 +21,7 @@ export default function RescuePage() {
   useEffect(() => {
     setLoading(true)
     rescueApi.pipeline()
-      .then(r => setPlans(r.data?.items || r.data || []))
+      .then(r => setPlans(r?.items || r || []))
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
