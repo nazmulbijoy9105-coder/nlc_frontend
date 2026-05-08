@@ -70,7 +70,7 @@ export const companiesApi = {
 };
 
 export const filingsApi = {
-  list: (companyId) => api.get('/api/v1/filings?company_id=' + companyId),
+  list: (companyId?: string) => api.get<any>('/api/v1/filings' + (companyId ? '?company_id=' + companyId : '')),
 };
 
 export const documentsApi = {
