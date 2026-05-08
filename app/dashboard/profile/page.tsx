@@ -15,8 +15,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     authApi.me().then(r => {
-      setUserState(r.data)
-      setUser(r.data)
+      setUserState(r)
+      setUser(r)
     }).catch(() => {})
   }, [])
 
