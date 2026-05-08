@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import { setTempToken } from '@/lib/auth'
+import { setTempToken, setTokens, setUser } from '@/lib/auth'
 
 export default function LoginPage() {
   const router = useRouter()
