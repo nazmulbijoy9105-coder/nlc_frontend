@@ -16,9 +16,16 @@ export default function LoginPage() {
     setLoading(true); setError('')
     try {
       const res = await authApi.login(email, password)
-      const { temp_token } = res
-      setTempToken(temp_token || "")
-      router.push('/verify')
+      if (res.requires_2fa && res.temp_token) {
+        setTempToken(res.temp_token)
+        router.push('/verify')
+      } else if (res.access_token && res.refresh_token) {
+        setTokens(res.access_token, res.refresh_token)
+        if (res.user) setUser(res.user as Record<string, unknown>)
+        router.push('/dashboard')
+      } else {
+        setError('Unexpected response from server.')
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed.')
     } finally { setLoading(false) }
