@@ -9,7 +9,7 @@ class ApiClient {
     if (typeof window !== "undefined") {
       const cookie = document.cookie.split(';').map(c => c.trim())
         .find(c => c.startsWith('nlc_access_token='));
-      const token = cookie ? cookie.split('=')[1] : null;
+      const token = cookie ? decodeURIComponent(cookie.substring('nlc_access_token='.length)) : null;
       if (token) headers["Authorization"] = "Bearer " + token;
     }
     return headers;
