@@ -7,9 +7,7 @@ class ApiClient {
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (typeof window !== "undefined") {
-      const cookie = document.cookie.split(';').map(c => c.trim())
-        .find(c => c.startsWith('nlc_access_token='));
-      const token = cookie ? decodeURIComponent(cookie.substring('nlc_access_token='.length)) : null;
+      const token = localStorage.getItem('nlc_access_token');
       if (token) headers["Authorization"] = "Bearer " + token;
     }
     return headers;
