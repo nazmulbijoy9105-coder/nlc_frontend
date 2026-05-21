@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { companiesApi } from '@/lib/api'
 import { BandBadge, ScoreBar, SectionHeader } from '@/components/ui'
 import Topbar from '@/components/Topbar'
@@ -34,9 +35,14 @@ export default function CompaniesPage() {
     setLoading(true)
     companiesApi.list()
       .then((r: any) => {
-        const data = r?.items || r || []
-        setCompanies(data)
-        if (data.length > 0) setSelected(data[0])
+        const rawData = r?.items || r || []
+        // FIX: Ensure backend 'company_id' or 'id' maps to frontend 'id'
+        const mappedData = rawData.map((c: any) => ({
+          ...c,
+          id: c.company_id || c.id
+        }))
+        setCompanies(mappedData)
+        if (mappedData.length > 0) setSelected(mappedData[0])
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -57,9 +63,10 @@ export default function CompaniesPage() {
     try {
       await companiesApi.evaluate(selected.id)
       const r = await companiesApi.list()
-      const data = r?.items || r || []
-      setCompanies(data)
-      const updated = data.find((c: Company) => c.id === selected.id)
+      const rawData = r?.items || r || []
+      const mappedData = rawData.map((c: any) => ({ ...c, id: c.company_id || c.id }))
+      setCompanies(mappedData)
+      const updated = mappedData.find((c: Company) => c.id === selected.id)
       if (updated) setSelected(updated)
     } catch (e) { console.error(e) }
     finally { setEvaluating(false) }
@@ -81,7 +88,7 @@ export default function CompaniesPage() {
     <>
       <Topbar title="Companies" />
       <div style={{ padding: 60, textAlign: 'center', color: 'var(--white-3)', fontSize: 13 }}>
-        No companies found. Add a company to get started.
+        No companies found. <Link href="/dashboard/companies/new" style={{ color: 'var(--gold)' }}>Add a company</Link> to get started.
       </div>
     </>
   )
@@ -126,10 +133,15 @@ export default function CompaniesPage() {
           {/* Company List */}
           <div>
             <SectionHeader title="All Companies">
-              <select value={filter} onChange={e => setFilter(e.target.value)}
-                style={{ background: 'var(--navy)', border: '1px solid var(--navy-border)', color: 'var(--white-2)', fontSize: 11, padding: '4px 8px', outline: 'none' }}>
-                {['ALL','GREEN','YELLOW','RED','BLACK'].map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select value={filter} onChange={e => setFilter(e.target.value)}
+                  style={{ background: 'var(--navy)', border: '1px solid var(--navy-border)', color: 'var(--white-2)', fontSize: 11, padding: '4px 8px', outline: 'none' }}>
+                  {['ALL','GREEN','YELLOW','RED','BLACK'].map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <Link href="/dashboard/companies/new">
+                  <button className="nlc-btn-sm" style={{ fontSize: 11, padding: '4px 10px' }}>+ Add</button>
+                </Link>
+              </div>
             </SectionHeader>
             <div className="nlc-card">
               {filtered.length === 0 && (

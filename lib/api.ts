@@ -62,6 +62,7 @@ export const dashboardApi = {
 export const companiesApi = {
   list: () => api.get<any>("/api/v1/companies"),
   get: (id: string) => api.get<any>("/api/v1/companies/" + id),
+  create: (data: any) => api.post<any>("/api/v1/companies", data), // <-- ADDED CREATE METHOD
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
