@@ -65,9 +65,9 @@ export default function AddCompanyPage() {
                 <label style={labelStyle}>Incorporation Date *</label>
                 <input required type="date" value={form.incorporation_date} onChange={e => setForm(f => ({ ...f, incorporation_date: e.target.value }))} style={inputStyle} />
               </div>
-              <div>
-                <label style={labelStyle}>Financial Year End *</label>
-                <input required type="date" value={form.financial_year_end} onChange={e => setForm(f => ({ ...f, financial_year_end: e.target.value }))} style={inputStyle} />
+                <div>
+                <label style={labelStyle}>Financial Year End</label>
+                <input type="date" value={form.financial_year_end} onChange={e => setForm(f => ({ ...f, financial_year_end: e.target.value }))} style={inputStyle} />
               </div>
             </div>
             <div>
