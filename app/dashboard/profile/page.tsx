@@ -81,7 +81,7 @@ export default function ProfilePage() {
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#5dd4a0', flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 500 }}>NLC Backend API</div>
-              <div style={{ fontSize: 11, color: 'var(--white-3)', marginTop: 2 }}>{process.env.NEXT_PUBLIC_API_URL || 'https://nlc-backend.vercel.app'}/api/v1</div>
+              <div style={{ fontSize: 11, color: 'var(--white-3)', marginTop: 2 }}>{process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com'}/api/v1</div>
             </div>
             <span className="badge-pill badge-green" style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>Connected</span>
           </div>
