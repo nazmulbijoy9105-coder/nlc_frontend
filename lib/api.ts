@@ -4,8 +4,9 @@ class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private getHeaders(): HeadersInit {
-    const headers: HeadersInit = { "Content-Type": "application/json" };
+  // FIX: Return Record<string, string> instead of HeadersInit for strict TypeScript compatibility
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (typeof window !== "undefined") {
       const token = localStorage.getItem('nlc_access_token');
       if (token) headers["Authorization"] = "Bearer " + token;
@@ -29,12 +30,16 @@ class ApiClient {
 
   // SPECIAL METHOD FOR FASTAPI: Sends URL-encoded form data instead of JSON
   async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
+    // FIX: Explicitly build headers for form data to avoid TypeScript indexing errors
+    const headers: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem('nlc_access_token');
+      if (token) headers["Authorization"] = "Bearer " + token;
+    }
+
     const res = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers: {
-        // Let the browser set Content-Type automatically for form data
-        "Authorization": this.getHeaders()["Authorization"] || ""
-      },
+      headers, // Browser automatically sets Content-Type for FormData/URLSearchParams
       credentials: "include",
       body: formData,
     });
