@@ -78,6 +78,6 @@ export const documentsApi = {
 };
 
 export const rescueApi = {
-  list: () => api.get<any>("/api/v1/rescue"),
-  pipeline: () => api.get<any>("/api/v1/rescue/pipeline"),
+  list: () => api.get<any>("/api/v1/rescue/plans"),
+  activePlan: (companyId: string) => api.get<any>("/api/v1/rescue/plans/" + companyId + "/active"),
 };
