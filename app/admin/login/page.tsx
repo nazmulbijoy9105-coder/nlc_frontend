@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { authApi } from "@/lib/api"; // Uses our unified API client
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,24 +15,17 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const API_BASE = "https://nlc-platform.onrender.com";
-      const formData = new URLSearchParams();
-      formData.append("username", email);
-      formData.append("password", password);
+      // Call API via our authApi wrapper (handles FastAPI form data automatically)
+      const data = await authApi.login(email, password);
 
-      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Login failed");
-
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // Save token and user with standard keys matching api.ts
+      localStorage.setItem("nlc_access_token", data.access_token);
+      localStorage.setItem("nlc_user", JSON.stringify(data.user));
+      
+      // Redirect based on user role
       router.push(data.user.role === "admin" ? "/admin" : "/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
