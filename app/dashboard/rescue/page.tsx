@@ -20,7 +20,7 @@ export default function RescuePage() {
 
   useEffect(() => {
     setLoading(true)
-    rescueApi.pipeline()
+    rescueApi.list()
       .then((r: any) => setPlans(r?.items || r || []))
       .catch(console.error)
       .finally(() => setLoading(false))
