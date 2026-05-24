@@ -4,7 +4,6 @@ class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  // FIX: Return Record<string, string> instead of HeadersInit for strict TypeScript compatibility
   private getHeaders(): Record<string, string> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (typeof window !== "undefined") {
@@ -28,10 +27,11 @@ class ApiClient {
     return res.json();
   }
 
-  // SPECIAL METHOD FOR FASTAPI: Sends URL-encoded form data instead of JSON
+  // EXACT MATCH OF YOUR ORIGINAL WORKING FETCH
   async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
-    // FIX: Explicitly build headers for form data to avoid TypeScript indexing errors
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded" // Strictly defining this
+    };
     if (typeof window !== "undefined") {
       const token = localStorage.getItem('nlc_access_token');
       if (token) headers["Authorization"] = "Bearer " + token;
@@ -39,7 +39,7 @@ class ApiClient {
 
     const res = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers, // Browser automatically sets Content-Type for FormData/URLSearchParams
+      headers,
       credentials: "include",
       body: formData,
     });
@@ -96,7 +96,7 @@ export const api = new ApiClient(API_BASE);
 export const authApi = {
   login: (email: string, password: string) => {
     const formData = new URLSearchParams();
-    formData.append("username", email); // FastAPI OAuth2 requires 'username'
+    formData.append("username", email); // FastAPI OAuth2 expects 'username'
     formData.append("password", password);
     return api.postForm<any>("/api/v1/auth/login", formData);
   },
