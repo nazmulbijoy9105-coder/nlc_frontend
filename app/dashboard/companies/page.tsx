@@ -1,230 +1,158 @@
-'use client'
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { companiesApi } from '@/lib/api'
-import { BandBadge, ScoreBar, SectionHeader } from '@/components/ui'
-import Topbar from '@/components/Topbar'
+"use client";
 
-interface Company {
-  id: string
-  company_name: string
-  registration_number: string
-  incorporation_date: string
-  current_compliance_score: number
-  current_risk_band: string
-  last_evaluated_at: string
-}
-interface Module { module_name: string; score: number; max_score: number }
-interface Violation {
-  id: string; rule_id: string; rule_name: string
-  description: string; score_impact: number
-  statute_reference: string; detected_at: string; severity: string
-}
+import { useEffect, useState } from "react";
+import { companiesApi } from "@/lib/api";
+import { Company } from "@/types";  // Use the types/index.ts interface
 
 export default function CompaniesPage() {
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [selected, setSelected] = useState<Company | null>(null)
-  const [modules, setModules] = useState<Module[]>([])
-  const [violations, setViolations] = useState<Violation[]>([])
-  const [filter, setFilter] = useState('ALL')
-  const [activeTab, setActiveTab] = useState('modules')
-  const [loading, setLoading] = useState(true)
-  const [evaluating, setEvaluating] = useState(false)
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [filter, setFilter] = useState<string>("ALL");
+  const [selected, setSelected] = useState<Company | null>(null);
 
   useEffect(() => {
-    setLoading(true)
-    companiesApi.list()
-      .then((r: any) => {
-        const rawData = r?.items || r || []
-        // FIX: Ensure backend 'company_id' or 'id' maps to frontend 'id'
-        const mappedData = rawData.map((c: any) => ({
-          ...c,
-          id: c.company_id || c.id
-        }))
-        setCompanies(mappedData)
-        if (mappedData.length > 0) setSelected(mappedData[0])
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
+    companiesApi.list().then((data: Company[]) => setCompanies(data));
+  }, []);
 
-  useEffect(() => {
-    if (!selected) return
-    companiesApi.modules(selected.id).then((r: any) => setModules(r || [])).catch(() => setModules([]))
-    companiesApi.violations(selected.id).then((r: any) => {
-      const d = r
-      setViolations(d?.active_flags || d || [])
-    }).catch(() => setViolations([]))
-  }, [selected?.id])
-
-  const handleEvaluate = async () => {
-    if (!selected) return
-    setEvaluating(true)
-    try {
-      await companiesApi.evaluate(selected.id)
-      const r = await companiesApi.list()
-      const rawData = r?.items || r || []
-      const mappedData = rawData.map((c: any) => ({ ...c, id: c.company_id || c.id }))
-      setCompanies(mappedData)
-      const updated = mappedData.find((c: Company) => c.id === selected.id)
-      if (updated) setSelected(updated)
-    } catch (e) { console.error(e) }
-    finally { setEvaluating(false) }
-  }
-
-  const filtered = filter === 'ALL' ? companies : companies.filter(c => c.current_risk_band === filter)
-  const bandColor: Record<string, string> = { GREEN: '#5dd4a0', YELLOW: '#e0b84a', RED: '#e07070', BLACK: '#cc9999' }
-
-  if (loading) return (
-    <>
-      <Topbar title="Companies" />
-      <div style={{ padding: 60, textAlign: 'center', color: 'var(--white-3)', fontSize: 13 }}>
-        Loading companies...
-      </div>
-    </>
-  )
-
-  if (!selected) return (
-    <>
-      <Topbar title="Companies" />
-      <div style={{ padding: 60, textAlign: 'center', color: 'var(--white-3)', fontSize: 13 }}>
-        No companies found. <Link href="/dashboard/companies/new" style={{ color: 'var(--gold)' }}>Add a company</Link> to get started.
-      </div>
-    </>
-  )
-
-  const score = selected.current_compliance_score || 0
-  const band = selected.current_risk_band || 'GREEN'
+  // FIX: Use frontend field names from types/index.ts
+  const filtered = filter === "ALL"
+    ? companies
+    : companies.filter((c) => c.band === filter);  // was: current_risk_band
 
   return (
-    <>
-      <Topbar title="Companies" />
-      <div style={{ padding: 28 }}>
-        {/* Score Hero */}
-        <div className="nlc-card" style={{ padding: 28, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 32 }}>
-          <div style={{ width: 90, height: 90, flexShrink: 0, border: `3px solid ${bandColor[band]}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="font-cormorant" style={{ fontSize: 38, fontWeight: 700, color: bandColor[band], lineHeight: 1 }}>{score}</div>
-            <div style={{ fontSize: 9, color: 'var(--white-3)', letterSpacing: 1, textTransform: 'uppercase' }}>/ 100</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <h2 className="font-garamond" style={{ fontSize: 22, fontWeight: 600 }}>{selected.company_name}</h2>
-            <p style={{ fontSize: 12, color: 'var(--white-2)', marginTop: 4 }}>
-              Incorporated: {selected.incorporation_date} · Reg: {selected.registration_number}
-            </p>
-            <div style={{ display: 'flex', gap: 20, marginTop: 12, flexWrap: 'wrap' }}>
-              {[['Band', <span key="b" style={{ color: bandColor[band] }}>{band}</span>],
-                ['Violations', violations.length],
-                ['Last Eval', selected.last_evaluated_at ? new Date(selected.last_evaluated_at).toLocaleDateString('en-GB') : '—']
-              ].map(([k, v]) => (
-                <div key={String(k)} style={{ fontSize: 11, color: 'var(--white-3)' }}>
-                  {k}: <b style={{ color: 'var(--nlc-white)', fontWeight: 500 }}>{v}</b>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button className="nlc-btn-sm" onClick={handleEvaluate} disabled={evaluating}>
-              {evaluating ? 'Running...' : 'Run Evaluation'}
-            </button>
-          </div>
-        </div>
+    <div style={{ padding: 24 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Companies</h1>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
-          {/* Company List */}
-          <div>
-            <SectionHeader title="All Companies">
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <select value={filter} onChange={e => setFilter(e.target.value)}
-                  style={{ background: 'var(--navy)', border: '1px solid var(--navy-border)', color: 'var(--white-2)', fontSize: 11, padding: '4px 8px', outline: 'none' }}>
-                  {['ALL','GREEN','YELLOW','RED','BLACK'].map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
-                <Link href="/dashboard/companies/new">
-                  <button className="nlc-btn-sm" style={{ fontSize: 11, padding: '4px 10px' }}>+ Add</button>
-                </Link>
-              </div>
-            </SectionHeader>
-            <div className="nlc-card">
-              {filtered.length === 0 && (
-                <div style={{ padding: 20, color: 'var(--white-3)', fontSize: 12, textAlign: 'center' }}>No companies in this band.</div>
-              )}
-              {filtered.map((c, i) => (
-                <div key={c.id} onClick={() => setSelected(c)}
-                  style={{
-                    padding: '14px 16px', cursor: 'pointer',
-                    borderBottom: i < filtered.length - 1 ? '1px solid rgba(42,63,107,.4)' : 'none',
-                    background: selected?.id === c.id ? 'var(--gold-dim)' : 'transparent',
-                    borderLeft: `2px solid ${selected?.id === c.id ? 'var(--gold)' : 'transparent'}`,
-                    transition: 'all .15s'
-                  }}>
-                  <div style={{ fontWeight: 500, fontSize: 13 }}>{c.company_name}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--white-3)' }}>{c.registration_number}</span>
-                    <BandBadge band={c.current_risk_band} />
-                  </div>
-                  <div style={{ marginTop: 8 }}><ScoreBar score={c.current_compliance_score} band={c.current_risk_band} /></div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Detail Panel */}
-          <div>
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--navy-border)', marginBottom: 20 }}>
-              {[['modules','Module Scores'],['violations','Violations']].map(([k,v]) => (
-                <div key={k} onClick={() => setActiveTab(k)}
-                  style={{ padding: '10px 18px', fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                    color: activeTab === k ? 'var(--gold)' : 'var(--white-3)',
-                    borderBottom: `2px solid ${activeTab === k ? 'var(--gold)' : 'transparent'}`, transition: 'all .15s' }}>
-                  {v}
-                </div>
-              ))}
-            </div>
-
-            {activeTab === 'modules' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-                {modules.length === 0 && (
-                  <div style={{ gridColumn: '1/-1', padding: 24, color: 'var(--white-3)', fontSize: 12, textAlign: 'center' }}>
-                    Run an evaluation to see module scores.
-                  </div>
-                )}
-                {modules.map(m => {
-                  const pct = Math.round((m.score / m.max_score) * 100)
-                  const fill = pct >= 75 ? 'var(--green)' : pct >= 50 ? '#b8860b' : '#a03030'
-                  const col = pct >= 75 ? '#5dd4a0' : pct >= 50 ? '#e0b84a' : '#e07070'
-                  return (
-                    <div key={m.module_name} className="nlc-card" style={{ padding: 16 }}>
-                      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.5px', color: 'var(--white-2)', marginBottom: 10 }}>{m.module_name}</div>
-                      <div style={{ height: 6, background: 'var(--navy-border)' }}>
-                        <div style={{ height: 6, background: fill, width: `${pct}%` }} />
-                      </div>
-                      <div style={{ fontSize: 13, fontWeight: 600, marginTop: 6, color: col }}>{m.score} / {m.max_score}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {activeTab === 'violations' && (
-              <div className="nlc-card">
-                {violations.length === 0 && (
-                  <div style={{ padding: 24, textAlign: 'center', color: '#5dd4a0', fontSize: 13 }}>✓ No active violations</div>
-                )}
-                {violations.map((v, i) => (
-                  <div key={v.id} style={{ padding: '16px 20px', borderBottom: i < violations.length - 1 ? '1px solid rgba(42,63,107,.4)' : 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, color: 'var(--gold)' }}>{v.rule_id}</span>
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{v.rule_name}</span>
-                      <span style={{ marginLeft: 'auto', fontSize: 10, color: '#e07070' }}>−{v.score_impact} pts</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: 'var(--white-2)', lineHeight: 1.5 }}>{v.description}</div>
-                    <div style={{ fontSize: 10, color: '#e07070', marginTop: 4 }}>Statute: {v.statute_reference}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Filter buttons */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {["ALL", "GREEN", "YELLOW", "RED", "BLACK"].map((b) => (
+          <button
+            key={b}
+            onClick={() => setFilter(b)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              background: filter === b ? "#1e3a5f" : "#e5e7eb",
+              color: filter === b ? "#fff" : "#374151",
+            }}
+          >
+            {b}
+          </button>
+        ))}
       </div>
-    </>
-  )
+
+      <div style={{ display: "flex", gap: 24 }}>
+        {/* Company list */}
+        <div style={{ flex: 1 }}>
+          {filtered.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => setSelected(c)}
+              style={{
+                padding: 14,
+                marginBottom: 8,
+                borderRadius: 8,
+                border: "1px solid #e5e7eb",
+                cursor: "pointer",
+                background: selected?.id === c.id ? "#f3f4f6" : "#fff",
+              }}
+            >
+              {/* FIX: Use c.name (was c.company_name) */}
+              <div style={{ fontWeight: 500, fontSize: 13 }}>{c.name}</div>
+              <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                {c.registration_number}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                {/* FIX: Use c.band (was c.current_risk_band) */}
+                <BandBadge band={c.band} />
+              </div>
+              <div style={{ marginTop: 8 }}>
+                {/* FIX: Use c.compliance_score (was c.current_compliance_score) */}
+                <ScoreBar score={c.compliance_score} band={c.band} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Detail panel */}
+        {selected && (
+          <div style={{ width: 320, padding: 16, borderRadius: 8, border: "1px solid #e5e7eb" }}>
+            {/* FIX: Use selected.name (was selected.company_name) */}
+            <h2 style={{ fontSize: 18, fontWeight: 600 }}>{selected.name}</h2>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
+              {selected.registration_number}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              {/* FIX: Use selected.compliance_score (was selected.current_compliance_score) */}
+              <ScoreBar score={selected.compliance_score} band={selected.band} />
+            </div>
+            <div style={{ marginTop: 12, fontSize: 12 }}>
+              <div>Director Count: {selected.director_count}</div>
+              <div>Violation Count: {selected.violation_count}</div>
+              <div>Last Evaluated: {selected.last_evaluated_at}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BandBadge({ band }: { band: string }) {
+  const colors: Record<string, string> = {
+    GREEN: "#10b981",
+    YELLOW: "#f59e0b",
+    RED: "#ef4444",
+    BLACK: "#111827",
+  };
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "2px 8px",
+        borderRadius: 4,
+        fontSize: 11,
+        fontWeight: 600,
+        color: "#fff",
+        background: colors[band] || "#6b7280",
+      }}
+    >
+      {band}
+    </span>
+  );
+}
+
+function ScoreBar({ score, band }: { score: number; band: string }) {
+  const colors: Record<string, string> = {
+    GREEN: "#10b981",
+    YELLOW: "#f59e0b",
+    RED: "#ef4444",
+    BLACK: "#111827",
+  };
+  const pct = Math.min(100, Math.max(0, score || 0));
+  return (
+    <div>
+      <div
+        style={{
+          height: 6,
+          borderRadius: 3,
+          background: "#e5e7eb",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${pct}%`,
+            height: "100%",
+            background: colors[band] || "#6b7280",
+            transition: "width 0.3s",
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 11, marginTop: 4, color: "#6b7280" }}>
+        {score}/100
+      </div>
+    </div>
+  );
 }
