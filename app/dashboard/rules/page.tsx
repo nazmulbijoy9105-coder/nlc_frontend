@@ -17,7 +17,7 @@ const RULES = [
 ]
 
 export default function RulesPage() {
-  const modules = [...new Set(RULES.map(r => r.module))]
+  const modules = Array.from(new Set(RULES.map(r => r.module)))
 
   return (
     <>

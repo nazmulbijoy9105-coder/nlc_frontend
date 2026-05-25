@@ -16,7 +16,7 @@ export default function CompaniesPage() {
   // FIX: Use frontend field names from types/index.ts
   const filtered = filter === "ALL"
     ? companies
-    : companies.filter((c) => c.band === filter);  // was: current_risk_band
+    : companies.filter((c) => c.band === filter);  // was: band
 
   return (
     <div style={{ padding: 24 }}>
@@ -58,17 +58,17 @@ export default function CompaniesPage() {
                 background: selected?.id === c.id ? "#f3f4f6" : "#fff",
               }}
             >
-              {/* FIX: Use c.name (was c.company_name) */}
+              {/* FIX: Use c.name (was c.name) */}
               <div style={{ fontWeight: 500, fontSize: 13 }}>{c.name}</div>
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
                 {c.registration_number}
               </div>
               <div style={{ marginTop: 8 }}>
-                {/* FIX: Use c.band (was c.current_risk_band) */}
+                {/* FIX: Use c.band (was c.band) */}
                 <BandBadge band={c.band} />
               </div>
               <div style={{ marginTop: 8 }}>
-                {/* FIX: Use c.compliance_score (was c.current_compliance_score) */}
+                {/* FIX: Use c.compliance_score (was c.compliance_score) */}
                 <ScoreBar score={c.compliance_score} band={c.band} />
               </div>
             </div>
@@ -78,13 +78,13 @@ export default function CompaniesPage() {
         {/* Detail panel */}
         {selected && (
           <div style={{ width: 320, padding: 16, borderRadius: 8, border: "1px solid #e5e7eb" }}>
-            {/* FIX: Use selected.name (was selected.company_name) */}
+            {/* FIX: Use selected.name (was selected.name) */}
             <h2 style={{ fontSize: 18, fontWeight: 600 }}>{selected.name}</h2>
             <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
               {selected.registration_number}
             </div>
             <div style={{ marginTop: 12 }}>
-              {/* FIX: Use selected.compliance_score (was selected.current_compliance_score) */}
+              {/* FIX: Use selected.compliance_score (was selected.compliance_score) */}
               <ScoreBar score={selected.compliance_score} band={selected.band} />
             </div>
             <div style={{ marginTop: 12, fontSize: 12 }}>

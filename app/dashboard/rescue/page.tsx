@@ -12,8 +12,8 @@ export default function RescuePage() {
   }, []);
 
   // FIX: Use frontend field names from types/index.ts
-  const red = plans.filter((p) => p.band === "RED");    // was: current_risk_band
-  const black = plans.filter((p) => p.band === "BLACK"); // was: current_risk_band
+  const red = plans.filter((p) => p.band === "RED");    // was: band
+  const black = plans.filter((p) => p.band === "BLACK"); // was: band
 
   return (
     <div style={{ padding: 24 }}>
@@ -66,7 +66,7 @@ export default function RescuePage() {
               {p.company_name || p.company_id}
             </div>
             <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-              {/* FIX: Use p.band (was p.current_risk_band) */}
+              {/* FIX: Use p.band (was p.band) */}
               Band: {p.band} | Score: {p.score} | Violations: {p.violation_count}
             </div>
             {p.rescue_day && (
