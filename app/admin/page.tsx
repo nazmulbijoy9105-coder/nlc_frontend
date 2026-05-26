@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { clearAuth, isAuthenticated } from "@/lib/auth";
 
 interface User { id: string; email: string; full_name?: string; first_name?: string; last_name?: string; role: string; }
 
@@ -17,9 +18,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("nlc_user") || localStorage.getItem("user");
-    if (!storedUser) { router.push("/login"); return; }
+    if (!storedUser || !isAuthenticated()) { router.push("/admin/login"); return; }
     const parsed = JSON.parse(storedUser);
-    if (!isAdminRole(parsed.role)) { router.push("/login"); return; }
+    if (!isAdminRole(parsed.role)) { router.push("/"); return; }
     setUser(parsed);
 
     api.get<any>("/api/v1/admin/users")
@@ -28,7 +29,7 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  const logout = () => { localStorage.clear(); router.push("/login"); };
+  const logout = () => { clearAuth(); router.push("/admin/login"); };
 
   if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><div className="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full" /></div>;
 
