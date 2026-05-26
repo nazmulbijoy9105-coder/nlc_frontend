@@ -3,6 +3,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api"; // Uses our unified API client
 
+function isAdminRole(role?: string) {
+  return role === "SUPER_ADMIN" || role === "ADMIN_STAFF" || role === "admin";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -23,7 +27,7 @@ export default function LoginPage() {
       localStorage.setItem("nlc_user", JSON.stringify(data.user));
       
       // Redirect based on user role
-      router.push(data.user.role === "admin" ? "/admin" : "/dashboard");
+      router.push(isAdminRole(data.user.role) ? "/admin" : "/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
