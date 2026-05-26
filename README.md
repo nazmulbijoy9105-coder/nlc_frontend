@@ -43,7 +43,11 @@ git push -u origin main
 3. Framework: Next.js (auto-detected)
 4. Add environment variable:
    - `NEXT_PUBLIC_API_URL` = your backend Render URL
+   - Existing Vercel names `NEXT_PUBLIC_BACKEND_URL` and `NEXT_PUBLIC_API_BASE_URL` are also supported.
    - Browser API calls use the same-origin `/api/backend` proxy by default.
+
+Do not point `NEXT_PUBLIC_API_BASE_PATH` at Render. Leave it unset, or set it to
+`/api/backend`.
 
 ### Step 4 — Set ALLOWED_ORIGINS on backend
 The frontend no longer depends on browser cross-origin calls, but keep direct API
