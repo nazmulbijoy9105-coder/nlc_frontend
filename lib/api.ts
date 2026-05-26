@@ -237,7 +237,7 @@ export const authApi = {
 export const dashboardApi = {
   getStats: () => api.get<any>("/api/v1/companies/dashboard/kpis"),
   stats: () => api.get<any>("/api/v1/companies/dashboard/kpis"),
-  recentActivity: () => api.get<any>("/api/v1/admin/dashboard"),
+  recentActivity: async () => [],
   upcomingDeadlines: () => api.get<any>("/api/v1/companies/dashboard/deadlines"),
 };
 

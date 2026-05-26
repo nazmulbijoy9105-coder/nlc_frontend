@@ -57,12 +57,11 @@ const MOCK_COMPANIES = [
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>(MOCK_STATS)
   const [deadlines, setDeadlines] = useState<Deadline[]>(MOCK_DEADLINES)
-  const [activity, setActivity] = useState<ActivityLog[]>(MOCK_ACTIVITY)
+  const [activity] = useState<ActivityLog[]>(MOCK_ACTIVITY)
 
   useEffect(() => {
     dashboardApi.stats().then((r: any) => setStats(r)).catch(() => {})
     dashboardApi.upcomingDeadlines().then((r: any) => setDeadlines(r)).catch(() => {})
-    dashboardApi.recentActivity().then((r: any) => setActivity(r)).catch(() => {})
   }, [])
 
   const dotColor: Record<string, string> = { EVALUATION: 'var(--gold)', DOCUMENT: 'var(--green)', VIOLATION: '#a03030', SYSTEM: 'var(--gold)', FILING: 'var(--gold)' }
