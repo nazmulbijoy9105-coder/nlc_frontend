@@ -27,10 +27,9 @@ class ApiClient {
     return res.json();
   }
 
-  // EXACT MATCH OF YOUR ORIGINAL WORKING FETCH
   async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
     const headers: Record<string, string> = {
-      "Content-Type": "application/x-www-form-urlencoded" // Strictly defining this
+      "Content-Type": "application/x-www-form-urlencoded"
     };
     if (typeof window !== "undefined") {
       const token = localStorage.getItem('nlc_access_token');
@@ -94,12 +93,8 @@ class ApiClient {
 export const api = new ApiClient(API_BASE);
 
 export const authApi = {
-  login: (email: string, password: string) => {
-    const formData = new URLSearchParams();
-    formData.append("username", email); // FastAPI OAuth2 expects 'username'
-    formData.append("password", password);
-    return api.postForm<any>("/api/v1/auth/login", formData);
-  },
+  login: (email: string, password: string) =>
+    api.post<any>("/api/v1/auth/login", { email, password }),
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }),
   me: () => api.get<any>("/api/v1/auth/me"),
