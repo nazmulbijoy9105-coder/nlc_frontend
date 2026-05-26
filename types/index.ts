@@ -11,14 +11,20 @@ export interface User {
 
 export interface Company {
   id: string
-  name: string
+  company_name: string
   registration_number: string
   incorporation_date: string
-  compliance_score: number
-  band: Band
-  last_evaluated_at: string
-  director_count: number
-  violation_count: number
+  company_type: string
+  company_status: string
+  current_compliance_score: number | null
+  current_risk_band: string | null
+  last_evaluated_at: string | null
+  registered_address: string | null
+  financial_year_end: string | null
+  revenue_tier: string | null
+  is_fdi_registered: boolean | null
+  is_dormant: boolean | null
+  created_at: string
 }
 
 export interface ModuleScore {
