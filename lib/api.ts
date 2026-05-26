@@ -1,4 +1,30 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
+
+async function readErrorMessage(res: Response): Promise<string> {
+  const fallback = "HTTP " + res.status;
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const err = await res.json().catch(() => null);
+    const detail = err?.detail || err?.message || err?.error;
+
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          const field = Array.isArray(item?.loc) ? item.loc.join(".") : undefined;
+          return [field, item?.msg].filter(Boolean).join(": ");
+        })
+        .filter(Boolean)
+        .join("; ") || fallback;
+    }
+
+    return fallback;
+  }
+
+  return (await res.text().catch(() => "")) || fallback;
+}
 
 class ApiClient {
   private baseUrl: string;
@@ -21,8 +47,7 @@ class ApiClient {
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      throw new Error(await readErrorMessage(res));
     }
     return res.json();
   }
@@ -44,8 +69,7 @@ class ApiClient {
       body: formData,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      throw new Error(await readErrorMessage(res));
     }
     return res.json();
   }
@@ -57,8 +81,7 @@ class ApiClient {
       credentials: "include",
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      throw new Error(await readErrorMessage(res));
     }
     return res.json();
   }
@@ -71,8 +94,7 @@ class ApiClient {
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      throw new Error(await readErrorMessage(res));
     }
     return res.json();
   }
@@ -84,8 +106,7 @@ class ApiClient {
       credentials: "include",
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      throw new Error(await readErrorMessage(res));
     }
     return res.json();
   }

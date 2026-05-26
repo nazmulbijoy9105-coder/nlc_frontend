@@ -43,9 +43,11 @@ git push -u origin main
 3. Framework: Next.js (auto-detected)
 4. Add environment variable:
    - `NEXT_PUBLIC_API_URL` = your backend Render URL
+   - Browser API calls use the same-origin `/api/backend` proxy by default.
 
 ### Step 4 — Set ALLOWED_ORIGINS on backend
-In your `nlc_platform` Render deployment, add:
+The frontend no longer depends on browser cross-origin calls, but keep direct API
+access configured for local testing. In your `nlc_platform` Render deployment, add:
 ```
 ALLOWED_ORIGINS=https://your-nlc-frontend.vercel.app
 ```

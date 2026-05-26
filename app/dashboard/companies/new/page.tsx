@@ -22,7 +22,13 @@ export default function AddCompanyPage() {
     setLoading(true)
     setError('')
     try {
-      await companiesApi.create(form)
+      await companiesApi.create({
+        ...form,
+        company_name: form.company_name.trim(),
+        registration_number: form.registration_number.trim(),
+        registered_address: form.registered_address.trim(),
+        financial_year_end: form.financial_year_end || undefined,
+      })
       router.push('/dashboard/companies')
     } catch (err: any) {
       setError(err.message || 'Failed to add company')

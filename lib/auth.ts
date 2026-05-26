@@ -25,7 +25,11 @@ export const clearAuth = () => {
   Cookies.remove(ACCESS_TOKEN)
   Cookies.remove(REFRESH_TOKEN)
   Cookies.remove(TEMP_TOKEN)
-  if (typeof window !== 'undefined') localStorage.removeItem(USER_KEY)
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(ACCESS_TOKEN)
+    localStorage.removeItem(REFRESH_TOKEN)
+    localStorage.removeItem(USER_KEY)
+  }
 }
 
 export const isAuthenticated = () => !!Cookies.get(ACCESS_TOKEN)
