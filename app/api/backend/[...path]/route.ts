@@ -28,6 +28,8 @@ function backendBaseUrl(): string {
     process.env.NLC_BACKEND_URL ||
     process.env.API_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
     DEFAULT_BACKEND_URL
   ).replace(/\/+$/, "");
 }
