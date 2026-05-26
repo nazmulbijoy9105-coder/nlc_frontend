@@ -1,12 +1,21 @@
-# CORS Setup — Required After Deploy
+# Backend API Access After Deploy
 
-After your Vercel frontend deploys, copy your Vercel URL (e.g. https://nlc-frontend.vercel.app)
-and add it to your Render backend environment variables:
+The frontend sends browser requests to its same-origin Next.js proxy at `/api/backend`.
+That proxy forwards requests server-to-server to the Render backend configured by:
 
-Go to: https://dashboard.render.com → nlc-api → Environment
+```
+NEXT_PUBLIC_API_URL=https://nlc-platform.onrender.com
+```
 
-Update ALLOWED_ORIGINS:
+This prevents browser CORS failures for deployed Vercel domains and preview URLs.
+
+You can still keep the backend CORS allowlist configured for direct API testing:
+
+Go to: https://dashboard.render.com -> nlc-api -> Environment
+
+Update `ALLOWED_ORIGINS`:
+```
 https://nlc-frontend.vercel.app,http://localhost:3000
+```
 
-Then click Save Changes — Render redeploys automatically.
-Your frontend will then be able to call your backend with no CORS errors.
+Then click Save Changes. Render redeploys automatically.

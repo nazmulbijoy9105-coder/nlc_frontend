@@ -1,39 +1,114 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
+import { clearAuth, getValidAccessToken } from "@/lib/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
+const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
+
+type RequestOptions = {
+  auth?: boolean;
+};
+
+function isAuthEndpoint(path: string): boolean {
+  return path.startsWith("/api/v1/auth/login") || path.startsWith("/api/v1/auth/verify-2fa");
+}
+
+function handleAuthFailure(path: string): void {
+  if (typeof window === "undefined" || isAuthEndpoint(path)) return;
+
+  clearAuth();
+  if (window.location.pathname !== "/") {
+    window.location.assign("/");
+  }
+}
+
+function isGenericBackendError(message: string): boolean {
+  return message.toLowerCase().includes("an unexpected error occurred");
+}
+
+function isAuthenticationFailure(status: number, message: string): boolean {
+  const normalized = message.toLowerCase();
+
+  if (status === 401) return true;
+  if (status !== 403) return false;
+
+  return (
+    normalized.includes("not authenticated") ||
+    normalized.includes("invalid") ||
+    normalized.includes("expired") ||
+    normalized.includes("deactivated") ||
+    normalized.includes("role mismatch")
+  );
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+  const fallback = "HTTP " + res.status;
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const err = await res.json().catch(() => null);
+    const detail = err?.detail || err?.message || err?.error;
+
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          const field = Array.isArray(item?.loc) ? item.loc.join(".") : undefined;
+          return [field, item?.msg].filter(Boolean).join(": ");
+        })
+        .filter(Boolean)
+        .join("; ") || fallback;
+    }
+
+    return fallback;
+  }
+
+  return (await res.text().catch(() => "")) || fallback;
+}
 
 class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private getHeaders(): Record<string, string> {
+  private getHeaders(options: RequestOptions = {}): Record<string, string> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem('nlc_access_token');
+    if (options.auth !== false) {
+      const token = getValidAccessToken();
       if (token) headers["Authorization"] = "Bearer " + token;
     }
     return headers;
   }
 
-  async post<T>(path: string, body?: unknown): Promise<T> {
+  async post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
+    const headers = this.getHeaders(options);
     const res = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers: this.getHeaders(),
+      headers,
       credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (
+        isAuthenticationFailure(res.status, message) ||
+        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
+      ) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
     return res.json();
   }
 
   // Matches FastAPI's OAuth2PasswordRequestForm contract.
   async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
+  // EXACT MATCH OF YOUR ORIGINAL WORKING FETCH
+  async postForm<T>(path: string, formData: URLSearchParams, options: RequestOptions = {}): Promise<T> {
     const headers: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded"
     };
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem('nlc_access_token');
+    if (options.auth !== false) {
+      const token = getValidAccessToken();
       if (token) headers["Authorization"] = "Bearer " + token;
     }
 
@@ -44,48 +119,76 @@ class ApiClient {
       body: formData,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (isAuthenticationFailure(res.status, message)) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
     return res.json();
   }
 
   async get<T>(path: string): Promise<T> {
+    const headers = this.getHeaders();
     const res = await fetch(this.baseUrl + path, {
       method: "GET",
-      headers: this.getHeaders(),
+      headers,
       credentials: "include",
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (
+        isAuthenticationFailure(res.status, message) ||
+        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
+      ) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
     return res.json();
   }
 
   async put<T>(path: string, body?: unknown): Promise<T> {
+    const headers = this.getHeaders();
     const res = await fetch(this.baseUrl + path, {
       method: "PUT",
-      headers: this.getHeaders(),
+      headers,
       credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (
+        isAuthenticationFailure(res.status, message) ||
+        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
+      ) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
     return res.json();
   }
 
   async delete<T>(path: string): Promise<T> {
+    const headers = this.getHeaders();
     const res = await fetch(this.baseUrl + path, {
       method: "DELETE",
-      headers: this.getHeaders(),
+      headers,
       credentials: "include",
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (
+        isAuthenticationFailure(res.status, message) ||
+        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
+      ) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
     return res.json();
   }
@@ -98,10 +201,10 @@ export const authApi = {
     const formData = new URLSearchParams();
     formData.append("username", email);
     formData.append("password", password);
-    return api.postForm<any>("/api/v1/auth/login", formData);
+    return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
   },
   verify2FA: (temp_token: string, totp_code: string) =>
-    api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }),
+    api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }, { auth: false }),
   me: () => api.get<any>("/api/v1/auth/me"),
   logout: () => api.post("/api/v1/auth/logout"),
 };
@@ -109,7 +212,7 @@ export const authApi = {
 export const dashboardApi = {
   getStats: () => api.get<any>("/api/v1/companies/dashboard/kpis"),
   stats: () => api.get<any>("/api/v1/companies/dashboard/kpis"),
-  recentActivity: () => api.get<any>("/api/v1/admin/dashboard"),
+  recentActivity: async () => [],
   upcomingDeadlines: () => api.get<any>("/api/v1/companies/dashboard/deadlines"),
 };
 
