@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 
 interface User { id: number; email: string; first_name: string; last_name: string; role: string; }
 
@@ -9,18 +10,18 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const API_BASE = "https://nlc-platform.onrender.com";
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem("nlc_user") || localStorage.getItem("user");
     if (!storedUser) { router.push("/login"); return; }
     const parsed = JSON.parse(storedUser);
     if (parsed.role !== "admin") { router.push("/login"); return; }
     setUser(parsed);
-    
-    const token = localStorage.getItem("access_token");
-    fetch(`${API_BASE}/api/v1/admin/users`, { headers: { "Authorization": `Bearer ${token}` } })
-      .then(res => res.json()).then(setUsers).catch(() => {}).finally(() => setLoading(false));
+
+    api.get<any>("/api/v1/admin/users")
+      .then((data) => setUsers(Array.isArray(data) ? data : data?.items || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [router]);
 
   const logout = () => { localStorage.clear(); router.push("/login"); };
