@@ -27,6 +27,7 @@ class ApiClient {
     return res.json();
   }
 
+  // Matches FastAPI's OAuth2PasswordRequestForm contract.
   async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
     const headers: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded"
@@ -93,8 +94,12 @@ class ApiClient {
 export const api = new ApiClient(API_BASE);
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post<any>("/api/v1/auth/login", { email, password }),
+  login: (email: string, password: string) => {
+    const formData = new URLSearchParams();
+    formData.append("username", email);
+    formData.append("password", password);
+    return api.postForm<any>("/api/v1/auth/login", formData);
+  },
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }),
   me: () => api.get<any>("/api/v1/auth/me"),

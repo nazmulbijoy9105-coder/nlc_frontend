@@ -15,7 +15,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      // Call API via our authApi wrapper.
+      // Call API via our authApi wrapper (handles OAuth2 form data).
       const data = await authApi.login(email, password);
 
       // Save token and user with standard keys matching api.ts
