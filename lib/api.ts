@@ -100,10 +100,12 @@ class ApiClient {
     return res.json();
   }
 
+  // Matches FastAPI's OAuth2PasswordRequestForm contract.
+  async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
   // EXACT MATCH OF YOUR ORIGINAL WORKING FETCH
   async postForm<T>(path: string, formData: URLSearchParams, options: RequestOptions = {}): Promise<T> {
     const headers: Record<string, string> = {
-      "Content-Type": "application/x-www-form-urlencoded" // Strictly defining this
+      "Content-Type": "application/x-www-form-urlencoded"
     };
     if (options.auth !== false) {
       const token = getValidAccessToken();
@@ -197,7 +199,7 @@ export const api = new ApiClient(API_BASE);
 export const authApi = {
   login: (email: string, password: string) => {
     const formData = new URLSearchParams();
-    formData.append("username", email); // FastAPI OAuth2 expects 'username'
+    formData.append("username", email);
     formData.append("password", password);
     return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
   },

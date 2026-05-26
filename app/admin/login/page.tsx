@@ -20,7 +20,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      // Call API via our authApi wrapper (handles FastAPI form data automatically)
+      // Call API via our authApi wrapper (handles OAuth2 form data).
       const data = await authApi.login(email, password);
 
       setTokens(data.access_token, data.refresh_token);
