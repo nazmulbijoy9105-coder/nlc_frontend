@@ -1,7 +1,6 @@
-import { clearAuth } from "@/lib/auth";
+import { clearAuth, getValidAccessToken } from "@/lib/auth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
-const ACCESS_TOKEN_KEY = "nlc_access_token";
 const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
 
 type RequestOptions = {
@@ -10,43 +9,6 @@ type RequestOptions = {
 
 function isAuthEndpoint(path: string): boolean {
   return path.startsWith("/api/v1/auth/login") || path.startsWith("/api/v1/auth/verify-2fa");
-}
-
-function decodeJwtPayload(token: string): { exp?: number } | null {
-  const [, payload] = token.split(".");
-  if (!payload) return null;
-
-  try {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    return JSON.parse(window.atob(padded));
-  } catch {
-    return null;
-  }
-}
-
-function readValidAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY)?.trim();
-  if (!token || token === "undefined" || token === "null") {
-    if (token) clearAuth();
-    return null;
-  }
-
-  const parts = token.split(".");
-  const payload = parts.length === 3 && parts.every(Boolean) ? decodeJwtPayload(token) : null;
-  if (!payload) {
-    clearAuth();
-    return null;
-  }
-
-  if (typeof payload.exp === "number" && payload.exp <= Math.floor(Date.now() / 1000) + 30) {
-    clearAuth();
-    return null;
-  }
-
-  return token;
 }
 
 function handleAuthFailure(path: string): void {
@@ -60,6 +22,21 @@ function handleAuthFailure(path: string): void {
 
 function isGenericBackendError(message: string): boolean {
   return message.toLowerCase().includes("an unexpected error occurred");
+}
+
+function isAuthenticationFailure(status: number, message: string): boolean {
+  const normalized = message.toLowerCase();
+
+  if (status === 401) return true;
+  if (status !== 403) return false;
+
+  return (
+    normalized.includes("not authenticated") ||
+    normalized.includes("invalid") ||
+    normalized.includes("expired") ||
+    normalized.includes("deactivated") ||
+    normalized.includes("role mismatch")
+  );
 }
 
 async function readErrorMessage(res: Response): Promise<string> {
@@ -95,7 +72,7 @@ class ApiClient {
   private getHeaders(options: RequestOptions = {}): Record<string, string> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (options.auth !== false) {
-      const token = readValidAccessToken();
+      const token = getValidAccessToken();
       if (token) headers["Authorization"] = "Bearer " + token;
     }
     return headers;
@@ -112,8 +89,7 @@ class ApiClient {
     if (!res.ok) {
       const message = await readErrorMessage(res);
       if (
-        res.status === 401 ||
-        res.status === 403 ||
+        isAuthenticationFailure(res.status, message) ||
         (res.status === 500 && headers.Authorization && isGenericBackendError(message))
       ) {
         handleAuthFailure(path);
@@ -124,13 +100,15 @@ class ApiClient {
     return res.json();
   }
 
+  // Matches FastAPI's OAuth2PasswordRequestForm contract.
+  async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
   // EXACT MATCH OF YOUR ORIGINAL WORKING FETCH
   async postForm<T>(path: string, formData: URLSearchParams, options: RequestOptions = {}): Promise<T> {
     const headers: Record<string, string> = {
-      "Content-Type": "application/x-www-form-urlencoded" // Strictly defining this
+      "Content-Type": "application/x-www-form-urlencoded"
     };
     if (options.auth !== false) {
-      const token = readValidAccessToken();
+      const token = getValidAccessToken();
       if (token) headers["Authorization"] = "Bearer " + token;
     }
 
@@ -142,7 +120,7 @@ class ApiClient {
     });
     if (!res.ok) {
       const message = await readErrorMessage(res);
-      if (res.status === 401 || res.status === 403) {
+      if (isAuthenticationFailure(res.status, message)) {
         handleAuthFailure(path);
         throw new Error(AUTH_ERROR_MESSAGE);
       }
@@ -161,8 +139,7 @@ class ApiClient {
     if (!res.ok) {
       const message = await readErrorMessage(res);
       if (
-        res.status === 401 ||
-        res.status === 403 ||
+        isAuthenticationFailure(res.status, message) ||
         (res.status === 500 && headers.Authorization && isGenericBackendError(message))
       ) {
         handleAuthFailure(path);
@@ -184,8 +161,7 @@ class ApiClient {
     if (!res.ok) {
       const message = await readErrorMessage(res);
       if (
-        res.status === 401 ||
-        res.status === 403 ||
+        isAuthenticationFailure(res.status, message) ||
         (res.status === 500 && headers.Authorization && isGenericBackendError(message))
       ) {
         handleAuthFailure(path);
@@ -206,8 +182,7 @@ class ApiClient {
     if (!res.ok) {
       const message = await readErrorMessage(res);
       if (
-        res.status === 401 ||
-        res.status === 403 ||
+        isAuthenticationFailure(res.status, message) ||
         (res.status === 500 && headers.Authorization && isGenericBackendError(message))
       ) {
         handleAuthFailure(path);
@@ -224,7 +199,7 @@ export const api = new ApiClient(API_BASE);
 export const authApi = {
   login: (email: string, password: string) => {
     const formData = new URLSearchParams();
-    formData.append("username", email); // FastAPI OAuth2 expects 'username'
+    formData.append("username", email);
     formData.append("password", password);
     return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
   },
@@ -237,7 +212,7 @@ export const authApi = {
 export const dashboardApi = {
   getStats: () => api.get<any>("/api/v1/companies/dashboard/kpis"),
   stats: () => api.get<any>("/api/v1/companies/dashboard/kpis"),
-  recentActivity: () => api.get<any>("/api/v1/admin/dashboard"),
+  recentActivity: async () => [],
   upcomingDeadlines: () => api.get<any>("/api/v1/companies/dashboard/deadlines"),
 };
 

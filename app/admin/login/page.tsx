@@ -2,6 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api"; // Uses our unified API client
+import { setTokens, setUser } from "@/lib/auth";
+
+function isAdminRole(role?: string) {
+  return role === "SUPER_ADMIN" || role === "ADMIN_STAFF" || role === "admin";
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,15 +20,14 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      // Call API via our authApi wrapper (handles FastAPI form data automatically)
+      // Call API via our authApi wrapper (handles OAuth2 form data).
       const data = await authApi.login(email, password);
 
-      // Save token and user with standard keys matching api.ts
-      localStorage.setItem("nlc_access_token", data.access_token);
-      localStorage.setItem("nlc_user", JSON.stringify(data.user));
+      setTokens(data.access_token, data.refresh_token);
+      if (data.user) setUser(data.user);
       
       // Redirect based on user role
-      router.push(data.user.role === "admin" ? "/admin" : "/dashboard");
+      router.push(isAdminRole(data.user.role) ? "/admin" : "/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {

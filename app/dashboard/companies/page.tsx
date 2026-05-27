@@ -20,7 +20,7 @@ export default function CompaniesPage() {
 
   const filtered = filter === "ALL"
     ? companies
-    : companies.filter((c) => c.current_risk_band === filter);
+    : companies.filter((c) => getRiskBand(c) === filter);
 
   return (
     <div style={{ padding: 24 }}>
@@ -52,11 +52,11 @@ export default function CompaniesPage() {
             <div key={c.id} onClick={() => setSelected(c)}
               style={{ padding: 14, marginBottom: 8, borderRadius: 8, border: "1px solid #e5e7eb",
                 cursor: "pointer", background: selected?.id === c.id ? "#f3f4f6" : "#fff" }}>
-              <div style={{ fontWeight: 500, fontSize: 13 }}>{c.company_name}</div>
+              <div style={{ fontWeight: 500, fontSize: 13 }}>{getCompanyName(c)}</div>
               <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>{c.registration_number}</div>
               <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
-                <BandBadge band={c.current_risk_band} />
-                <span style={{ fontSize: 11, color: "#6b7280" }}>Score: {c.current_compliance_score ?? "N/A"}</span>
+                <BandBadge band={getRiskBand(c)} />
+                <span style={{ fontSize: 11, color: "#6b7280" }}>Score: {getComplianceScore(c) ?? "N/A"}</span>
                 <span style={{ fontSize: 11, color: "#6b7280" }}>{c.company_status}</span>
               </div>
             </div>
@@ -75,15 +75,15 @@ export default function CompaniesPage() {
           <div style={{ width: 320, padding: 20, borderRadius: 8, border: "1px solid #e5e7eb" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 600 }}>{selected.company_name}</h2>
+                <h2 style={{ fontSize: 16, fontWeight: 600 }}>{getCompanyName(selected)}</h2>
                 <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{selected.registration_number}</div>
               </div>
-              <BandBadge band={selected.current_risk_band} />
+              <BandBadge band={getRiskBand(selected)} />
             </div>
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8, fontSize: 12 }}>
               <Row label="Type" value={selected.company_type} />
               <Row label="Status" value={selected.company_status} />
-              <Row label="Score" value={selected.current_compliance_score?.toString() ?? "Not evaluated"} />
+              <Row label="Score" value={getComplianceScore(selected)?.toString() ?? "Not evaluated"} />
               <Row label="Incorporated" value={selected.incorporation_date} />
               <Row label="FYE" value={selected.financial_year_end ?? "—"} />
               <Row label="Last Evaluated" value={selected.last_evaluated_at ?? "Never"} />
@@ -101,6 +101,18 @@ export default function CompaniesPage() {
       </div>
     </div>
   );
+}
+
+function getCompanyName(company: Company) {
+  return company.company_name || company.name || "Unnamed company";
+}
+
+function getRiskBand(company: Company) {
+  return company.current_risk_band ?? company.band ?? null;
+}
+
+function getComplianceScore(company: Company) {
+  return company.current_compliance_score ?? company.compliance_score ?? null;
 }
 
 function BandBadge({ band }: { band: string | null }) {
