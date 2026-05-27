@@ -45,15 +45,17 @@ async function readErrorMessage(res: Response): Promise<string> {
 
   if (contentType.includes("application/json")) {
     const err = await res.json().catch(() => null);
-    const detail = err?.detail || err?.message || err?.error;
+    const detail = err?.detail || err?.message || err?.error || err?.errors;
 
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) {
       return detail
         .map((item) => {
           if (typeof item === "string") return item;
-          const field = Array.isArray(item?.loc) ? item.loc.join(".") : undefined;
-          return [field, item?.msg].filter(Boolean).join(": ");
+          const field = Array.isArray(item?.loc)
+            ? item.loc.join(".")
+            : item?.field;
+          return [field, item?.msg || item?.message].filter(Boolean).join(": ");
         })
         .filter(Boolean)
         .join("; ") || fallback;
@@ -78,130 +80,109 @@ class ApiClient {
     return headers;
   }
 
-  async post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
-    const headers = this.getHeaders(options);
+  private async request<T>(
+    path: string,
+    init: RequestInit,
+    options: RequestOptions = {},
+  ): Promise<T> {
+    const headers = new Headers(init.headers || this.getHeaders(options));
+    if (options.auth !== false && !headers.has("Authorization")) {
+      const token = getValidAccessToken();
+      if (token) headers.set("Authorization", "Bearer " + token);
+    }
+
     const res = await fetch(this.baseUrl + path, {
-      method: "POST",
+      ...init,
       headers,
       credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
     });
+
     if (!res.ok) {
       const message = await readErrorMessage(res);
-      if (
-        isAuthenticationFailure(res.status, message) ||
-        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
-      ) {
+      const authFailure =
+        !isAuthEndpoint(path) &&
+        (isAuthenticationFailure(res.status, message) ||
+          (res.status === 500 && headers.has("Authorization") && isGenericBackendError(message)));
+
+      if (authFailure) {
         handleAuthFailure(path);
         throw new Error(AUTH_ERROR_MESSAGE);
       }
+
       throw new Error(message);
     }
+
     return res.json();
   }
 
-  // Matches FastAPI's OAuth2PasswordRequestForm contract.
-  async postForm<T>(path: string, formData: URLSearchParams): Promise<T> {
-  // EXACT MATCH OF YOUR ORIGINAL WORKING FETCH
-  async postForm<T>(path: string, formData: URLSearchParams, options: RequestOptions = {}): Promise<T> {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/x-www-form-urlencoded"
-    };
-    if (options.auth !== false) {
-      const token = getValidAccessToken();
-      if (token) headers["Authorization"] = "Bearer " + token;
-    }
+  async post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(
+      path,
+      {
+        method: "POST",
+        body: body ? JSON.stringify(body) : undefined,
+      },
+      options,
+    );
+  }
 
-    const res = await fetch(this.baseUrl + path, {
-      method: "POST",
-      headers,
-      credentials: "include",
-      body: formData,
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
-      }
-      throw new Error(message);
-    }
-    return res.json();
+  async postForm<T>(
+    path: string,
+    formData: URLSearchParams,
+    options: RequestOptions = {},
+  ): Promise<T> {
+    return this.request<T>(
+      path,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData,
+      },
+      options,
+    );
   }
 
   async get<T>(path: string): Promise<T> {
-    const headers = this.getHeaders();
-    const res = await fetch(this.baseUrl + path, {
-      method: "GET",
-      headers,
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (
-        isAuthenticationFailure(res.status, message) ||
-        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
-      ) {
-        handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
-      }
-      throw new Error(message);
-    }
-    return res.json();
+    return this.request<T>(path, { method: "GET" });
   }
 
   async put<T>(path: string, body?: unknown): Promise<T> {
-    const headers = this.getHeaders();
-    const res = await fetch(this.baseUrl + path, {
+    return this.request<T>(path, {
       method: "PUT",
-      headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (
-        isAuthenticationFailure(res.status, message) ||
-        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
-      ) {
-        handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
-      }
-      throw new Error(message);
-    }
-    return res.json();
   }
 
   async delete<T>(path: string): Promise<T> {
-    const headers = this.getHeaders();
-    const res = await fetch(this.baseUrl + path, {
-      method: "DELETE",
-      headers,
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (
-        isAuthenticationFailure(res.status, message) ||
-        (res.status === 500 && headers.Authorization && isGenericBackendError(message))
-      ) {
-        handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
-      }
-      throw new Error(message);
-    }
-    return res.json();
+    return this.request<T>(path, { method: "DELETE" });
   }
 }
 
 export const api = new ApiClient(API_BASE);
 
+function shouldFallbackToFormLogin(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("validation") ||
+    normalized.includes("field required") ||
+    normalized.includes("username") ||
+    normalized.includes("body")
+  );
+}
+
 export const authApi = {
-  login: (email: string, password: string) => {
+  login: async (email: string, password: string) => {
     const formData = new URLSearchParams();
     formData.append("username", email);
     formData.append("password", password);
-    return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
+
+    try {
+      return await api.post<any>("/api/v1/auth/login", { email, password }, { auth: false });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (!shouldFallbackToFormLogin(message)) throw error;
+      return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
+    }
   },
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }, { auth: false }),
