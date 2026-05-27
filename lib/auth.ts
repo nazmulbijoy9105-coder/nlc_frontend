@@ -6,6 +6,7 @@ const TEMP_TOKEN = 'nlc_temp_token'
 const USER_KEY = 'nlc_user'
 
 export const setTokens = (access: string, refresh: string) => {
+  if (typeof window !== "undefined") localStorage.setItem("nlc_access_token", access);
   Cookies.set(ACCESS_TOKEN, access, { expires: 1, sameSite: 'lax' })
   Cookies.set(REFRESH_TOKEN, refresh, { expires: 7, sameSite: 'lax' })
   if (typeof window !== 'undefined') {
