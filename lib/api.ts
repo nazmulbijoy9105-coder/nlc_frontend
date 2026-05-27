@@ -20,10 +20,6 @@ function handleAuthFailure(path: string): void {
   }
 }
 
-function isGenericBackendError(message: string): boolean {
-  return message.toLowerCase().includes("an unexpected error occurred");
-}
-
 function isAuthenticationFailure(status: number, message: string): boolean {
   const normalized = message.toLowerCase();
 
@@ -101,8 +97,7 @@ class ApiClient {
       const message = await readErrorMessage(res);
       const authFailure =
         !isAuthEndpoint(path) &&
-        (isAuthenticationFailure(res.status, message) ||
-          (res.status === 500 && headers.has("Authorization") && isGenericBackendError(message)));
+        isAuthenticationFailure(res.status, message);
 
       if (authFailure) {
         handleAuthFailure(path);
