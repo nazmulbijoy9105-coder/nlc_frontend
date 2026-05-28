@@ -13,10 +13,9 @@ function isAuthEndpoint(path: string): boolean {
 
 function handleAuthFailure(path: string): void {
   if (typeof window === "undefined" || isAuthEndpoint(path)) return;
-
   clearAuth();
   if (window.location.pathname !== "/") {
-    window.location.assign("/");
+    window.location.href = "/";
   }
 }
 
@@ -26,10 +25,8 @@ function isGenericBackendError(message: string): boolean {
 
 function isAuthenticationFailure(status: number, message: string): boolean {
   const normalized = message.toLowerCase();
-
   if (status === 401) return true;
   if (status !== 403) return false;
-
   return (
     normalized.includes("not authenticated") ||
     normalized.includes("invalid") ||
@@ -42,28 +39,22 @@ function isAuthenticationFailure(status: number, message: string): boolean {
 async function readErrorMessage(res: Response): Promise<string> {
   const fallback = "HTTP " + res.status;
   const contentType = res.headers.get("content-type") || "";
-
   if (contentType.includes("application/json")) {
     const err = await res.json().catch(() => null);
     const detail = err?.detail || err?.message || err?.error || err?.errors;
-
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) {
       return detail
         .map((item) => {
           if (typeof item === "string") return item;
-          const field = Array.isArray(item?.loc)
-            ? item.loc.join(".")
-            : item?.field;
+          const field = Array.isArray(item?.loc) ? item.loc.join(".") : item?.field;
           return [field, item?.msg || item?.message].filter(Boolean).join(": ");
         })
         .filter(Boolean)
         .join("; ") || fallback;
     }
-
     return fallback;
   }
-
   return (await res.text().catch(() => "")) || fallback;
 }
 
@@ -116,30 +107,15 @@ class ApiClient {
   }
 
   async post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
-    return this.request<T>(
-      path,
-      {
-        method: "POST",
-        body: body ? JSON.stringify(body) : undefined,
-      },
-      options,
-    );
+    return this.request<T>(path, { method: "POST", body: body ? JSON.stringify(body) : undefined }, options);
   }
 
-  async postForm<T>(
-    path: string,
-    formData: URLSearchParams,
-    options: RequestOptions = {},
-  ): Promise<T> {
-    return this.request<T>(
-      path,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: formData,
-      },
-      options,
-    );
+  async postForm<T>(path: string, formData: URLSearchParams, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData,
+    }, options);
   }
 
   async get<T>(path: string): Promise<T> {
@@ -147,10 +123,7 @@ class ApiClient {
   }
 
   async put<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>(path, {
-      method: "PUT",
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    return this.request<T>(path, { method: "PUT", body: body ? JSON.stringify(body) : undefined });
   }
 
   async delete<T>(path: string): Promise<T> {
@@ -175,7 +148,6 @@ export const authApi = {
     const formData = new URLSearchParams();
     formData.append("username", email);
     formData.append("password", password);
-
     try {
       return await api.post<any>("/api/v1/auth/login", { email, password }, { auth: false });
     } catch (error) {

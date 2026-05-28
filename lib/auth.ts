@@ -14,7 +14,6 @@ const cookieOptions = () => ({
 function decodeJwtPayload(token: string): { exp?: number } | null {
   const [, payload] = token.split('.')
   if (!payload || typeof window === 'undefined') return null
-
   try {
     const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
     const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
@@ -37,25 +36,21 @@ function removeStoredAuth() {
 
 export const getValidAccessToken = () => {
   if (typeof window === 'undefined') return ''
-
   const token = (localStorage.getItem(ACCESS_TOKEN) || Cookies.get(ACCESS_TOKEN) || '').trim()
   if (!token || token === 'undefined' || token === 'null') {
     if (token) removeStoredAuth()
     return ''
   }
-
   const parts = token.split('.')
   const payload = parts.length === 3 && parts.every(Boolean) ? decodeJwtPayload(token) : null
   if (!payload) {
     removeStoredAuth()
     return ''
   }
-
   if (typeof payload.exp === 'number' && payload.exp <= Math.floor(Date.now() / 1000) + 30) {
     removeStoredAuth()
     return ''
   }
-
   localStorage.setItem(ACCESS_TOKEN, token)
   Cookies.set(ACCESS_TOKEN, token, { ...cookieOptions(), expires: 1 })
   return token
@@ -76,9 +71,7 @@ export const setTempToken = (token: string) => {
 
 export const getTempToken = () => Cookies.get(TEMP_TOKEN) || ''
 
-export const clearAuth = () => {
-  removeStoredAuth()
-}
+export const clearAuth = () => removeStoredAuth()
 
 export const isAuthenticated = () => !!getValidAccessToken()
 

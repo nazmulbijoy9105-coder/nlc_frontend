@@ -10,11 +10,12 @@ export default function CompaniesPage() {
   const [filter, setFilter] = useState<string>("ALL");
   const [selected, setSelected] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
     companiesApi.list()
       .then((data: any) => setCompanies(Array.isArray(data) ? data : data?.items || []))
-      .catch(console.error)
+      .catch(err => { console.error("companies list:", err); setFetchError(err.message); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -45,6 +46,7 @@ export default function CompaniesPage() {
       </div>
 
       {loading && <div style={{ color: "#6b7280", padding: 20 }}>Loading...</div>}
+      {fetchError && <div style={{ color: "#e07070", padding: 20 }}>{fetchError}</div>}
 
       <div style={{ display: "flex", gap: 24 }}>
         <div style={{ flex: 1 }}>
