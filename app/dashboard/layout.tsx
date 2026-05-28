@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { isAuthenticated, clearAuth, getUser } from '@/lib/auth'
@@ -38,10 +38,30 @@ function Icon({ name }: { name: string }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const user = getUser()
+  const [ready, setReady] = useState(false)
+  const [user, setUser] = useState<ReturnType<typeof getUser>>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) router.push('/')
+    let cancelled = false
+
+    const verifySession = async () => {
+      if (!isAuthenticated()) {
+        router.replace('/')
+        return
+      }
+
+      try {
+        const currentUser = await authApi.me()
+        if (cancelled) return
+        setUser(currentUser || getUser())
+        setReady(true)
+      } catch {
+        if (!cancelled) router.replace('/')
+      }
+    }
+
+    verifySession()
+    return () => { cancelled = true }
   }, [router])
 
   const handleLogout = async () => {
@@ -53,6 +73,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const initials = user?.full_name
     ? user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
     : 'MN'
+
+  if (!ready) {
+    return <div style={{ minHeight: '100vh', background: 'var(--navy)' }} />
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
