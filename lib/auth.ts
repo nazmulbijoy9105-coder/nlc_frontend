@@ -6,7 +6,6 @@ const TEMP_TOKEN = 'nlc_temp_token'
 const USER_KEY = 'nlc_user'
 
 export const setTokens = (access: string, refresh: string) => {
-  if (typeof window !== "undefined") localStorage.setItem("nlc_access_token", access);
   Cookies.set(ACCESS_TOKEN, access, { expires: 1, sameSite: 'lax' })
   Cookies.set(REFRESH_TOKEN, refresh, { expires: 7, sameSite: 'lax' })
   if (typeof window !== 'undefined') {
@@ -20,16 +19,33 @@ export const setTempToken = (token: string) => {
 
 export const getTempToken = () => Cookies.get(TEMP_TOKEN) || ''
 
-export const getAccessToken = () => Cookies.get(ACCESS_TOKEN) || ''
+export const getAccessToken = () => {
+  const cookieToken = Cookies.get(ACCESS_TOKEN)
+  if (cookieToken) return cookieToken
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('nlc_access_token') || ''
+  }
+  return ''
+}
 
 export const clearAuth = () => {
   Cookies.remove(ACCESS_TOKEN)
   Cookies.remove(REFRESH_TOKEN)
   Cookies.remove(TEMP_TOKEN)
-  if (typeof window !== 'undefined') localStorage.removeItem(USER_KEY)
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(USER_KEY)
+    localStorage.removeItem('nlc_access_token')
+  }
 }
 
-export const isAuthenticated = () => !!Cookies.get(ACCESS_TOKEN)
+export const isAuthenticated = () => {
+  const hasCookie = !!Cookies.get(ACCESS_TOKEN)
+  if (hasCookie) return true
+  if (typeof window !== 'undefined') {
+    return !!localStorage.getItem('nlc_access_token')
+  }
+  return false
+}
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')
