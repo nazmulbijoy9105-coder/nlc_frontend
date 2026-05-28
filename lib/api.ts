@@ -137,28 +137,12 @@ class ApiClient {
 
 export const api = new ApiClient(API_BASE);
 
-function shouldFallbackToFormLogin(message: string): boolean {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("validation") ||
-    normalized.includes("field required") ||
-    normalized.includes("username") ||
-    normalized.includes("body")
-  );
-}
-
 export const authApi = {
   login: async (email: string, password: string) => {
     const formData = new URLSearchParams();
     formData.append("username", email);
     formData.append("password", password);
-    try {
-      return await api.post<any>("/api/v1/auth/login", { email, password }, { auth: false });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (!shouldFallbackToFormLogin(message)) throw error;
-      return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
-    }
+    return api.postForm<any>("/api/v1/auth/login", formData, { auth: false });
   },
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }, { auth: false }),
