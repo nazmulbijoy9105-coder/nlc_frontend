@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const DEFAULT_BACKEND_URL = "https://nlc-platform.onrender.com";
-const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
 const HOP_BY_HOP_HEADERS = [
   "connection", "content-encoding", "content-length", "host",
   "keep-alive", "origin", "proxy-authenticate", "proxy-authorization",
@@ -48,62 +47,19 @@ function forwardedResponseHeaders(response: Response): Headers {
   return headers;
 }
 
-function backendPath(pathSegments: string[] = []): string {
-  return "/" + pathSegments.join("/");
-}
-
-function isAuthEndpoint(path: string): boolean {
-  return path.startsWith("/api/v1/auth/login") || path.startsWith("/api/v1/auth/verify-2fa");
-}
-
-function isGenericBackendError(message: string): boolean {
-  return message.toLowerCase().includes("an unexpected error occurred");
-}
-
-function errorMessage(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "";
-  const record = payload as Record<string, unknown>;
-  const detail = record.detail || record.message || record.error;
-  return typeof detail === "string" ? detail : "";
-}
-
-async function isUpstreamAuthCrash(
-  response: Response,
-  requestHeaders: Headers,
-  path: string,
-): Promise<boolean> {
-  if (response.status !== 500 || isAuthEndpoint(path) || !requestHeaders.has("authorization")) {
-    return false;
-  }
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) return false;
-
-  const payload = await response.clone().json().catch(() => null);
-  return isGenericBackendError(errorMessage(payload));
-}
-
 async function proxy(request: NextRequest, context: RouteContext): Promise<Response> {
   const params = await context.params;
   const method = request.method.toUpperCase();
   if (method === "OPTIONS") return new Response(null, { status: 204 });
 
   try {
-    const requestHeaders = forwardedRequestHeaders(request);
-    const path = backendPath(params.path);
     const response = await fetch(buildBackendUrl(request, params.path), {
       method,
-      headers: requestHeaders,
+      headers: forwardedRequestHeaders(request),
       body: method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer(),
       cache: "no-store",
       redirect: "manual",
     });
-
-    if (await isUpstreamAuthCrash(response, requestHeaders, path)) {
-      return Response.json(
-        { detail: AUTH_ERROR_MESSAGE },
-        { status: 401, headers: { "cache-control": "no-store", "www-authenticate": "Bearer" } },
-      );
-    }
 
     return new Response(response.body, {
       status: response.status,
