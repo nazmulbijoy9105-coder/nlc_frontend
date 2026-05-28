@@ -22,7 +22,7 @@ Next.js 15 frontend for the NLC RJSC Compliance Intelligence Platform.
 | `/dashboard/rules` | ILRMF 32 rules viewer |
 | `/dashboard/profile` | User profile + API status |
 
-## Deploy to Render
+## Deploy to Vercel
 
 ### Step 1 — Deploy NLC Backend first
 See `nlc_platform` repo. Deploy to Render using the `api/index.py` entry point.
@@ -37,7 +37,7 @@ git remote add origin https://github.com/YOUR_USERNAME/nlc_frontend.git
 git push -u origin main
 ```
 
-### Step 3 — Connect to Render
+### Step 3 — Connect to Vercel
 1. Go to https://vercel.com/new
 2. Import `nlc_frontend` repo
 3. Framework: Next.js (auto-detected)
@@ -50,18 +50,11 @@ Do not point `NEXT_PUBLIC_API_BASE_PATH` at Render. Leave it unset, or set it to
 `/api/backend`.
 
 ### Step 4 — Set ALLOWED_ORIGINS on backend
-The frontend no longer depends on browser cross-origin calls, but keep direct API
-access configured for local testing. In your `nlc_platform` Render deployment, add:
+The frontend is served from Vercel and sends browser requests to its same-origin
+`/api/backend` proxy. In your `nlc_platform` Render deployment, allow only the
+live Vercel frontend origin:
 ```
 ALLOWED_ORIGINS=https://your-nlc-frontend.vercel.app
-```
-
-## Local Dev (optional — requires Node.js)
-```bash
-cp .env.example .env.local
-# Edit .env.local with your backend URL
-npm install
-npm run dev
 ```
 
 ## Mock Data
