@@ -47,7 +47,7 @@ export const getValidAccessToken = () => {
     removeStoredAuth()
     return ''
   }
-  if (typeof payload.exp === 'number' && payload.exp <= Math.floor(Date.now() / 1000) + 30) {
+  if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(Date.now() / 1000) + 30) {
     removeStoredAuth()
     return ''
   }
