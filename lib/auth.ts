@@ -5,47 +5,82 @@ const REFRESH_TOKEN = 'nlc_refresh_token'
 const TEMP_TOKEN = 'nlc_temp_token'
 const USER_KEY = 'nlc_user'
 
-export const setTokens = (access: string, refresh: string) => {
-  Cookies.set(ACCESS_TOKEN, access, { expires: 1, sameSite: 'lax' })
-  Cookies.set(REFRESH_TOKEN, refresh, { expires: 7, sameSite: 'lax' })
+const cookieOptions = () => ({
+  path: '/',
+  sameSite: 'lax' as const,
+  secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+})
+
+function decodeJwtPayload(token: string): { exp?: number } | null {
+  const [, payload] = token.split('.')
+  if (!payload || typeof window === 'undefined') return null
+
+  try {
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    return JSON.parse(window.atob(padded))
+  } catch {
+    return null
+  }
+}
+
+function removeStoredAuth() {
+  Cookies.remove(ACCESS_TOKEN, { path: '/' })
+  Cookies.remove(REFRESH_TOKEN, { path: '/' })
+  Cookies.remove(TEMP_TOKEN, { path: '/' })
   if (typeof window !== 'undefined') {
-    localStorage.setItem('nlc_access_token', access)
+    localStorage.removeItem(ACCESS_TOKEN)
+    localStorage.removeItem(REFRESH_TOKEN)
+    localStorage.removeItem(USER_KEY)
+  }
+}
+
+export const getValidAccessToken = () => {
+  if (typeof window === 'undefined') return ''
+
+  const token = (localStorage.getItem(ACCESS_TOKEN) || Cookies.get(ACCESS_TOKEN) || '').trim()
+  if (!token || token === 'undefined' || token === 'null') {
+    if (token) removeStoredAuth()
+    return ''
+  }
+
+  const parts = token.split('.')
+  const payload = parts.length === 3 && parts.every(Boolean) ? decodeJwtPayload(token) : null
+  if (!payload) {
+    removeStoredAuth()
+    return ''
+  }
+
+  if (typeof payload.exp === 'number' && payload.exp <= Math.floor(Date.now() / 1000) + 30) {
+    removeStoredAuth()
+    return ''
+  }
+
+  localStorage.setItem(ACCESS_TOKEN, token)
+  Cookies.set(ACCESS_TOKEN, token, { ...cookieOptions(), expires: 1 })
+  return token
+}
+
+export const setTokens = (access: string, refresh: string) => {
+  Cookies.set(ACCESS_TOKEN, access, { ...cookieOptions(), expires: 1 })
+  Cookies.set(REFRESH_TOKEN, refresh, { ...cookieOptions(), expires: 7 })
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ACCESS_TOKEN, access)
+    localStorage.setItem(REFRESH_TOKEN, refresh)
   }
 }
 
 export const setTempToken = (token: string) => {
-  Cookies.set(TEMP_TOKEN, token, { expires: 1 / 288, sameSite: 'strict' }) // 5 minutes
+  Cookies.set(TEMP_TOKEN, token, { path: '/', sameSite: 'strict', expires: 1 / 288 })
 }
 
 export const getTempToken = () => Cookies.get(TEMP_TOKEN) || ''
 
-export const getAccessToken = () => {
-  const cookieToken = Cookies.get(ACCESS_TOKEN)
-  if (cookieToken) return cookieToken
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('nlc_access_token') || ''
-  }
-  return ''
-}
-
 export const clearAuth = () => {
-  Cookies.remove(ACCESS_TOKEN)
-  Cookies.remove(REFRESH_TOKEN)
-  Cookies.remove(TEMP_TOKEN)
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(USER_KEY)
-    localStorage.removeItem('nlc_access_token')
-  }
+  removeStoredAuth()
 }
 
-export const isAuthenticated = () => {
-  const hasCookie = !!Cookies.get(ACCESS_TOKEN)
-  if (hasCookie) return true
-  if (typeof window !== 'undefined') {
-    return !!localStorage.getItem('nlc_access_token')
-  }
-  return false
-}
+export const isAuthenticated = () => !!getValidAccessToken()
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')
