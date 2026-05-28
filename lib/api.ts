@@ -81,6 +81,10 @@ class ApiClient {
       const token = getValidAccessToken();
       if (token) headers.set("Authorization", "Bearer " + token);
     }
+    if (options.auth !== false && !headers.has("Authorization")) {
+      handleAuthFailure(path);
+      throw new Error(AUTH_ERROR_MESSAGE);
+    }
 
     const res = await fetch(this.baseUrl + path, {
       ...init,
