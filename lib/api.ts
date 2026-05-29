@@ -1,6 +1,6 @@
 import { clearAuth, getValidAccessToken } from "@/lib/auth";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
 const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
 
 type RequestOptions = {
