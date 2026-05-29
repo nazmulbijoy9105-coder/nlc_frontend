@@ -9,13 +9,13 @@ NEXT_PUBLIC_API_URL=https://nlc-platform.onrender.com
 
 This prevents browser CORS failures for deployed Vercel domains and preview URLs.
 
-You can still keep the backend CORS allowlist configured for direct API testing:
+Keep the backend CORS allowlist limited to the live Vercel frontend origin:
 
 Go to: https://dashboard.render.com -> nlc-api -> Environment
 
 Update `ALLOWED_ORIGINS`:
 ```
-https://nlc-frontend.vercel.app,http://localhost:3000
+https://nlc-frontend.vercel.app
 ```
 
 Then click Save Changes. Render redeploys automatically.

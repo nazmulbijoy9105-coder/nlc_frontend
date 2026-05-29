@@ -5,18 +5,9 @@ export const runtime = "nodejs";
 
 const DEFAULT_BACKEND_URL = "https://nlc-platform.onrender.com";
 const HOP_BY_HOP_HEADERS = [
-  "connection",
-  "content-encoding",
-  "content-length",
-  "host",
-  "keep-alive",
-  "origin",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailer",
-  "transfer-encoding",
-  "upgrade",
+  "connection", "content-encoding", "content-length", "host",
+  "keep-alive", "origin", "proxy-authenticate", "proxy-authorization",
+  "te", "trailer", "transfer-encoding", "upgrade",
 ];
 
 type RouteContext = {
@@ -43,24 +34,15 @@ function buildBackendUrl(request: NextRequest, pathSegments: string[] = []): str
 
 function forwardedRequestHeaders(request: NextRequest): Headers {
   const headers = new Headers(request.headers);
-
-  for (const header of HOP_BY_HOP_HEADERS) {
-    headers.delete(header);
-  }
-
+  for (const header of HOP_BY_HOP_HEADERS) headers.delete(header);
   headers.set("x-forwarded-host", request.nextUrl.host);
   headers.set("x-forwarded-proto", request.nextUrl.protocol.replace(":", ""));
-
   return headers;
 }
 
 function forwardedResponseHeaders(response: Response): Headers {
   const headers = new Headers(response.headers);
-
-  for (const header of HOP_BY_HOP_HEADERS) {
-    headers.delete(header);
-  }
-
+  for (const header of HOP_BY_HOP_HEADERS) headers.delete(header);
   headers.set("cache-control", "no-store");
   return headers;
 }
@@ -68,10 +50,7 @@ function forwardedResponseHeaders(response: Response): Headers {
 async function proxy(request: NextRequest, context: RouteContext): Promise<Response> {
   const params = await context.params;
   const method = request.method.toUpperCase();
-
-  if (method === "OPTIONS") {
-    return new Response(null, { status: 204 });
-  }
+  if (method === "OPTIONS") return new Response(null, { status: 204 });
 
   try {
     const response = await fetch(buildBackendUrl(request, params.path), {
@@ -89,7 +68,6 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Backend request failed";
-
     return Response.json(
       { detail: "Unable to reach backend API", message },
       { status: 502, headers: { "cache-control": "no-store" } },
