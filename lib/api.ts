@@ -84,12 +84,20 @@ export const companiesApi = {
 };
 
 export const filingsApi = {
-  list: (companyId?: string) => api.get<any>("/api/v1/filings" + (companyId ? "?company_id=" + companyId : "")),
+  listAGM: (companyId?: string) => api.get<any>("/api/v1/filings/agm" + (companyId ? "/" + companyId : "")),
+  listAudit: (companyId?: string) => api.get<any>("/api/v1/filings/audit" + (companyId ? "/" + companyId : "")),
+  listAnnualReturn: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
+  listRegisters: (companyId?: string) => api.get<any>("/api/v1/filings/statutory-register" + (companyId ? "/" + companyId : "")),
+  list: (companyId?: string) => api.get<any>("/api/v1/filings/agm" + (companyId ? "/" + companyId : "")),
 };
 
 export const documentsApi = {
-  list: () => api.get<any>("/api/v1/documents"),
-  approve: (id: string) => api.post<any>("/api/v1/documents/" + id + "/approve"),
+  list: () => api.get<any>("/api/v1/documents/templates"),
+  listByCompany: (companyId: string) => api.get<any>("/api/v1/documents/" + companyId),
+  generate: (data: any) => api.post<any>("/api/v1/documents/generate", data),
+  approve: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/approve"),
+  release: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/release"),
+  detail: (id: string) => api.get<any>("/api/v1/documents/detail/" + id),
 };
 
 export const rescueApi = {
