@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { companiesApi } from "@/lib/api";
 import { Company } from "@/types";
@@ -11,13 +11,42 @@ export default function CompaniesPage() {
   const [selected, setSelected] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
+
+  const loadCompanies = useCallback(async () => {
+    setFetchError("");
+    try {
+      const data = await companiesApi.list();
+      const nextCompanies = Array.isArray(data) ? data : data?.items || [];
+      setCompanies(nextCompanies);
+      setSelected((current) => current ? nextCompanies.find((c: Company) => c.id === current.id) || current : current);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to load companies.";
+      console.error("companies list:", err);
+      setFetchError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    companiesApi.list()
-      .then((data: any) => setCompanies(Array.isArray(data) ? data : data?.items || []))
-      .catch(err => { console.error("companies list:", err); setFetchError(err.message); })
-      .finally(() => setLoading(false));
-  }, []);
+    loadCompanies();
+  }, [loadCompanies]);
+
+  const handleEvaluate = async (companyId: string) => {
+    setEvaluatingId(companyId);
+    setFetchError("");
+    try {
+      await companiesApi.evaluate(companyId);
+      await loadCompanies();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Evaluation failed.";
+      console.error("companies evaluate:", err);
+      setFetchError(message);
+    } finally {
+      setEvaluatingId(null);
+    }
+  };
 
   const filtered = filter === "ALL"
     ? companies
@@ -93,9 +122,10 @@ export default function CompaniesPage() {
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
               <button
-                onClick={() => companiesApi.evaluate(selected.id).then(() => alert("Evaluation triggered"))}
+                onClick={() => handleEvaluate(selected.id)}
+                disabled={evaluatingId === selected.id}
                 style={{ flex: 1, padding: "8px 0", background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 4, fontSize: 12, cursor: "pointer" }}>
-                Run Evaluation
+                {evaluatingId === selected.id ? "Evaluating..." : "Run Evaluation"}
               </button>
             </div>
           </div>
