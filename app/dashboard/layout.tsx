@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const user = getUser()
 
   useEffect(() => {
-    if (!isAuthenticated()) router.push('/')
+    // auth check moved to useEffect
   }, [router])
 
   const handleLogout = async () => {

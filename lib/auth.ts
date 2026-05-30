@@ -36,6 +36,7 @@ function removeStoredAuth() {
 
 export const getValidAccessToken = () => {
   if (typeof window === 'undefined') return ''
+  if (typeof window === 'undefined') return '';
   const token = (localStorage.getItem(ACCESS_TOKEN) || Cookies.get(ACCESS_TOKEN) || '').trim()
   if (!token || token === 'undefined' || token === 'null') {
     if (token) removeStoredAuth()
