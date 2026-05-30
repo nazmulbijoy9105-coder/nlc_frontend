@@ -25,7 +25,8 @@ export default function CompaniesPage() {
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
   const [flags, setFlags] = useState<Flag[]>([]);
   const [flagsLoading, setFlagsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"info" | "flags">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "flags" | "history">("info")
+  const [history, setHistory] = useState<any[]>([]);
 
   const loadCompanies = useCallback(async () => {
     setFetchError("");
@@ -60,6 +61,7 @@ export default function CompaniesPage() {
     setSelected(c);
     setActiveTab("info");
     loadFlags(c.id);
+    companiesApi.scoreHistory(c.id).then((d: any) => setHistory(Array.isArray(d) ? d.slice(0,12).reverse() : [])).catch(() => setHistory([]))
   };
 
   const handleEvaluate = async (companyId: string) => {
@@ -137,12 +139,12 @@ export default function CompaniesPage() {
                 <BandBadge band={getRiskBand(selected)} />
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
-                {(["info", "flags"] as const).map(tab => (
+                {(["info", "flags", "history"] as const).map(tab => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
                     style={{ padding: "5px 14px", borderRadius: 4, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600,
                       background: activeTab === tab ? "#1e3a5f" : "#f3f4f6",
                       color: activeTab === tab ? "#fff" : "#374151" }}>
-                    {tab === "info" ? "Details" : "Violations " + (flags.length > 0 ? "(" + flags.length + ")" : "")}
+                    {tab === "info" ? "Details" : tab === "history" ? "Score History" : "Violations " + (flags.length > 0 ? "(" + flags.length + ")" : "")}
                   </button>
                 ))}
               </div>
@@ -186,6 +188,40 @@ export default function CompaniesPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {activeTab === "history" && (
+                <div>
+                  {history.length === 0 ? (
+                    <div style={{ color: "#6b7280", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No score history yet. Run evaluation first.</div>
+                  ) : (
+                    <div>
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80, marginBottom: 12 }}>
+                        {history.map((h: any, i: number) => {
+                          const score = h.score || 0
+                          const band = h.risk_band || "GREEN"
+                          const colors: Record<string,string> = { GREEN: "#10b981", YELLOW: "#f59e0b", RED: "#ef4444", BLACK: "#374151" }
+                          return (
+                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                              <div style={{ fontSize: 8, color: "#6b7280" }}>{score}</div>
+                              <div style={{ width: "100%", background: colors[band] || "#6b7280", borderRadius: "2px 2px 0 0",
+                                height: Math.max(4, (score / 100) * 60) + "px", transition: "height 0.3s" }} />
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {history.slice(-4).reverse().map((h: any, i: number) => (
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                            <span style={{ color: "#6b7280" }}>{h.month ? h.month.slice(0,7) : "—"}</span>
+                            <span style={{ fontWeight: 600 }}>{h.score}</span>
+                            <span style={{ color: h.risk_band === "GREEN" ? "#10b981" : h.risk_band === "YELLOW" ? "#f59e0b" : h.risk_band === "RED" ? "#ef4444" : "#9ca3af" }}>{h.risk_band}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

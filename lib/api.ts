@@ -81,9 +81,13 @@ export const companiesApi = {
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
+  scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
 };
 
 export const filingsApi = {
+  agms: (companyId: string) => api.get<any>("/api/v1/filings/agm/" + companyId),
+  audits: (companyId: string) => api.get<any>("/api/v1/filings/audit/" + companyId),
+  annualReturns: (companyId: string) => api.get<any>("/api/v1/filings/annual-return/" + companyId),
   listAGM: (companyId?: string) => api.get<any>("/api/v1/filings/agm" + (companyId ? "/" + companyId : "")),
   listAudit: (companyId?: string) => api.get<any>("/api/v1/filings/audit" + (companyId ? "/" + companyId : "")),
   listAnnualReturn: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
