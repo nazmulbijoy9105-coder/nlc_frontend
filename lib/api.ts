@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
 
 class ApiClient {
   private baseUrl: string;
