@@ -87,6 +87,9 @@ export const companiesApi = {
 };
 
 export const filingsApi = {
+  createAGM: (data: any) => api.post<any>("/api/v1/filings/agm", data),
+  createAudit: (data: any) => api.post<any>("/api/v1/filings/audit", data),
+  createReturn: (data: any) => api.post<any>("/api/v1/filings/annual-return", data),
   agms: (companyId: string) => api.get<any>("/api/v1/filings/agm/" + companyId),
   audits: (companyId: string) => api.get<any>("/api/v1/filings/audit/" + companyId),
   annualReturns: (companyId: string) => api.get<any>("/api/v1/filings/annual-return/" + companyId),
