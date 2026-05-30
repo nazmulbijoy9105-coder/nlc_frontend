@@ -104,3 +104,16 @@ export const rescueApi = {
   list: () => api.get<any>("/api/v1/rescue"),
   pipeline: () => api.get<any>("/api/v1/rescue"),
 };
+
+export const commercialApi = {
+  pipeline: () => api.get<any>("/api/v1/commercial/pipeline"),
+  funnel: () => api.get<any>("/api/v1/commercial/funnel"),
+  engagements: (companyId: string) => api.get<any>("/api/v1/commercial/engagements/" + companyId),
+  createEngagement: (data: any) => api.post<any>("/api/v1/commercial/engagements", data),
+  advanceStatus: (id: string, data: any) => api.patch<any>("/api/v1/commercial/engagements/" + id + "/status", data),
+  tasks: (companyId: string) => api.get<any>("/api/v1/commercial/tasks/" + companyId),
+  completeTask: (id: string, data: any) => api.patch<any>("/api/v1/commercial/tasks/" + id + "/complete", data),
+  createQuotation: (data: any) => api.post<any>("/api/v1/commercial/quotations", data),
+  acceptQuotation: (id: string) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/accept"),
+  rejectQuotation: (id: string, data: any) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/reject", data),
+}
