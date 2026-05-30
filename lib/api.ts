@@ -1,3 +1,67 @@
+import { clearAuth, getValidAccessToken } from "@/lib/auth";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
+const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
+
+type RequestOptions = {
+  auth?: boolean;
+};
+
+function isAuthEndpoint(path: string): boolean {
+  return path.startsWith("/api/v1/auth/login") || path.startsWith("/api/v1/auth/verify-2fa");
+}
+
+function handleAuthFailure(path: string): void {
+  if (typeof window === "undefined" || isAuthEndpoint(path)) return;
+
+  clearAuth();
+  if (window.location.pathname !== "/") {
+    window.location.assign("/");
+  }
+}
+
+function isAuthenticationFailure(status: number, message: string): boolean {
+  const normalized = message.toLowerCase();
+
+  if (status === 401) return true;
+  if (status !== 403) return false;
+
+  return (
+    normalized.includes("not authenticated") ||
+    normalized.includes("invalid") ||
+    normalized.includes("expired") ||
+    normalized.includes("deactivated") ||
+    normalized.includes("role mismatch")
+  );
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+  const fallback = "HTTP " + res.status;
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const err = await res.json().catch(() => null);
+    const detail = err?.detail || err?.message || err?.error || err?.errors;
+
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          const field = Array.isArray(item?.loc)
+            ? item.loc.join(".")
+            : item?.field;
+          return [field, item?.msg || item?.message].filter(Boolean).join(": ");
+        })
+        .filter(Boolean)
+        .join("; ") || fallback;
+    }
+
+    return fallback;
+  }
+
+  return (await res.text().catch(() => "")) || fallback;
+}
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
 
 class ApiClient {
@@ -22,6 +86,17 @@ class ApiClient {
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
+      const message = await readErrorMessage(res);
+      const authFailure =
+        !isAuthEndpoint(path) &&
+        isAuthenticationFailure(res.status, message);
+
+      if (authFailure) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+
+      throw new Error(message);
       const err = await res.json().catch(() => ({ detail: "Request failed" }));
       throw new Error(err.detail || "HTTP " + res.status);
     }
