@@ -27,13 +27,24 @@ export default function FilingsPage() {
     setLoading(true); setSuccess(''); setError('')
     try {
       if (tab === 'agm') {
-        await filingsApi.createAGM(agm)
+        if (!agm.company_id || !agm.agm_due_date) { setError('Company and AGM Due Date are required.'); setLoading(false); return }
+        const body: any = { company_id: agm.company_id, financial_year: agm.financial_year, agm_due_date: agm.agm_due_date }
+        if (agm.scheduled_date) body.scheduled_date = agm.scheduled_date
+        if (agm.notice_sent_date) body.notice_sent_date = agm.notice_sent_date
+        await filingsApi.createAGM(body)
         setSuccess('AGM record created successfully.')
       } else if (tab === 'audit') {
-        await filingsApi.createAudit(audit)
+        if (!audit.company_id) { setError('Company is required.'); setLoading(false); return }
+        const body: any = { company_id: audit.company_id, financial_year: audit.financial_year }
+        if (audit.auditor_firm) body.auditor_firm = audit.auditor_firm
+        if (audit.auditor_icab_number) body.auditor_icab_number = audit.auditor_icab_number
+        await filingsApi.createAudit(body)
         setSuccess('Audit record created successfully.')
       } else {
-        await filingsApi.createReturn(ret)
+        if (!ret.company_id) { setError('Company is required.'); setLoading(false); return }
+        const body: any = { company_id: ret.company_id, financial_year: ret.financial_year }
+        if (ret.agm_date) body.agm_date = ret.agm_date
+        await filingsApi.createReturn(body)
         setSuccess('Annual Return record created successfully.')
       }
     } catch (e: any) {
