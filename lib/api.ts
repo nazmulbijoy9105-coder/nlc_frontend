@@ -93,7 +93,6 @@ export const companiesApi = {
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
-  delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
 };
 
 export const filingsApi = {
