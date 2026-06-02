@@ -18,6 +18,7 @@ interface Flag {
 export default function CompaniesPage() {
   const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("ALL");
   const [selected, setSelected] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +80,17 @@ export default function CompaniesPage() {
       setEvaluatingId(null);
     }
   };
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this company? This cannot be undone.')) return
+    setDeleting(id)
+    try {
+      await companiesApi.delete(id)
+      setCompanies(prev => prev.filter(x => x.id !== id))
+      if (selected?.id === id) setSelected(null)
+    } catch { alert('Delete failed — check console') }
+    finally { setDeleting(null) }
+  }
 
   const filtered = filter === "ALL" ? companies : companies.filter((c) => getRiskBand(c) === filter);
 
