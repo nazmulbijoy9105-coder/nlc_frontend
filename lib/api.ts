@@ -108,8 +108,8 @@ export const documentsApi = {
 };
 
 export const rescueApi = {
-  list: () => api.get<any>("/api/v1/rescue"),
-  pipeline: () => api.get<any>("/api/v1/rescue"),
+  list: () => api.get<any>("/api/v1/rescue/plans"),
+  pipeline: () => api.get<any>("/api/v1/rescue/plans"),
 };
 
 export const commercialApi = {
