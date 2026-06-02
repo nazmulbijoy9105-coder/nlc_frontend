@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { dashboardApi } from '@/lib/api'
+import { dashboardApi, companiesApi } from '@/lib/api'
 import type { DashboardStats, ActivityLog, Deadline } from '@/types'
 import Topbar from '@/components/Topbar'
 import Link from 'next/link'
@@ -58,11 +58,25 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>(MOCK_STATS)
   const [deadlines, setDeadlines] = useState<Deadline[]>(MOCK_DEADLINES)
   const [activity] = useState<ActivityLog[]>(MOCK_ACTIVITY)
+  const [companies, setCompanies] = useState<any[]>([])
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     dashboardApi.stats().then((r: any) => setStats(r)).catch(() => {})
+    companiesApi.list().then((r: any) => setCompanies(Array.isArray(r) ? r : r?.items || [])).catch(() => {})
     dashboardApi.upcomingDeadlines().then((r: any) => setDeadlines(r)).catch(() => {})
   }, [])
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this company? This cannot be undone.')) return
+    setDeleting(id)
+    try {
+      await companiesApi.delete(id)
+      setCompanies(prev => prev.filter(c => c.id !== id))
+      dashboardApi.stats().then((r: any) => setStats(r)).catch(() => {})
+    } catch { alert('Delete failed') }
+    finally { setDeleting(null) }
+  }
 
   const dotColor: Record<string, string> = { EVALUATION: 'var(--gold)', DOCUMENT: 'var(--green)', VIOLATION: '#a03030', SYSTEM: 'var(--gold)', FILING: 'var(--gold)' }
 
@@ -87,16 +101,35 @@ export default function DashboardPage() {
         <table className="nlc-table" style={{ marginBottom: 28 }}>
           <thead><tr><th>Company</th><th>Reg No</th><th>Compliance Score</th><th>Band</th><th>Last Evaluated</th><th></th></tr></thead>
           <tbody>
-            {MOCK_COMPANIES.map(c => (
-              <tr key={c.id}>
-                <td><div style={{ fontWeight: 500 }}>{c.name}</div></td>
-                <td style={{ fontSize: 12, color: 'var(--white-2)' }}>{c.registration_number}</td>
-                <td><ScoreBar score={c.compliance_score} band={c.band} /></td>
-                <td><BandBadge band={c.band} /></td>
-                <td style={{ fontSize: 11, color: 'var(--white-3)' }}>{c.last_evaluated_at}</td>
-                <td><Link href="/dashboard/companies"><button className="nlc-btn-sm" style={{ padding: '4px 10px', fontSize: 10 }}>View</button></Link></td>
-              </tr>
-            ))}
+            {companies.length === 0 && (
+              <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--white-3)', padding: 20 }}>
+                No companies yet. <Link href="/dashboard/companies/new"><span style={{ color: 'var(--gold)', cursor: 'pointer' }}>Add one →</span></Link>
+              </td></tr>
+            )}
+            {companies.map((c: any) => {
+              const band = c.risk_band || c.band || 'GREEN'
+              const score = c.compliance_score ?? c.overall_score ?? 0
+              const regNo = c.registration_number || c.rjsc_number || '—'
+              const lastEval = c.last_evaluated_at ? new Date(c.last_evaluated_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'
+              return (
+                <tr key={c.id}>
+                  <td><div style={{ fontWeight: 500 }}>{c.name || c.company_name}</div></td>
+                  <td style={{ fontSize: 12, color: 'var(--white-2)' }}>{regNo}</td>
+                  <td><ScoreBar score={score} band={band} /></td>
+                  <td><BandBadge band={band} /></td>
+                  <td style={{ fontSize: 11, color: 'var(--white-3)' }}>{lastEval}</td>
+                  <td style={{ display: 'flex', gap: 6 }}>
+                    <Link href="/dashboard/companies"><button className="nlc-btn-sm" style={{ padding: '4px 10px', fontSize: 10 }}>View</button></Link>
+                    <button
+                      className="nlc-btn-sm"
+                      onClick={() => handleDelete(c.id)}
+                      disabled={deleting === c.id}
+                      style={{ padding: '4px 10px', fontSize: 10, background: 'rgba(160,48,48,.15)', color: '#e07070', border: '1px solid rgba(160,48,48,.3)' }}
+                    >{deleting === c.id ? '…' : 'Del'}</button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
 

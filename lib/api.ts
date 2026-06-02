@@ -41,6 +41,15 @@ class ApiClient {
     return res.json();
   }
 
+  async delete<T>(path: string): Promise<T> {
+    const res = await fetch(this.baseUrl + path, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
+
   async put<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PUT",
@@ -82,6 +91,7 @@ export const companiesApi = {
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
+  delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
 };
 
 export const filingsApi = {
