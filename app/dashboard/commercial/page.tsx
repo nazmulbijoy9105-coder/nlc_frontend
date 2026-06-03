@@ -11,6 +11,7 @@ const TIERS = [
 ]
 
 const STAGES = ["IDENTIFIED", "QUOTED", "CONFIRMED", "IN_PROGRESS", "COMPLETED"]
+const STAGE_LABELS: Record<string, string> = { IDENTIFIED: "Identified", QUOTED: "Quoted", CONFIRMED: "Confirmed", IN_PROGRESS: "In Progress", COMPLETED: "Completed" }
 
 const STAGE_COLORS: Record<string, string> = {
   IDENTIFIED: "#6b7280",
@@ -111,7 +112,7 @@ export default function CommercialPage() {
                           return (
                             <div key={stage} style={{ background: "var(--navy-bg)", borderRadius: 6, padding: "12px 14px",
                               borderTop: "3px solid " + (STAGE_COLORS[stage] || "#6b7280") }}>
-                              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "1px", color: STAGE_COLORS[stage], marginBottom: 8 }}>{stage}</div>
+                              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "1px", color: STAGE_COLORS[stage], marginBottom: 8 }}>{STAGE_LABELS[stage] || stage}</div>
                               <div style={{ fontSize: 22, fontWeight: 700 }}>{stageData.count || 0}</div>
                               <div style={{ fontSize: 11, color: "var(--white-3)", marginTop: 4 }}>
                                 {stageData.confirmed_bdt > 0 ? fmt(stageData.confirmed_bdt) : stageData.estimated_bdt > 0 ? fmt(stageData.estimated_bdt) : "—"}
@@ -136,7 +137,7 @@ export default function CommercialPage() {
                       return (
                         <div key={stage}>
                           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-                            <span style={{ fontWeight: 500 }}>{stage}</span>
+                            <span style={{ fontWeight: 500 }}>{STAGE_LABELS[stage] || stage}</span>
                             <span style={{ color: "var(--white-2)" }}>{data?.count || 0} engagements · {fmt(data?.total_bdt || 0)}</span>
                           </div>
                           <div style={{ height: 8, background: "var(--navy-bg)", borderRadius: 4, overflow: "hidden" }}>
