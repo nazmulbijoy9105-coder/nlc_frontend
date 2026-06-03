@@ -62,7 +62,7 @@ export default function DashboardPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
-    dashboardApi.stats().then((r: any) => setStats(r)).catch(() => {})
+    dashboardApi.stats().then((r: any) => setStats({ total_companies: r.total_companies ?? r.active_companies ?? 0, green_count: r.green_count ?? r.green_band_count ?? 0, yellow_count: r.yellow_count ?? r.yellow_band_count ?? 0, red_black_count: r.red_black_count ?? (r.red_band_count ?? 0) + (r.black_band_count ?? 0) })).catch(() => {})
     companiesApi.list().then((r: any) => setCompanies(Array.isArray(r) ? r : r?.items || [])).catch(() => {})
     dashboardApi.upcomingDeadlines().then((r: any) => setDeadlines(r)).catch(() => {})
   }, [])
@@ -73,7 +73,7 @@ export default function DashboardPage() {
     try {
       await companiesApi.delete(id)
       setCompanies(prev => prev.filter(c => c.id !== id))
-      dashboardApi.stats().then((r: any) => setStats(r)).catch(() => {})
+      dashboardApi.stats().then((r: any) => setStats({ total_companies: r.total_companies ?? r.active_companies ?? 0, green_count: r.green_count ?? r.green_band_count ?? 0, yellow_count: r.yellow_count ?? r.yellow_band_count ?? 0, red_black_count: r.red_black_count ?? (r.red_band_count ?? 0) + (r.black_band_count ?? 0) })).catch(() => {})
     } catch { alert('Delete failed') }
     finally { setDeleting(null) }
   }
