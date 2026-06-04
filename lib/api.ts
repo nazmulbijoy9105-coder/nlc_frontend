@@ -158,3 +158,8 @@ export const adminApi = {
   deactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/deactivate`, {}),
   reactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/reactivate`, {}),
 }
+
+export const rulesApi = {
+  list: () => api.get<any>('/api/v1/rules'),
+  summary: () => api.get<any>('/api/v1/rules/summary'),
+}
