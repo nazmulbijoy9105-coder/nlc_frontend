@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api"; // Uses our unified API client
-import { setTokens, setUser } from "@/lib/auth";
+import { setTokens, setTempToken, setUser } from "@/lib/auth";
 
 function isAdminRole(role?: string) {
   return role === "SUPER_ADMIN" || role === "ADMIN_STAFF" || role === "admin";

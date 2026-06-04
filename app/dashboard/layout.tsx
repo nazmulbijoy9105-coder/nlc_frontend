@@ -42,8 +42,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const user = getUser()
 
   useEffect(() => {
-    // auth check moved to useEffect
+    if (!isAuthenticated()) {
+      router.push('/')
+    }
   }, [router])
+
+  if (typeof window !== 'undefined' && !isAuthenticated()) {
+    return null
+  }
 
   const handleLogout = async () => {
     try { await authApi.logout() } catch {}
