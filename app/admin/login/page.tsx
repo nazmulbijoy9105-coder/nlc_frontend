@@ -20,14 +20,22 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      // Call API via our authApi wrapper (handles OAuth2 form data).
       const data = await authApi.login(email, password);
 
-      setTokens(data.access_token, data.refresh_token);
       if (data.user) setUser(data.user);
+
+      // Check if 2FA is required
+      if (data.user?.requires_2fa) {
+        setTempToken(data.access_token);
+        router.push("/verify");
+        return;
+      }
+
+      // No 2FA - set tokens and redirect
+      setTokens(data.access_token, data.refresh_token);
       
       // Redirect based on user role
-      router.push(isAdminRole(data.user.role) ? "/admin" : "/dashboard");
+      router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
