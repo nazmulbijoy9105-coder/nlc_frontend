@@ -100,6 +100,13 @@ export default function DocumentsPage() {
     finally { setGenerating(false) }
   }
 
+  const handleDownload = async (id: string) => {
+    try {
+      const res = await documentsApi.downloadPdf(id)
+      if (res.download_url) window.open(res.download_url, '_blank')
+    } catch (e: any) { alert(e.message || 'Download failed') }
+  }
+
   const handleApprove = async (id: string) => {
     try {
       await documentsApi.approve(id)
@@ -291,7 +298,7 @@ export default function DocumentsPage() {
                         <button style={{
                           padding: '4px 10px', fontSize: 9, fontWeight: 600, letterSpacing: '.6px', textTransform: 'uppercase',
                           background: 'transparent', border: '1px solid var(--navy-border)', color: 'var(--white-2)', cursor: 'pointer',
-                        }}>{d._status === 'APPROVED' ? 'Download' : 'View'}</button>
+                        }onClick={() => handleDownload(d.id)}>{d._status === 'APPROVED' ? 'Download' : 'View'}</button>
                       </div>
                     </td>
                   </tr>
