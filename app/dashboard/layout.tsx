@@ -17,6 +17,7 @@ const NAV = [
     { href: '/dashboard/commercial', label: 'Commercial', icon: 'users' },
   ]},
   { group: 'Admin', items: [
+    { href: '/dashboard/admin', label: 'User Management', icon: 'users' },
     { href: '/dashboard/rules', label: 'Rules Engine', icon: 'sun' },
     { href: '/dashboard/profile', label: 'My Profile', icon: 'user' },
   ]},

@@ -110,7 +110,8 @@ export const filingsApi = {
 };
 
 export const documentsApi = {
-  list: () => api.get<any>("/api/v1/documents/templates"),
+  list: () => api.get<any>("/api/v1/documents"),
+  templates: () => api.get<any>("/api/v1/documents/templates"),
   listByCompany: (companyId: string) => api.get<any>("/api/v1/documents/" + companyId),
   generate: (data: any) => api.post<any>("/api/v1/documents/generate", data),
   approve: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/approve"),
@@ -134,4 +135,12 @@ export const commercialApi = {
   createQuotation: (data: any) => api.post<any>("/api/v1/commercial/quotations", data),
   acceptQuotation: (id: string) => api.put<any>("/api/v1/commercial/quotations/" + id + "/accept"),
   rejectQuotation: (id: string, data: any) => api.put<any>("/api/v1/commercial/quotations/" + id + "/reject", data),
+}
+
+export const adminApi = {
+  listUsers:      (page = 1) => api.get<any>(`/api/v1/admin/users?page=${page}&per_page=50`),
+  createUser:     (data: { email: string; full_name: string; role: string; password: string }) =>
+                    api.post<any>('/api/v1/admin/users', data),
+  deactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/deactivate`, {}),
+  reactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/reactivate`, {}),
 }
