@@ -51,6 +51,20 @@ class ApiClient {
   }
 
 
+  async patch<T>(path: string, body?: unknown): Promise<T> {
+    const res = await fetch(this.baseUrl + path, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      credentials: "include",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Request failed" }));
+      throw new Error(err.detail || "HTTP " + res.status);
+    }
+    return res.json();
+  }
+
   async put<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PUT",
