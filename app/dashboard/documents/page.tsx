@@ -298,7 +298,7 @@ export default function DocumentsPage() {
                         <button style={{
                           padding: '4px 10px', fontSize: 9, fontWeight: 600, letterSpacing: '.6px', textTransform: 'uppercase',
                           background: 'transparent', border: '1px solid var(--navy-border)', color: 'var(--white-2)', cursor: 'pointer',
-                        } onClick={() => handleDownload(d.id)}>{d._status === 'APPROVED' ? 'Download' : 'View'}</button>
+                        }} onClick={() => handleDownload(d.id)}>{d._status === 'APPROVED' ? 'Download' : 'View'}</button>
                       </div>
                     </td>
                   </tr>
