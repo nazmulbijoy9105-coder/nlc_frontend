@@ -131,6 +131,7 @@ export const documentsApi = {
   approve: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/approve"),
   release: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/release"),
   detail: (id: string) => api.get<any>("/api/v1/documents/detail/" + id),
+  downloadPdf: (id: string) => api.get<any>("/api/v1/documents/detail/" + id + "/download-pdf"),
 };
 
 export const rescueApi = {
