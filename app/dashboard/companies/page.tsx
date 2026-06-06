@@ -29,7 +29,7 @@ export default function CompaniesPage() {
   const [flagsLoading, setFlagsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "flags" | "history">("info")
   const [history, setHistory] = useState<any[]>([]);
-  const [scoreBreakdown, setScoreBreakdown] = useState<<ScoreBreakdown | null>(null);
+  const [scoreBreakdown, setScoreBreakdown] = useState<ScoreBreakdown | null>(null);
 
   const loadCompanies = useCallback(async () => {
     setFetchError("");

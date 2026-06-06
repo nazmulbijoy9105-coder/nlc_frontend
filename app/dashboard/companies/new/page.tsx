@@ -89,7 +89,6 @@ export default function AddCompanyPage() {
       style={{
         padding: '12px 20px',
         borderRadius: 12,
-        border: 'none',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
