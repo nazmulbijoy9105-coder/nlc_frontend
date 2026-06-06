@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { companiesApi } from "@/lib/api";
-import { Company, ScoreBreakdown } from "@/types";\nimport ScoreBreakdownCard from "@/components/ScoreBreakdownCard";
+import { Company, ScoreBreakdown } from "@/types";
+import ScoreBreakdownCard from "@/components/ScoreBreakdownCard";
 
 interface Flag {
   flag_id: string;
