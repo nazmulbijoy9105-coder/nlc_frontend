@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
-      <div style={{
+      <div className="nlc-sidebar" style={{
         width: 220, background: 'var(--navy-2)', borderRight: '1px solid var(--navy-border)',
         display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', flexShrink: 0
       }}>
@@ -118,8 +118,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, minHeight: '100vh', overflow: 'auto', background: 'var(--navy)' }}>
+      <div className="nlc-main" style={{ flex: 1, minHeight: '100vh', overflow: 'auto', background: 'var(--navy)' }}>
         {children}
+        <button className="nlc-pdf-btn" onClick={() => window.print()} title="Print / Save as PDF">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </button>
       </div>
     </div>
   )
