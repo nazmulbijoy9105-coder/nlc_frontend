@@ -181,3 +181,77 @@ html, body {
   .nlc-table { page-break-inside: auto; }
   .nlc-table tr { page-break-inside: avoid; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   PDF / Print Styles — NLC Platform
+   ══════════════════════════════════════════════════════════ */
+.nlc-pdf-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.nlc-pdf-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(200,168,75,0.4);
+}
+
+@media print {
+  .nlc-sidebar { display: none !important; }
+  .nlc-pdf-btn { display: none !important; }
+  .nlc-main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body {
+    background: #fff !important;
+    color: #1a1a1a !important;
+    font-size: 11pt !important;
+  }
+  .nlc-card {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    page-break-inside: avoid;
+  }
+  .nlc-table th {
+    background: #f5f5f5 !important;
+    color: #333 !important;
+    border-bottom: 2px solid #333 !important;
+  }
+  .nlc-table td {
+    border-bottom: 1px solid #ddd !important;
+    color: #333 !important;
+  }
+  .badge-green, .badge-yellow, .badge-red, .badge-neutral {
+    border: 1px solid #999 !important;
+    color: #333 !important;
+    background: #eee !important;
+  }
+  button, input, select, textarea {
+    display: none !important;
+  }
+  a { text-decoration: none !important; color: #1a1a1a !important; }
+  h1, h2, h3, h4 { page-break-after: avoid; }
+  .nlc-table { page-break-inside: auto; }
+  .nlc-table tr { page-break-inside: avoid; }
+}
