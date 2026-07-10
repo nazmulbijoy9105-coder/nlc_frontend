@@ -105,6 +105,7 @@ export const companiesApi = {
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
+  update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
 };
 

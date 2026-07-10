@@ -150,7 +150,13 @@ export default function CompaniesPage() {
                   <h2 style={{ fontSize: 15, fontWeight: 600 }}>{getCompanyName(selected)}</h2>
                   <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{selected.registration_number}</div>
                 </div>
-                <BandBadge band={getRiskBand(selected)} />
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button onClick={() => router.push("/dashboard/companies/" + selected.id + "/edit")}
+                    style={{ padding: "4px 12px", borderRadius: 4, border: "1px solid #c8a84b", background: "#fff", color: "#c8a84b", fontSize: 11, cursor: "pointer" }}>
+                    Edit
+                  </button>
+                  <BandBadge band={getRiskBand(selected)} />
+                </div>
               </div>
               <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
                 {(["info", "flags", "history"] as const).map(tab => (
