@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "/api/backend";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_PATH || "https://nlc-platform.onrender.com";
 
 class ApiClient {
   private baseUrl: string;
@@ -49,7 +49,6 @@ class ApiClient {
     if (!res.ok) throw new Error(await res.text())
     return res.json()
   }
-
 
   async patch<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
