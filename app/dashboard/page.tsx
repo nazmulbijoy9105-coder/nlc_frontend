@@ -55,9 +55,9 @@ const MOCK_COMPANIES = [
 ]
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>(MOCK_STATS)
-  const [deadlines, setDeadlines] = useState<Deadline[]>(MOCK_DEADLINES)
-  const [activity, setActivity] = useState<ActivityLog[]>(MOCK_ACTIVITY)
+  const [stats, setStats] = useState<DashboardStats>({ total_companies: 0, green_count: 0, yellow_count: 0, red_black_count: 0, upcoming_deadlines: 0 })
+  const [deadlines, setDeadlines] = useState<Deadline[]>([])
+  const [activity, setActivity] = useState<ActivityLog[]>([])
   const [companies, setCompanies] = useState<any[]>([])
   const [deleting, setDeleting] = useState<string | null>(null)
 
