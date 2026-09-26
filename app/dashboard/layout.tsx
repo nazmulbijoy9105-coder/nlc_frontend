@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { isAuthenticated, clearAuth, getUser } from '@/lib/auth'
@@ -17,6 +17,7 @@ const NAV = [
     { href: '/dashboard/commercial', label: 'Commercial', icon: 'users' },
   ]},
   { group: 'Admin', items: [
+    { href: '/dashboard/admin', label: 'User Management', icon: 'users' },
     { href: '/dashboard/rules', label: 'Rules Engine', icon: 'sun' },
     { href: '/dashboard/profile', label: 'My Profile', icon: 'user' },
   ]},
@@ -38,11 +39,31 @@ function Icon({ name }: { name: string }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const user = getUser()
+  const [mounted, setMounted] = useState(false)
+  const [authed, setAuthed] = useState(false)
+  const [user, setUserState] = useState<{full_name?: string; role?: string} | null>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) router.push('/')
+    const a = isAuthenticated()
+    setAuthed(a)
+    if (a) {
+      const u = getUser()
+      setUserState(u as {full_name?: string; role?: string} | null)
+    }
+    setMounted(true)
+    if (!a) router.push('/')
   }, [router])
+
+  if (!mounted) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <div style={{ width: 220, background: 'var(--navy-2)', borderRight: '1px solid var(--navy-border)', flexShrink: 0 }} />
+        <div style={{ flex: 1, minHeight: '100vh', background: 'var(--navy)' }} />
+      </div>
+    )
+  }
+
+  if (!authed) return null
 
   const handleLogout = async () => {
     try { await authApi.logout() } catch {}
@@ -51,13 +72,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const initials = user?.full_name
-    ? user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+    ? (user.full_name as string).split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
     : 'MN'
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Sidebar */}
-      <div style={{
+      <div className="nlc-sidebar" style={{
         width: 220, background: 'var(--navy-2)', borderRight: '1px solid var(--navy-border)',
         display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', flexShrink: 0
       }}>
@@ -100,8 +121,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 30, height: 30, background: 'var(--gold-dim)', border: '1px solid var(--gold-line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--gold)', flexShrink: 0 }}>{initials}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.full_name || 'Md Nazmul Islam'}</div>
-              <div style={{ fontSize: 10, color: 'var(--white-3)' }}>{user?.role?.replace(/_/g, ' ') || 'Super Admin'}</div>
+              <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(user?.full_name || 'Md Nazmul Islam')}</div>
+              <div style={{ fontSize: 10, color: 'var(--white-3)' }}>{(user?.role as string)?.replace(/_/g, ' ') || 'Super Admin'}</div>
             </div>
             <button onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} title="Sign out">
               <svg width="14" height="14" viewBox="0 0 24 24" stroke="var(--white-3)" fill="none" strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -111,8 +132,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, minHeight: '100vh', overflow: 'auto', background: 'var(--navy)' }}>
+      <div className="nlc-main" style={{ flex: 1, minHeight: '100vh', overflow: 'auto', background: 'var(--navy)' }}>
         {children}
+        <button className="nlc-pdf-btn" onClick={() => window.print()} title="Print / Save as PDF">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </button>
       </div>
     </div>
   )

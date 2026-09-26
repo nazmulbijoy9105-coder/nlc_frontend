@@ -36,6 +36,7 @@ function removeStoredAuth() {
 
 export const getValidAccessToken = () => {
   if (typeof window === 'undefined') return ''
+  if (typeof window === 'undefined') return '';
   const token = (localStorage.getItem(ACCESS_TOKEN) || Cookies.get(ACCESS_TOKEN) || '').trim()
   if (!token || token === 'undefined' || token === 'null') {
     if (token) removeStoredAuth()
@@ -56,6 +57,23 @@ export const getValidAccessToken = () => {
   return token
 }
 
+
+
+export const refreshToken = async (): Promise<string> => {
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('nlc_refresh_token') || '') : ''
+  if (!token) { clearAuth(); return '' }
+  try {
+    const res = await fetch((process.env.NEXT_PUBLIC_API_BASE_PATH || '/api/backend') + '/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: token }),
+    })
+    if (!res.ok) { clearAuth(); return '' }
+    const data = await res.json()
+    setTokens(data.access_token, token)
+    return data.access_token
+  } catch { clearAuth(); return '' }
+}
 export const setTokens = (access: string, refresh: string) => {
   Cookies.set(ACCESS_TOKEN, access, { ...cookieOptions(), expires: 1 })
   Cookies.set(REFRESH_TOKEN, refresh, { ...cookieOptions(), expires: 7 })

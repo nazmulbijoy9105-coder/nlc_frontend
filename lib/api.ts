@@ -71,7 +71,7 @@ class ApiClient {
   private getHeaders(auth = true): HeadersInit {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (auth && typeof window !== "undefined") {
-      const token = localStorage.getItem("nlc_access_token");
+      const token = localStorage.getItem("nlc_access_token") || document.cookie.split(';').find(c => c.trim().startsWith('nlc_access_token='))?.split('=')[1];
       if (token) headers["Authorization"] = "Bearer " + token;
     }
     return headers;
@@ -108,6 +108,29 @@ class ApiClient {
       method: "GET",
       headers: this.getHeaders(),
       credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Request failed" }));
+      throw new Error(err.detail || "HTTP " + res.status);
+    }
+    return res.json();
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    const res = await fetch(this.baseUrl + path, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
+
+  async patch<T>(path: string, body?: unknown): Promise<T> {
+    const res = await fetch(this.baseUrl + path, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      credentials: "include",
+      body: body ? JSON.stringify(body) : undefined,
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: "Request failed" }));
@@ -156,9 +179,18 @@ export const companiesApi = {
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
+  scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
+  update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
+  delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
 };
 
 export const filingsApi = {
+  createAGM: (data: any) => api.post<any>("/api/v1/filings/agm", data),
+  createAudit: (data: any) => api.post<any>("/api/v1/filings/audit", data),
+  createReturn: (data: any) => api.post<any>("/api/v1/filings/annual-return", data),
+  agms: (companyId: string) => api.get<any>("/api/v1/filings/agm/" + companyId),
+  audits: (companyId: string) => api.get<any>("/api/v1/filings/audit/" + companyId),
+  annualReturns: (companyId: string) => api.get<any>("/api/v1/filings/annual-return/" + companyId),
   listAGM: (companyId?: string) => api.get<any>("/api/v1/filings/agm" + (companyId ? "/" + companyId : "")),
   listAudit: (companyId?: string) => api.get<any>("/api/v1/filings/audit" + (companyId ? "/" + companyId : "")),
   listAnnualReturn: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
@@ -167,15 +199,43 @@ export const filingsApi = {
 };
 
 export const documentsApi = {
-  list: () => api.get<any>("/api/v1/documents/templates"),
+  list: () => api.get<any>("/api/v1/documents"),
+  templates: () => api.get<any>("/api/v1/documents/templates"),
   listByCompany: (companyId: string) => api.get<any>("/api/v1/documents/" + companyId),
   generate: (data: any) => api.post<any>("/api/v1/documents/generate", data),
   approve: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/approve"),
   release: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/release"),
   detail: (id: string) => api.get<any>("/api/v1/documents/detail/" + id),
+  downloadPdf: (id: string) => api.get<any>("/api/v1/documents/detail/" + id + "/download-pdf"),
 };
 
 export const rescueApi = {
-  list: () => api.get<any>("/api/v1/rescue"),
-  pipeline: () => api.get<any>("/api/v1/rescue"),
+  list: () => api.get<any>("/api/v1/rescue/plans"),
+  pipeline: () => api.get<any>("/api/v1/rescue/plans"),
 };
+
+export const commercialApi = {
+  pipeline: () => api.get<any>("/api/v1/commercial/pipeline"),
+  funnel: () => api.get<any>("/api/v1/commercial/funnel"),
+  engagements: (companyId: string) => api.get<any>("/api/v1/commercial/engagements/" + companyId),
+  createEngagement: (data: any) => api.post<any>("/api/v1/commercial/engagements", data),
+  advanceStatus: (id: string, data: any) => api.put<any>("/api/v1/commercial/engagements/" + id + "/status", data),
+  tasks: (companyId: string) => api.get<any>("/api/v1/commercial/tasks/" + companyId),
+  completeTask: (id: string, data: any) => api.put<any>("/api/v1/commercial/tasks/" + id + "/complete", data),
+  createQuotation: (data: any) => api.post<any>("/api/v1/commercial/quotations", data),
+  acceptQuotation: (id: string) => api.put<any>("/api/v1/commercial/quotations/" + id + "/accept"),
+  rejectQuotation: (id: string, data: any) => api.put<any>("/api/v1/commercial/quotations/" + id + "/reject", data),
+}
+
+export const adminApi = {
+  listUsers:      (page = 1) => api.get<any>(`/api/v1/admin/users?page=${page}&per_page=50`),
+  createUser:     (data: { email: string; full_name: string; role: string; password: string }) =>
+                    api.post<any>('/api/v1/admin/users', data),
+  deactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/deactivate`, {}),
+  reactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/reactivate`, {}),
+}
+
+export const rulesApi = {
+  list: () => api.get<any>('/api/v1/rules'),
+  summary: () => api.get<any>('/api/v1/rules/summary'),
+}
