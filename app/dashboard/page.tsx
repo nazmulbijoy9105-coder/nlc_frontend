@@ -1,175 +1,121 @@
-'use client'
-import { useEffect, useState } from 'react'
+"use client"
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { dashboardApi, companiesApi } from '@/lib/api'
-import type { DashboardStats, ActivityLog, Deadline } from '@/types'
-import Topbar from '@/components/Topbar'
-import Link from 'next/link'
-
-function StatCard({ num, label, delta, color }: { num: number; label: string; delta: string; color?: string }) {
-  return (
-    <div className="nlc-card" style={{ padding: 20, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--gold-line)' }} />
-      <div className="font-cormorant" style={{ fontSize: 36, fontWeight: 600, color: color || 'var(--gold)', lineHeight: 1 }}>{num}</div>
-      <div style={{ fontSize: 11, color: 'var(--white-2)', marginTop: 6 }}>{label}</div>
-      <div style={{ fontSize: 10, marginTop: 8, color: color || 'var(--white-3)' }}>{delta}</div>
-    </div>
-  )
-}
-
-function BandBadge({ band }: { band: string }) {
-  const map: Record<string, string> = { GREEN: 'badge-green', YELLOW: 'badge-yellow', RED: 'badge-red', BLACK: 'badge-red' }
-  return <span className={`badge-pill ${map[band] || 'badge-neutral'}`} style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>{band}</span>
-}
-
-function ScoreBar({ score, band }: { score: number; band: string }) {
-  const color = band === 'GREEN' ? 'var(--green)' : band === 'YELLOW' ? '#b8860b' : '#a03030'
-  const textColor = band === 'GREEN' ? '#5dd4a0' : band === 'YELLOW' ? '#e0b84a' : '#e07070'
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ flex: 1, height: 4, background: 'var(--navy-border)' }}>
-        <div style={{ height: 4, background: color, width: `${score}%` }} />
-      </div>
-      <div style={{ fontSize: 12, fontWeight: 600, minWidth: 28, textAlign: 'right', color: textColor }}>{score}</div>
-    </div>
-  )
-}
-
-// Fallback mock data when API isn't connected yet
-const MOCK_STATS: DashboardStats = { total_companies: 24, green_count: 16, yellow_count: 5, red_black_count: 3, upcoming_deadlines: 3 }
-const MOCK_DEADLINES: Deadline[] = [
-  { company_name: 'Dhaka Trade House Ltd.', filing_type: 'Annual Return Filing — RJSC', due_date: '', days_remaining: 3 },
-  { company_name: 'Sahara Crafts Partnership', filing_type: 'AGM Notice — 21 Days Prior', due_date: '', days_remaining: 12 },
-  { company_name: 'Global Academy Hub Ltd.', filing_type: 'Form XII — Director Change', due_date: '', days_remaining: 28 },
-]
-const MOCK_ACTIVITY: ActivityLog[] = [
-  { id: '1', message: 'Compliance evaluation run for NB Tech Solutions Ltd. — Score: 91/100', actor: 'Super Admin', created_at: '', type: 'EVALUATION' },
-  { id: '2', message: 'AI-drafted Annual Return approved and released for Global Academy Hub', actor: 'Md Nazmul Islam', created_at: '', type: 'DOCUMENT' },
-  { id: '3', message: 'Dhaka Trade House Ltd. escalated to RED band — 4 ILRMF rule violations', actor: 'Rule Engine', created_at: '', type: 'VIOLATION' },
-  { id: '4', message: 'Sahara Crafts reconstitution — NRB partner BIDA compliance flagged', actor: 'Legal Staff', created_at: '', type: 'SYSTEM' },
-]
-const MOCK_COMPANIES = [
-  { id: '1', name: 'Global Academy Hub Ltd.', registration_number: 'C-87654/2019', compliance_score: 88, band: 'GREEN', last_evaluated_at: '22 Mar 2026' },
-  { id: '2', name: 'Sahara Crafts Partnership', registration_number: 'P-32110/2021', compliance_score: 62, band: 'YELLOW', last_evaluated_at: '21 Mar 2026' },
-  { id: '3', name: 'NB Tech Solutions Ltd.', registration_number: 'C-11204/2025', compliance_score: 91, band: 'GREEN', last_evaluated_at: '23 Mar 2026' },
-  { id: '4', name: 'Dhaka Trade House Ltd.', registration_number: 'C-44320/2017', compliance_score: 34, band: 'RED', last_evaluated_at: '20 Mar 2026' },
-]
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>({ total_companies: 0, green_count: 0, yellow_count: 0, red_black_count: 0, upcoming_deadlines: 0 })
-  const [deadlines, setDeadlines] = useState<Deadline[]>([])
-  const [activity, setActivity] = useState<ActivityLog[]>([])
-  const [companies, setCompanies] = useState<any[]>([])
-  const [deleting, setDeleting] = useState<string | null>(null)
+  const router = useRouter()
+  const [kpis, setKpis] = useState<any>(null)
+  const [deadlines, setDeadlines] = useState<any[]>([])
+  const [activity, setActivity] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    dashboardApi.stats().then((r: any) => setStats({ total_companies: r.total_companies ?? r.active_companies ?? 0, green_count: r.green_count ?? r.green_band_count ?? 0, yellow_count: r.yellow_count ?? r.yellow_band_count ?? 0, red_black_count: r.red_black_count ?? (r.red_band_count ?? 0) + (r.black_band_count ?? 0), upcoming_deadlines: r.upcoming_deadlines ?? 0 })).catch(() => {})
-    companiesApi.list().then((r: any) => setCompanies(Array.isArray(r) ? r : r?.items || [])).catch(() => {})
-    dashboardApi.upcomingDeadlines().then((r: any) => setDeadlines(r)).catch(() => {})
-    dashboardApi.recentActivity().then((r: any) => { if (Array.isArray(r) && r.length > 0) setActivity(r) }).catch(() => {})
+    loadData()
   }, [])
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this company? This cannot be undone.')) return
-    setDeleting(id)
+  const loadData = async () => {
     try {
-      await companiesApi.delete(id)
-      setCompanies(prev => prev.filter(c => c.id !== id))
-      dashboardApi.stats().then((r: any) => setStats({ total_companies: r.total_companies ?? r.active_companies ?? 0, green_count: r.green_count ?? r.green_band_count ?? 0, yellow_count: r.yellow_count ?? r.yellow_band_count ?? 0, red_black_count: r.red_black_count ?? (r.red_band_count ?? 0) + (r.black_band_count ?? 0), upcoming_deadlines: r.upcoming_deadlines ?? 0 })).catch(() => {})
-    } catch { alert('Delete failed') }
-    finally { setDeleting(null) }
+      const [k, d, a] = await Promise.all([
+        dashboardApi.getStats().catch(() => null),
+        dashboardApi.upcomingDeadlines().catch(() => []),
+        dashboardApi.recentActivity().catch(() => []),
+      ])
+      setKpis(k); setDeadlines(d || []); setActivity(a || [])
+    } catch (e) { console.error('Dashboard load error:', e) }
+    finally { setLoading(false) }
   }
 
-  const dotColor: Record<string, string> = { EVALUATION: 'var(--gold)', DOCUMENT: 'var(--green)', VIOLATION: '#a03030', SYSTEM: 'var(--gold)', FILING: 'var(--gold)' }
+  if (loading) return <div style={{ padding: 40, color: 'var(--white-3)' }}>Loading dashboard…</div>
+
+  const total = kpis?.total_companies || 0
+  const active = kpis?.active_companies || 0
+  const inDefault = kpis?.black_companies || kpis?.red_companies || 0
+  const avgScore = kpis?.average_score || 0
+
+  const kpiCards = [
+    { lbl: 'Total Companies', val: total || '—', sub: 'Active portfolios', color: 'var(--navy-3)' },
+    { lbl: 'In Default', val: inDefault || '—', sub: 'Require intervention', color: '#B91C1C' },
+    { lbl: 'Avg Score', val: avgScore ? `${avgScore}/100` : '—', sub: 'Portfolio average', color: 'var(--green)' },
+    { lbl: 'Active Flags', val: kpis?.total_active_flags || '—', sub: 'Compliance violations', color: 'var(--yellow)' },
+  ]
+
+  const bands = [
+    { name: 'GREEN', label: 'Compliant', n: kpis?.green_companies || 0, c: '#1a7a52' },
+    { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies || 0, c: '#D97706' },
+    { name: 'RED', label: 'Default', n: kpis?.red_companies || 0, c: '#B91C1C' },
+    { name: 'BLACK', label: 'Severe', n: kpis?.black_companies || 0, c: '#0A0A0A' },
+  ]
 
   return (
-    <>
-      <Topbar title="Dashboard" />
-      <div style={{ padding: 28 }}>
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 28 }}>
-          <StatCard num={stats.total_companies} label="Active Companies" delta="↑ 3 this month" color="var(--gold)" />
-          <StatCard num={stats.green_count} label="GREEN Band" delta="Score ≥ 75" color="#5dd4a0" />
-          <StatCard num={stats.yellow_count} label="YELLOW Band" delta="⚠ Needs attention" color="#e0b84a" />
-          <StatCard num={stats.red_black_count} label="RED / BLACK" delta="● Urgent action" color="#e07070" />
-        </div>
+    <div style={{ padding: 24 }}>
+      {/* KPI Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+        {kpiCards.map((k, i) => (
+          <div key={i} className="nlc-card" style={{ borderTop: `3px solid ${k.color}`, cursor: 'pointer' }} onClick={() => router.push('/dashboard/companies')}>
+            <div className="sec-lbl" style={{ marginBottom: 8, paddingBottom: 0, border: 'none' }}>{k.lbl}</div>
+            <div className="font-garamond" style={{ fontSize: 34, lineHeight: 1, marginBottom: 4, color: k.color }}>{k.val}</div>
+            <div style={{ fontSize: 11, color: 'var(--text2)' }}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
 
-        {/* Companies */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 16 }}>
-          <div className="font-garamond" style={{ fontSize: 17, fontWeight: 600, whiteSpace: 'nowrap' }}>Companies</div>
-          <div style={{ flex: 1, height: 1, background: 'var(--navy-border)' }} />
-          <Link href="/dashboard/companies"><button className="nlc-btn-sm">View All</button></Link>
+      {/* Middle: Risk + Deadlines + Alerts */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: 14, marginBottom: 20 }}>
+        {/* Risk Distribution */}
+        <div className="nlc-card">
+          <div className="sec-lbl">Risk Distribution</div>
+          {bands.map(b => (
+            <div key={b.name} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.label}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: b.c, fontFamily: "'JetBrains Mono', monospace" }}>{b.n}</span>
+              </div>
+              <div className="pbar">
+                <div className="pbar-fill" style={{ width: `${total ? (b.n / total) * 100 : 0}%`, background: b.c }} />
+              </div>
+            </div>
+          ))}
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 10, color: 'var(--text3)' }}>Total Portfolio</span>
+            <span className="font-garamond" style={{ fontSize: 15, fontWeight: 700, color: 'var(--navy)' }}>{total} Companies</span>
+          </div>
         </div>
-        <table className="nlc-table" style={{ marginBottom: 28 }}>
-          <thead><tr><th>Company</th><th>Reg No</th><th>Compliance Score</th><th>Band</th><th>Last Evaluated</th><th></th></tr></thead>
-          <tbody>
-            {companies.length === 0 && (
-              <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--white-3)', padding: 20 }}>
-                No companies yet. <Link href="/dashboard/companies/new"><span style={{ color: 'var(--gold)', cursor: 'pointer' }}>Add one →</span></Link>
-              </td></tr>
-            )}
-            {companies.map((c: any) => {
-              const band = c.risk_band || c.band || 'GREEN'
-              const score = c.compliance_score ?? c.overall_score ?? 0
-              const regNo = c.registration_number || c.rjsc_number || '—'
-              const lastEval = c.last_evaluated_at ? new Date(c.last_evaluated_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'
-              return (
-                <tr key={c.id}>
-                  <td><div style={{ fontWeight: 500 }}>{c.name || c.company_name}</div></td>
-                  <td style={{ fontSize: 12, color: 'var(--white-2)' }}>{regNo}</td>
-                  <td><ScoreBar score={score} band={band} /></td>
-                  <td><BandBadge band={band} /></td>
-                  <td style={{ fontSize: 11, color: 'var(--white-3)' }}>{lastEval}</td>
-                  <td style={{ display: 'flex', gap: 6 }}>
-                    <Link href="/dashboard/companies"><button className="nlc-btn-sm" style={{ padding: '4px 10px', fontSize: 10 }}>View</button></Link>
-                    <button
-                      className="nlc-btn-sm"
-                      onClick={() => handleDelete(c.id)}
-                      disabled={deleting === c.id}
-                      style={{ padding: '4px 10px', fontSize: 10, background: 'rgba(160,48,48,.15)', color: '#e07070', border: '1px solid rgba(160,48,48,.3)' }}
-                    >{deleting === c.id ? '…' : 'Del'}</button>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
 
         {/* Deadlines */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 16 }}>
-          <div className="font-garamond" style={{ fontSize: 17, fontWeight: 600 }}>Upcoming Deadlines</div>
-          <div style={{ flex: 1, height: 1, background: 'var(--navy-border)' }} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 28 }}>
-          {deadlines.map((d, i) => {
-            const c = d.days_remaining <= 7 ? '#e07070' : d.days_remaining <= 20 ? '#e0b84a' : '#5dd4a0'
-            return (
-              <div key={i} className="nlc-card" style={{ padding: 18 }}>
-                <div className="font-cormorant" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1, color: c }}>{d.days_remaining}</div>
-                <div style={{ fontSize: 10, color: 'var(--white-3)', letterSpacing: '.8px', textTransform: 'uppercase', marginTop: 2 }}>Days Remaining</div>
-                <div style={{ fontSize: 12, marginTop: 10, fontWeight: 500 }}>{d.company_name}</div>
-                <div style={{ fontSize: 11, color: 'var(--white-2)', marginTop: 2 }}>{d.filing_type}</div>
+        <div className="nlc-card">
+          <div className="sec-lbl">Upcoming Deadlines</div>
+          {deadlines.length === 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No upcoming deadlines</div>
+          ) : deadlines.slice(0, 5).map((d, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)' }}>{d.company_name || d.title || 'Unknown'}</div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1 }}>{d.event_type || d.description || ''}</div>
               </div>
-            )
-          })}
+              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: d.days_remaining < 7 ? '#B91C1C' : d.days_remaining < 30 ? '#D97706' : 'var(--green)' }}>
+                {d.days_remaining}d
+              </span>
+            </div>
+          ))}
         </div>
 
-        {/* Activity */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 16 }}>
-          <div className="font-garamond" style={{ fontSize: 17, fontWeight: 600 }}>Recent Activity</div>
-          <div style={{ flex: 1, height: 1, background: 'var(--navy-border)' }} />
-        </div>
+        {/* Recent Activity */}
         <div className="nlc-card">
-          {activity.map((a, i) => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, padding: '14px 18px', borderBottom: i < activity.length - 1 ? '1px solid rgba(42,63,107,.4)' : 'none' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 4, background: dotColor[a.type] || 'var(--gold)' }} />
-              <div>
-                <div style={{ fontSize: 13, lineHeight: 1.4 }}>{a.message}</div>
-                <div style={{ fontSize: 10, color: 'var(--white-3)', marginTop: 3 }}>{a.actor}</div>
+          <div className="sec-lbl gold">⚑ Recent Activity</div>
+          {activity.length === 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No recent activity</div>
+          ) : activity.slice(0, 8).map((a, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.type === 'EVALUATION' ? 'var(--green)' : a.type === 'VIOLATION' ? '#B91C1C' : 'var(--teal)', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.message || a.description || 'Activity'}</div>
+                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1 }}>{a.actor || 'System'} · {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
-    </>
+    </div>
   )
 }

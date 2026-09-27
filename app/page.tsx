@@ -1,8 +1,7 @@
-'use client'
+"use client"
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authApi } from '@/lib/api'
-import { setTempToken, setTokens, setUser } from '@/lib/auth'
+import { authApi, setTokens, setUser, setTempToken } from '@/lib/api'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,83 +20,82 @@ export default function LoginPage() {
         router.push('/verify')
       } else if (res.access_token && res.refresh_token) {
         setTokens(res.access_token, res.refresh_token)
-        if (res.user) setUser(res.user as Record<string, unknown>)
+        if (res.user) setUser(res.user)
         router.push('/dashboard')
       } else {
         setError('Unexpected response from server.')
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed.')
-    } finally { setLoading(false) }
+    } catch (e: any) {
+      setError(e instanceof Error ? e.message : 'Login failed.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'radial-gradient(ellipse 70% 60% at 50% -10%, rgba(200,168,75,0.07) 0%, transparent 65%), var(--navy)'
-    }}>
-      <div style={{ width: 400, padding: 16 }}>
-        {/* Crest */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{
-            width: 68, height: 68, margin: '0 auto 14px',
-            border: '2px solid var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Cormorant Garamond", serif', fontSize: 28, fontWeight: 700, color: 'var(--gold)',
-            position: 'relative'
-          }}>
-            N
-            <span style={{ position: 'absolute', inset: -6, border: '1px solid var(--gold-line)' }} />
-          </div>
-          <div className="font-garamond" style={{ fontSize: 28, fontWeight: 600, letterSpacing: '.3px' }}>
-            Neum Lex Counsel
-          </div>
-          <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--white-2)', marginTop: 4 }}>
-            RJSC Compliance Platform
-          </div>
-        </div>
-
-        {/* Card */}
-        <div className="nlc-card" style={{ padding: 32 }}>
-          <label className="f-label" style={{ display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 8 }}>
-            Email Address
-          </label>
-          <input
-            className="nlc-input" type="email" placeholder="you@neumlexcounsel.com"
-            value={email} onChange={e => setEmail(e.target.value)}
-            style={{ marginBottom: 20 }}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-          />
-          <label style={{ display: 'block', fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 8 }}>
-            Password
-          </label>
-          <input
-            className="nlc-input" type="password" placeholder="••••••••••"
-            value={password} onChange={e => setPassword(e.target.value)}
-            style={{ marginBottom: 20 }}
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-          />
-          {error && (
-            <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(160,48,48,.3)', color: '#e07070', padding: '10px 14px', fontSize: 12, marginBottom: 16 }}>
-              {error}
+    <div style={{ minHeight: '100vh', background: 'var(--navy)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: 3, background: 'linear-gradient(90deg, transparent, var(--gold), var(--gold-2), var(--gold), transparent)' }} />
+      <div style={{ flex: 1, display: 'flex', minHeight: 'calc(100vh - 3px)' }}>
+        {/* Left panel */}
+        <div style={{ width: '48%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '64px 72px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle, rgba(201,168,76,.06) 0%, transparent 70%)' }} />
+          <div style={{ marginBottom: 52 }}>
+            <div className="font-garamond" style={{ fontSize: 38, color: 'var(--gold)', lineHeight: 1.1, letterSpacing: '.01em' }}>
+              Neum Lex<br />Counsel
             </div>
-          )}
-          <button className="nlc-btn-gold" onClick={handleLogin} disabled={loading}>
-            {loading ? 'Signing In…' : 'Sign In →'}
-          </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0' }}>
-            <span style={{ flex: 1, height: 1, background: 'var(--navy-border)' }} />
-            <span style={{ fontSize: 10, color: 'var(--white-3)', letterSpacing: '1px', textTransform: 'uppercase' }}>Access Roles</span>
-            <span style={{ flex: 1, height: 1, background: 'var(--navy-border)' }} />
+            <div style={{ width: 44, height: 2, background: 'linear-gradient(90deg, var(--gold), var(--gold-2))', margin: '18px 0', borderRadius: 2 }} />
+            <div style={{ color: 'rgba(255,255,255,.35)', fontSize: 11, letterSpacing: '.16em', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase' }}>
+              RJSC Compliance Intelligence
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="badge-pill badge-green" style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>Super Admin</span>
-            <span className="badge-pill badge-yellow" style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>Legal Staff</span>
-            <span className="badge-pill badge-neutral" style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>Client View</span>
+          <div style={{ borderLeft: '2px solid rgba(201,168,76,.25)', paddingLeft: 22 }}>
+            <div className="font-garamond" style={{ color: 'rgba(255,255,255,.85)', fontSize: 19, marginBottom: 20, fontStyle: 'italic', lineHeight: 1.5 }}>
+              "Corporate Governance.<br />Structured. Defensible."
+            </div>
+            {['Legal Rule Engine', 'Compliance Scoring', 'Default Rescue System', 'Revenue Intelligence'].map(f => (
+              <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: 12, color: 'rgba(255,255,255,.38)' }}>
+                <span style={{ color: 'var(--gold)', fontSize: 9 }}>◆</span>{f}
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 52, fontSize: 9.5, color: 'rgba(255,255,255,.14)', letterSpacing: '.1em', fontFamily: "'JetBrains Mono', monospace" }}>
+            CONFIDENTIAL ∙ ENTERPRISE ACCESS ∙ TLS 1.3
           </div>
         </div>
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 11, color: 'var(--white-3)', letterSpacing: '.5px' }}>
-          Neum Lex Counsel · Bangladesh Companies Act 1994
+        {/* Right panel — login form */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, background: 'rgba(255,255,255,.02)', borderLeft: '1px solid rgba(255,255,255,.06)' }}>
+          <div className="nlc-card" style={{ width: 400, padding: 36 }}>
+            <div style={{ marginBottom: 26 }}>
+              <div className="font-garamond" style={{ fontSize: 22, color: 'var(--navy)', marginBottom: 6 }}>Secure Login</div>
+              <div style={{ fontSize: 12, color: 'var(--text3)' }}>Enter your credentials to continue</div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label className="f-label">Email Address</label>
+              <input className="nlc-input" type="email" placeholder="admin@neumlexcounsel.com" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label className="f-label">Password</label>
+              <input className="nlc-input" type="password" placeholder="••••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} />
+            </div>
+            {error && (
+              <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(160,48,48,.3)', color: '#e07070', padding: '10px 14px', fontSize: 12, marginBottom: 16, borderRadius: 7 }}>
+                {error}
+              </div>
+            )}
+            <button className="nlc-btn-gold" onClick={handleLogin} disabled={loading} style={{ opacity: loading ? .6 : 1 }}>
+              {loading ? 'Signing In…' : 'Sign In →'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '20px 0' }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <span style={{ fontSize: 10, color: 'var(--text3)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '.06em' }}>ACCESS ROLES</span>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span className="badge-pill badge-green">Super Admin</span>
+              <span className="badge-pill badge-yellow">Legal Staff</span>
+              <span className="badge-pill badge-neutral">Client View</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
