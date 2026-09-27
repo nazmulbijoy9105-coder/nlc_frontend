@@ -30,7 +30,7 @@ export default function CommercialPage() {
         <div className="nlc-card">
           <div className="sec-lbl">90-Day Forecast</div>
           {[['Corporate Rescue','22-28L','#0A0A0A'],['Regularization','14-18L','var(--red)'],['Compliance Pkg','8-12L','var(--yellow)']].map(([t,e,c])=>(
-            <div key={t} style={{padding:14,marginBottom:10,background:'var(--surface)',borderRadius:8,borderLeft:`4px solid ${c}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div key={t} style={{padding:14,marginBottom:10,background:'var(--surface)',borderRadius:8,borderLeft:`4px solid ${String(c)}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{t}</div>
               <div className="font-garamond" style={{fontSize:18,color:c}}>BDT {e}</div>
             </div>
