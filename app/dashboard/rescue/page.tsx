@@ -34,7 +34,7 @@ export default function RescuePage() {
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:20}}>
         {[['Rescue Cases',plans.length,'var(--red)'],['Total Steps','8','var(--navy-3)'],['High Priority','2','var(--red)'],['Est. Timeline','60-90 days','var(--yellow)']].map(([l,v,c])=>(
-          <div key={l} className="nlc-card" style={{borderTop:`3px solid ${c}`,textAlign:'center'}}>
+          <div key={l} className="nlc-card" style={{borderTop:`3px solid ${String(c)}`,textAlign:'center'}}>
             <div className="font-garamond" style={{fontSize:26,color:c,lineHeight:1}}>{v}</div>
             <div className="font-mono" style={{fontSize:9,color:'var(--text3)',marginTop:4,letterSpacing:'.1em',textTransform:'uppercase'}}>{l}</div>
           </div>

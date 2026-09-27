@@ -32,7 +32,7 @@ export default function RulesPage() {
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:18}}>
         {[['Total Rules',rules.length,'var(--navy-3)'],['Black Overrides',blackCount,'#0A0A0A'],['Modules',modules.length,'var(--teal)'],['Max Score',rules.reduce((s,r)=>s+(r.score_impact||0),0),'var(--red)']].map(([l,v,c])=>(
-          <div key={l} className="nlc-card" style={{borderTop:`3px solid ${c}`,textAlign:'center'}}>
+          <div key={l} className="nlc-card" style={{borderTop:`3px solid ${String(c)}`,textAlign:'center'}}>
             <div className="font-garamond" style={{fontSize:26,color:c,lineHeight:1}}>{v}</div>
             <div className="font-mono" style={{fontSize:9,color:'var(--text3)',marginTop:4,letterSpacing:'.1em',textTransform:'uppercase'}}>{l}</div>
           </div>
