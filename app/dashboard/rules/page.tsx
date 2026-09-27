@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { rulesApi } from '@/lib/api'
 
 export default function RulesPage() {
-  const [rules, setRules] = useState([])
+  const [rules, setRules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL')
 

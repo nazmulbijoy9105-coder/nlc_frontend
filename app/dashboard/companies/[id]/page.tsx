@@ -8,8 +8,8 @@ export default function CompanyProfilePage() {
   const params = useParams()
   const id = params.id as string
   const [company, setCompany] = useState<any>(null)
-  const [flags, setFlags] = useState([])
-  const [compliance, setCompliance] = useState(null)
+  const [flags, setFlags] = useState<any[]>([])
+  const [compliance, setCompliance] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if(id) load() }, [id])

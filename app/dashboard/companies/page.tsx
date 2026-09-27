@@ -5,7 +5,7 @@ import { companiesApi } from '@/lib/api'
 
 export default function CompaniesPage() {
   const router = useRouter()
-  const [companies, setCompanies] = useState([])
+  const [companies, setCompanies] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { load() }, [])

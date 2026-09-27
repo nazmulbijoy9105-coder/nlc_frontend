@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { rescueApi } from '@/lib/api'
 
 export default function RescuePage() {
-  const [plans, setPlans] = useState([])
+  const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { load() }, [])

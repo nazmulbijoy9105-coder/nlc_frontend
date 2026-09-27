@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 import { documentsApi } from '@/lib/api'
 
 export default function DocumentsPage() {
-  const [docs, setDocs] = useState([])
-  const [templates, setTemplates] = useState([])
+  const [docs, setDocs] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
+  const [selected, setSelected] = useState<any>(null)
 
   useEffect(() => { load() }, [])
   const load = async () => {
