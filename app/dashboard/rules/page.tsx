@@ -1,115 +1,70 @@
 "use client"
-import { useEffect, useState } from "react"
-import { rulesApi } from "@/lib/api"
-import Topbar from "@/components/Topbar"
-
-interface Rule {
-  rule_id: string
-  rule_name: string
-  rule_type: string
-  statutory_basis: string
-  description: string
-  default_severity: string
-  score_impact: number
-  revenue_tier: string
-  is_black_override: boolean
-  is_active: boolean
-  rule_version?: string
-}
-
-const SEVERITY_COLOR: Record<string, string> = {
-  BLACK: "#e07070",
-  RED: "#e07070",
-  YELLOW: "#e0b84a",
-  GREEN: "#5dd4a0",
-}
-
-const MODULE_LABEL: Record<string, string> = {
-  DEADLINE: "Deadline",
-  THRESHOLD: "Threshold",
-  DEPENDENCY: "Dependency",
-  CONDITIONAL: "Conditional",
-  ESCALATION: "Escalation",
-  CASCADE: "Cascade",
-}
+import { useState, useEffect } from 'react'
+import { rulesApi } from '@/lib/api'
 
 export default function RulesPage() {
-  const [rules, setRules] = useState<Rule[]>([])
+  const [rules, setRules] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('ALL')
 
-  useEffect(() => {
-    rulesApi.list().then((data: any) => {
-      if (Array.isArray(data) && data.length > 0) setRules(data)
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+  useEffect(() => { load() }, [])
+  const load = async () => {
+    try { const data = await rulesApi.list(); setRules(data) }
+    catch(e) { console.error(e) }
+    finally { setLoading(false) }
+  }
 
-  const activeRules = rules.filter(r => r.is_active !== false)
-  const moduleGroups = Array.from(new Set(activeRules.map(r => r.rule_type)))
-  const totalScore = activeRules.reduce((s, r) => s + (r.score_impact || 0), 0)
-  const blackCount = activeRules.filter(r => r.is_black_override).length
+  if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading rules...</div>
+
+  const filtered = filter==='ALL' ? rules : rules.filter(r=>r.rule_id.startsWith(filter))
+  const blackCount = rules.filter(r=>r.is_black_override).length
+  const modules = [...new Set(rules.map(r=>r.rule_id.split('-')[0]))].sort()
 
   return (
-    <>
-      <Topbar title="Rules Engine" />
-      <div style={{ padding: 28 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-          <div style={{ fontSize: 12, color: "var(--white-2)" }}>
-            ILRMF v2.0 — {activeRules.length} actionable rules across {moduleGroups.length} compliance modules.
-          </div>
+    <div style={{padding:24}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
+        <div>
+          <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:4}}>Legal Rule Manager</div>
+          <div style={{fontSize:12,color:'var(--red)',fontWeight:600}}>SUPER ADMIN ONLY — Every modification logged</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-          <span className="badge-green" style={{ padding: "4px 10px", fontSize: 10, fontWeight: 600, letterSpacing: ".8px", textTransform: "uppercase" }}>
-            {activeRules.length} Rules Active
-          </span>
-          {blackCount > 0 && (
-            <span style={{ fontSize: 10, fontWeight: 600, color: "#e07070", letterSpacing: 1, textTransform: "uppercase", border: "1px solid rgba(224,112,112,.3)", padding: "3px 8px", borderRadius: 3 }}>
-              {blackCount} Black Override{blackCount > 1 ? "s" : ""}
-            </span>
-          )}
-          <div style={{ flex: 1 }} />
-          <span style={{ fontSize: 11, color: "var(--white-3)" }}>
-            Max Score: <b style={{ color: "var(--gold)" }}>{totalScore}</b>
-          </span>
-        </div>
-
-        {loading && <div style={{ color: "var(--white-3)", padding: 20 }}>Loading rules from engine...</div>}
-
-        {!loading && activeRules.length === 0 && (
-          <div style={{ color: "var(--white-3)", padding: 20 }}>No rules loaded. Check backend connection.</div>
-        )}
-
-        {!loading && moduleGroups.map(mod => {
-          const modRules = activeRules.filter(r => r.rule_type === mod)
-          const modScore = modRules.reduce((s, r) => s + (r.score_impact || 0), 0)
-          return (
-            <div key={mod} style={{ marginBottom: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gold)" }}>
-                  {MODULE_LABEL[mod] || mod.replace(/_/g, " ")}
-                </div>
-                <div style={{ fontSize: 10, color: "var(--white-3)" }}>{modRules.length} rule{modRules.length > 1 ? "s" : ""}</div>
-                <div style={{ fontSize: 10, color: "var(--white-3)" }}>Max: {modScore} pts</div>
-              </div>
-              <div className="nlc-card">
-                {modRules.map((r, i, arr) => (
-                  <div key={r.rule_id} style={{ display: "flex", alignItems: "center", gap: 16, padding: "12px 16px", borderBottom: i < arr.length - 1 ? "1px solid rgba(42,63,107,.4)" : "none" }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "var(--gold)", minWidth: 70 }}>{r.rule_id}</span>
-                    <span style={{ fontSize: 13, flex: 1 }}>{r.rule_name}</span>
-                    <span style={{ fontSize: 11, color: "var(--white-3)", minWidth: 140 }}>{r.statutory_basis}</span>
-                    {r.is_black_override && (
-                      <span style={{ fontSize: 9, fontWeight: 600, color: "#e07070", letterSpacing: 1, textTransform: "uppercase", border: "1px solid rgba(224,112,112,.3)", padding: "2px 6px", borderRadius: 3, whiteSpace: "nowrap" }}>BLACK</span>
-                    )}
-                    <span className={"badge-" + (r.default_severity?.toLowerCase() || "neutral")} style={{ padding: "2px 8px", fontSize: 9, fontWeight: 600, letterSpacing: ".5px", textTransform: "uppercase", minWidth: 50, textAlign: "center", borderRadius: 3 }}>
-                      {r.default_severity}
-                    </span>
-                    <span style={{ fontSize: 11, color: SEVERITY_COLOR[r.default_severity] || "var(--white-2)", minWidth: 60, textAlign: "right" }}>+{r.score_impact} pts</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
+        <div style={{padding:'8px 14px',background:'var(--red-bg)',border:'1px solid rgba(160,48,48,.3)',borderRadius:7,fontSize:11,color:'var(--red)',fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}}>AI CANNOT MODIFY RULES</div>
       </div>
-    </>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:18}}>
+        {[['Total Rules',rules.length,'var(--navy-3)'],['Black Overrides',blackCount,'#0A0A0A'],['Modules',modules.length,'var(--teal)'],['Max Score',rules.reduce((s,r)=>s+(r.score_impact||0),0),'var(--red)']].map(([l,v,c])=>(
+          <div key={l} className="nlc-card" style={{borderTop:`3px solid ${c}`,textAlign:'center'}}>
+            <div className="font-garamond" style={{fontSize:26,color:c,lineHeight:1}}>{v}</div>
+            <div className="font-mono" style={{fontSize:9,color:'var(--text3)',marginTop:4,letterSpacing:'.1em',textTransform:'uppercase'}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="nlc-card">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+          <div className="sec-lbl gold" style={{margin:0,border:'none',padding:0}}>ILRMF Rule Registry — {filtered.length} Rules</div>
+          <select style={{padding:'6px 12px',borderRadius:6,border:'1px solid var(--border2)',fontSize:11,background:'var(--surface)'}} value={filter} onChange={e=>setFilter(e.target.value)}>
+            <option value="ALL">All Modules</option>
+            {modules.map(m=><option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        <div style={{overflowX:'auto'}}>
+          <table className="nlc-table" style={{minWidth:700}}>
+            <thead><tr><th>Rule ID</th><th>Name</th><th>Statutory Basis</th><th>Score</th><th>Severity</th><th>BLACK</th></tr></thead>
+            <tbody>
+              {filtered.map(r => (
+                <tr key={r.rule_id}>
+                  <td className="font-mono" style={{fontWeight:700,color:'var(--teal)',fontSize:11}}>{r.rule_id}</td>
+                  <td style={{fontWeight:600,color:'var(--navy)'}}>{r.rule_name}</td>
+                  <td style={{fontSize:10,color:'var(--text3)',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.statutory_basis}</td>
+                  <td className="font-mono" style={{fontWeight:700,color:'var(--navy)',textAlign:'center'}}>-{r.score_impact||0}</td>
+                  <td><span className={`badge badge-${(r.default_severity||'YELLOW').toLowerCase()}`}>{r.default_severity}</span></td>
+                  <td style={{textAlign:'center'}}>{r.is_black_override?'⚫':'—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   )
 }
