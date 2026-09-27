@@ -10,7 +10,7 @@ export default function CommercialPage() {
         {[['Active Rescue','Corporate Rescue','#0A0A0A'],['Regularization','Structured Package','var(--red)'],['Compliance','Compliance Package','var(--yellow)']].map(([l,t,c])=>(
           <div key={l} className="nlc-card" style={{borderTop:`4px solid ${String(c)}`}}>
             <div className="font-mono" style={{fontSize:9.5,color:'var(--text3)',letterSpacing:'.1em',marginBottom:8}}>{l.toUpperCase()}</div>
-            <div className="font-garamond" style={{fontSize:16,color:c}}>{t}</div>
+            <div className="font-garamond" style={{fontSize:16,color:String(c)}}>{t}</div>
           </div>
         ))}
       </div>
@@ -21,9 +21,9 @@ export default function CommercialPage() {
             <div key={s} style={{marginBottom:14}}>
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
                 <span style={{fontSize:12}}>{s}</span>
-                <span className="font-mono" style={{fontSize:12,fontWeight:700,color:c}}>{n}</span>
+                <span className="font-mono" style={{fontSize:12,fontWeight:700,color:String(c)}}>{n}</span>
               </div>
-              <div className="pbar"><div className="pbar-fill" style={{width:`${(Number(n)/46)*100}%`,background:c}}/></div>
+              <div className="pbar"><div className="pbar-fill" style={{width:`${(Number(n)/46)*100}%`,background:String(c)}}/></div>
             </div>
           ))}
         </div>
@@ -32,7 +32,7 @@ export default function CommercialPage() {
           {[['Corporate Rescue','22-28L','#0A0A0A'],['Regularization','14-18L','var(--red)'],['Compliance Pkg','8-12L','var(--yellow)']].map(([t,e,c])=>(
             <div key={t} style={{padding:14,marginBottom:10,background:'var(--surface)',borderRadius:8,borderLeft:`4px solid ${String(c)}`,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{t}</div>
-              <div className="font-garamond" style={{fontSize:18,color:c}}>BDT {e}</div>
+              <div className="font-garamond" style={{fontSize:18,color:String(c)}}>BDT {e}</div>
             </div>
           ))}
           <div style={{padding:14,background:'var(--navy)',borderRadius:9,textAlign:'center'}}>
