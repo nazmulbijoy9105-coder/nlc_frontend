@@ -1,7 +1,8 @@
 "use client"
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { authApi, setTokens, setUser } from '@/lib/api'
+import { authApi } from '@/lib/api'
+import { setTokens, setUser } from '@/lib/auth'
 
 export default function SignupPage() {
   const router = useRouter()
