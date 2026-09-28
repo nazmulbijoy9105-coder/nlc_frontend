@@ -28,7 +28,7 @@ export default function CompanyProfilePage() {
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
 
-  const score = compliance?.current_score || compliance?.compliance_score || 0 ?? company.compliance_score || company.current_compliance_score ?? 0
+  const score = compliance?.current_score || compliance?.compliance_score || company.compliance_score || company.current_compliance_score || 0
   const band = compliance?.risk_band || compliance?.band || company.band || company.current_risk_band || 'GREEN'
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':'#0A0A0A'
 
