@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react'
 import { rulesApi } from '@/lib/api'
+import { getUser } from '@/lib/auth'
 
 export default function RulesPage() {
   const _user = typeof window !== 'undefined' ? getUser() : null
