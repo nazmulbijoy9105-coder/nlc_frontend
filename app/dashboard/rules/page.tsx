@@ -3,17 +3,11 @@ import { useState, useEffect } from 'react'
 import { rulesApi } from '@/lib/api'
 
 export default function RulesPage() {
-  // Role guard — only SUPER_ADMIN and ADMIN_STAFF can access rules
-  import { getUser } from '@/lib/auth'
-  const user = typeof window !== 'undefined' ? getUser() : null
-  if (user && !user.role?.includes('ADMIN') && !user.role?.includes('SUPER')) {
-    return (
-      <div style={{padding:60,textAlign:'center'}}>
-        <div style={{fontSize:18,color:'var(--red)',marginBottom:8}}>⛔ Access Denied</div>
-        <div style={{fontSize:12,color:'var(--white-3)'}}>Rules Engine is restricted to administrators only.</div>
-      </div>
-    )
+  const _user = typeof window !== 'undefined' ? getUser() : null
+  if (_user && !_user.role?.includes('ADMIN') && !_user.role?.includes('SUPER')) {
+    return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Rules Engine is admin only</div>
   }
+
   const [rules, setRules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL')

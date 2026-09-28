@@ -1,17 +1,13 @@
 "use client"
+import { getUser } from '@/lib/auth'
 import { companiesApi } from '@/lib/api'
 
 export default function CommercialPage() {
-  import { getUser } from '@/lib/auth'
-  const user = typeof window !== 'undefined' ? getUser() : null
-  if (user && user.role?.includes('CLIENT')) {
-    return (
-      <div style={{padding:60,textAlign:'center'}}>
-        <div style={{fontSize:18,color:'var(--red)',marginBottom:8}}>⛔ Access Denied</div>
-        <div style={{fontSize:12,color:'var(--white-3)'}}>Revenue Intelligence is restricted to staff only.</div>
-      </div>
-    )
+  const _user = typeof window !== 'undefined' ? getUser() : null
+  if (_user && _user.role?.includes('CLIENT')) {
+    return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Revenue Intel is staff only</div>
   }
+
   return (
     <div style={{padding:24}}>
       <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:6}}>Revenue Intelligence</div>
