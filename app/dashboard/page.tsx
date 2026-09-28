@@ -6,6 +6,7 @@ import { dashboardApi, companiesApi } from '@/lib/api'
 export default function DashboardPage() {
   const router = useRouter()
   const [kpis, setKpis] = useState<any>(null)
+  const [companyList, setCompanyList] = useState<any[]>([])
   const [deadlines, setDeadlines] = useState<any[]>([])
   const [activity, setActivity] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -15,36 +16,38 @@ export default function DashboardPage() {
   }, [])
 
   const loadData = async () => {
+    let cl: any[] = []
     try {
       const [k, d, a] = await Promise.all([
         dashboardApi.getStats().catch(() => null),
+      (async () => { try { return await companiesApi.list() } catch { return [] } })(),
         dashboardApi.upcomingDeadlines().catch(() => []),
         dashboardApi.recentActivity().catch(() => []),
       ])
-      setKpis(k); setDeadlines(d || []); setActivity(a || [])
+      setKpis(k); setDeadlines(d || []); setActivity(a || []); setCompanyList(cl2 || [])
     } catch (e) { console.error('Dashboard load error:', e) }
     finally { setLoading(false) }
   }
 
   if (loading) return <div style={{ padding: 40, color: 'var(--white-3)' }}>Loading dashboard…</div>
 
-  const total = kpis?.total_companies || 0
-  const active = kpis?.active_companies || 0
-  const inDefault = kpis?.black_companies || kpis?.red_companies || 0
-  const avgScore = kpis?.average_score || 0
+  const total = kpis?.total_companies || kpis?.total || companyList.length || 0 || kpis?.total || 0 || 0
+  const active = kpis?.active_companies || kpis?.total_companies || 0 || 0
+  const inDefault = kpis?.black_companies || 0 || kpis?.red_companies || 0 || 0
+  const avgScore = kpis?.average_score || kpis?.avg_score || 0 || 0
 
   const kpiCards = [
     { lbl: 'Total Companies', val: total || '—', sub: 'Active portfolios', color: 'var(--navy-3)' },
     { lbl: 'In Default', val: inDefault || '—', sub: 'Require intervention', color: '#B91C1C' },
     { lbl: 'Avg Score', val: avgScore ? `${avgScore}/100` : '—', sub: 'Portfolio average', color: 'var(--green)' },
-    { lbl: 'Active Flags', val: kpis?.total_active_flags || '—', sub: 'Compliance violations', color: 'var(--yellow)' },
+    { lbl: 'Active Flags', val: kpis?.total_active_flags || kpis?.active_flags || 0 || '—', sub: 'Compliance violations', color: 'var(--yellow)' },
   ]
 
   const bands = [
-    { name: 'GREEN', label: 'Compliant', n: kpis?.green_companies || 0, c: '#1a7a52' },
-    { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies || 0, c: '#D97706' },
-    { name: 'RED', label: 'Default', n: kpis?.red_companies || 0, c: '#B91C1C' },
-    { name: 'BLACK', label: 'Severe', n: kpis?.black_companies || 0, c: '#0A0A0A' },
+    { name: 'GREEN', label: 'Compliant', n: kpis?.green_companies || 0 || 0, c: '#1a7a52' },
+    { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies || 0 || 0, c: '#D97706' },
+    { name: 'RED', label: 'Default', n: kpis?.red_companies || 0 || 0, c: '#B91C1C' },
+    { name: 'BLACK', label: 'Severe', n: kpis?.black_companies || 0 || 0, c: '#0A0A0A' },
   ]
 
   return (

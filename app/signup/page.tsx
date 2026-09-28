@@ -39,12 +39,12 @@ export default function SignupPage() {
           <input className="nlc-input" placeholder="John Doe" value={fullName} onChange={e => setFullName(e.target.value)} />
         </div>
         <div style={{ marginBottom: 14 }}>
-          <label className="f-label">Email Address</label>
+          <label className="f-label">Email</label>
           <input className="nlc-input" type="email" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)} />
         </div>
         <div style={{ marginBottom: 14 }}>
           <label className="f-label">Password</label>
-          <input className="nlc-input" type="password" placeholder="Min 8 chars, 1 upper, 1 digit, 1 special" value={password} onChange={e => setPassword(e.target.value)} />
+          <input className="nlc-input" type="password" placeholder="Min 8, 1 upper, 1 digit, 1 special" value={password} onChange={e => setPassword(e.target.value)} />
         </div>
         <div style={{ marginBottom: 20 }}>
           <label className="f-label">Role</label>
@@ -58,11 +58,11 @@ export default function SignupPage() {
         {error && (
           <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(160,48,48,.3)', color: '#e07070', padding: '10px 14px', fontSize: 12, marginBottom: 16, borderRadius: 7 }}>{error}</div>
         )}
-        <button className="nlc-btn-gold" onClick={handleSignup} disabled={loading} style={{ opacity: loading ? .6 : 1 }}>
-          {loading ? 'Creating Account…' : 'Create Account →'}
+        <button className="nlc-btn-gold" onClick={handleSignup} disabled={loading}>
+          {loading ? 'Creating...' : 'Create Account'}
         </button>
         <div style={{ textAlign: 'center', marginTop: 16 }}>
-          <button onClick={() => router.push('/')} style={{ background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 12, cursor: 'pointer' }}>← Back to Login</button>
+          <button onClick={() => router.push('/')} style={{ background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 12, cursor: 'pointer' }}>Back to Login</button>
         </div>
       </div>
     </div>

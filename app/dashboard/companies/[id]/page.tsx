@@ -28,8 +28,8 @@ export default function CompanyProfilePage() {
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
 
-  const score = compliance?.current_score ?? company.current_compliance_score ?? 0
-  const band = compliance?.risk_band ?? company.current_risk_band ?? 'GREEN'
+  const score = compliance?.current_score || compliance?.compliance_score || 0 ?? company.compliance_score || company.current_compliance_score ?? 0
+  const band = compliance?.risk_band || compliance?.band ?? company.band || company.current_risk_band ?? 'GREEN'
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':'#0A0A0A'
 
   return (
@@ -39,7 +39,7 @@ export default function CompanyProfilePage() {
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
           <div>
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
-              <div className="font-garamond" style={{fontSize:22,color:'var(--navy)'}}>{company.company_name || company.name}</div>
+              <div className="font-garamond" style={{fontSize:22,color:'var(--navy)'}}>{company.company_name || company.name || company.name}</div>
               <span className={`badge badge-${band.toLowerCase()}`}>{band}</span>
             </div>
             <div style={{display:'flex',gap:20,fontSize:11.5,color:'var(--text3)',fontFamily:"'JetBrains Mono', monospace"}}>
