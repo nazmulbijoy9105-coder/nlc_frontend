@@ -18,13 +18,13 @@ export default function DashboardPage() {
   const loadData = async () => {
     let cl: any[] = []
     try {
-      const [k, d, a] = await Promise.all([
+      const [k, cl, d, a] = await Promise.all([
         dashboardApi.getStats().catch(() => null),
-      (async () => { try { return await companiesApi.list() } catch { return [] } })(),
+        (async () => { try { return await companiesApi.list() } catch { return [] } })(),
         dashboardApi.upcomingDeadlines().catch(() => []),
         dashboardApi.recentActivity().catch(() => []),
       ])
-      setKpis(k); setDeadlines(d || []); setActivity(a || []); setCompanyList(cl2 || [])
+      setKpis(k); setCompanyList(Array.isArray(cl) ? cl : (cl?.items || cl?.data || [])); setDeadlines(d || []); setActivity(a || [])
     } catch (e) { console.error('Dashboard load error:', e) }
     finally { setLoading(false) }
   }

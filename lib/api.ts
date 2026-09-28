@@ -159,6 +159,8 @@ export const api = new ApiClient(API_BASE);
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<any>("/api/v1/auth/login", { email, password }, { auth: false }),
+  signup: (email: string, password: string, full_name: string, role: string) =>
+    api.post<any>("/api/v1/auth/signup", { email, password, full_name, role }, { auth: false }),
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }, { auth: false }),
   me: () => api.get<any>("/api/v1/auth/me"),
