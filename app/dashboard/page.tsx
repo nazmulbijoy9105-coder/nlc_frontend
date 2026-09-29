@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { dashboardApi, companiesApi } from '@/lib/api'
+import LegalDisclaimer from '@/components/LegalDisclaimer'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -119,6 +120,7 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+      <LegalDisclaimer />
     </div>
   )
 }
