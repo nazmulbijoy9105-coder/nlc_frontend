@@ -29,8 +29,8 @@ export default function CompanyProfilePage() {
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
 
   const score = compliance?.current_score || compliance?.compliance_score || company.compliance_score || company.current_compliance_score || 0
-  const band = compliance?.risk_band || compliance?.band || company.band || company.current_risk_band || 'GREEN'
-  const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':'#0A0A0A'
+  const band = compliance?.risk_band || compliance?.band || company.band || company.current_risk_band || 'NOT_EVALUATED'
+  const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#0A0A0A'
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -49,7 +49,7 @@ export default function CompanyProfilePage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue')}>Rescue Plan</button>
-            <button className="nlc-btn-primary" onClick={async()=>{await companiesApi.evaluate(id);load()}}>Re-evaluate</button>
+            <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+(e as Error).message)}}}>Re-evaluate</button>
           </div>
         </div>
       </div>
@@ -80,8 +80,8 @@ export default function CompanyProfilePage() {
           <div className="sec-lbl gold">Active Compliance Flags ({flags.length})</div>
           {flags.length === 0 ? (
             <div className="nlc-card" style={{textAlign:'center',padding:30}}>
-              <div style={{fontSize:14,color:'var(--green)',fontWeight:600}}>✓ No active violations</div>
-              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Company is compliant</div>
+              <div style={{fontSize:14,color:'var(--green)',fontWeight:600}}>{band==='NOT_EVALUATED' ? 'Not evaluated' : '✓ No active violations'}</div>
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>{band==='NOT_EVALUATED' ? 'This company has not been evaluated' : 'No violations detected by the rules evaluated'}</div>
             </div>
           ) : flags.map((f,i)=>(
             <div key={i} className="nlc-card" style={{marginBottom:8,borderLeft:`4px solid ${f.severity==='BLACK'?'#0A0A0A':f.severity==='RED'?'#B91C1C':f.severity==='YELLOW'?'#D97706':'var(--green)'}`}}>

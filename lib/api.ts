@@ -72,11 +72,15 @@ class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private getHeaders(auth = true): HeadersInit {
+  private async getHeaders(auth = true): Promise<HeadersInit> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (auth && typeof window !== "undefined") {
-      const token = localStorage.getItem("nlc_access_token") || document.cookie.split(';').find(c => c.trim().startsWith('nlc_access_token='))?.split('=')[1];
-      if (token) headers["Authorization"] = "Bearer " + token;
+      try {
+        const token = await getValidAccessToken();
+        if (token) headers["Authorization"] = "Bearer " + token;
+      } catch {
+        // token refresh failed — proceed without auth
+      }
     }
     return headers;
   }
@@ -85,7 +89,7 @@ class ApiClient {
     const auth = options.auth !== false;
     const res = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers: this.getHeaders(auth),
+      headers: await this.getHeaders(auth),
       credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -101,8 +105,6 @@ class ApiClient {
       }
 
       throw new Error(message);
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
     }
     return res.json();
   }
@@ -110,7 +112,7 @@ class ApiClient {
   async get<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "GET",
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       credentials: "include",
     });
     if (!res.ok) {
@@ -123,7 +125,7 @@ class ApiClient {
   async delete<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: 'DELETE',
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
     })
     if (!res.ok) throw new Error(await res.text())
     return res.json()
@@ -132,7 +134,7 @@ class ApiClient {
   async patch<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PATCH",
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -146,7 +148,7 @@ class ApiClient {
   async put<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PUT",
-      headers: this.getHeaders(),
+      headers: await this.getHeaders(),
       credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });

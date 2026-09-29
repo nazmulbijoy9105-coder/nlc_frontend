@@ -34,9 +34,8 @@ function removeStoredAuth() {
   }
 }
 
-export const getValidAccessToken = () => {
+export const getValidAccessToken = async (): Promise<string> => {
   if (typeof window === 'undefined') return ''
-  if (typeof window === 'undefined') return '';
   const token = (localStorage.getItem(ACCESS_TOKEN) || Cookies.get(ACCESS_TOKEN) || '').trim()
   if (!token || token === 'undefined' || token === 'null') {
     if (token) removeStoredAuth()
@@ -48,13 +47,15 @@ export const getValidAccessToken = () => {
     removeStoredAuth()
     return ''
   }
-  if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(Date.now() / 1000) + 30) {
-    removeStoredAuth()
-    return ''
+  // Token still valid — return it
+  if (typeof payload.exp === 'number' && payload.exp > Math.floor(Date.now() / 1000) + 30) {
+    localStorage.setItem(ACCESS_TOKEN, token)
+    Cookies.set(ACCESS_TOKEN, token, { ...cookieOptions(), expires: 1 })
+    return token
   }
-  localStorage.setItem(ACCESS_TOKEN, token)
-  Cookies.set(ACCESS_TOKEN, token, { ...cookieOptions(), expires: 1 })
-  return token
+  // Token expired — try to refresh BEFORE clearing auth
+  const refreshed = await refreshToken()
+  return refreshed || ''
 }
 
 
