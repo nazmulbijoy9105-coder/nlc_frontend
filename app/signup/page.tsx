@@ -56,12 +56,8 @@ export default function SignupPage() {
             <option value="CLIENT_VIEW_ONLY">Client View Only</option>
           </select>
         </div>
-        {error && (
-          <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(160,48,48,.3)', color: '#e07070', padding: '10px 14px', fontSize: 12, marginBottom: 16, borderRadius: 7 }}>{error}</div>
-        )}
-        <button className="nlc-btn-gold" onClick={handleSignup} disabled={loading}>
-          {loading ? 'Creating...' : 'Create Account'}
-        </button>
+        {error && <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(160,48,48,.3)', color: '#e07070', padding: '10px 14px', fontSize: 12, marginBottom: 16, borderRadius: 7 }}>{error}</div>}
+        <button className="nlc-btn-gold" onClick={handleSignup} disabled={loading}>{loading ? 'Creating...' : 'Create Account'}</button>
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <button onClick={() => router.push('/')} style={{ background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 12, cursor: 'pointer' }}>Back to Login</button>
         </div>

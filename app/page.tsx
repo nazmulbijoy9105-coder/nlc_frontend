@@ -97,6 +97,11 @@ export default function LoginPage() {
               <span className="badge-pill badge-neutral">Client View</span>
             </div>
           </div>
+          <div style={{textAlign:'center',marginTop:16}}>
+            <button onClick={()=>router.push('/signup')} style={{background:'transparent',border:'none',color:'var(--text3)',fontSize:12,cursor:'pointer'}}>
+              Don't have an account? Sign up
+            </button>
+          </div>
         </div>
       </div>
     </div>
