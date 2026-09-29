@@ -49,7 +49,7 @@ export default function CompanyProfilePage() {
           </div>
           <div style={{display:'flex',gap:10}}>
             <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue')}>Rescue Plan</button>
-            <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+e.message)}}}>Re-evaluate</button>
+            <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+(e as Error).message)}}}>Re-evaluate</button>
           </div>
         </div>
       </div>
