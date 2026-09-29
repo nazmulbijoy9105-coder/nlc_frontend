@@ -45,7 +45,7 @@ export default function DashboardPage() {
   ]
 
   const bands = [
-    { name: 'GREEN', label: 'Compliant', n: kpis?.green_companies || 0 || 0, c: '#1a7a52' },
+    { name: 'GREEN', label: 'No violations detected', n: kpis?.green_companies || 0 || 0, c: '#1a7a52' },
     { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies || 0 || 0, c: '#D97706' },
     { name: 'RED', label: 'Default', n: kpis?.red_companies || 0 || 0, c: '#B91C1C' },
     { name: 'BLACK', label: 'Severe', n: kpis?.black_companies || 0 || 0, c: '#0A0A0A' },

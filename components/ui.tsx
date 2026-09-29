@@ -15,14 +15,14 @@ export function BandBadge({ band }: { band: string }) {
   return (
     <span className={`badge-pill ${map[band] || 'badge-neutral'}`}
       style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>
-      {band.replace(/_/g, ' ')}
+      {band === 'GREEN' ? 'NO VIOLATIONS DETECTED' : band.replace(/_/g, ' ')}
     </span>
   )
 }
 
 export function ScoreBar({ score, band }: { score: number; band: string }) {
-  const fill = band === 'GREEN' ? 'var(--green)' : band === 'YELLOW' ? '#b8860b' : '#a03030'
-  const text = band === 'GREEN' ? '#5dd4a0' : band === 'YELLOW' ? '#e0b84a' : '#e07070'
+  const fill = band === 'GREEN' ? 'var(--green)' : band === 'YELLOW' ? '#b8860b' : band === 'NOT_EVALUATED' ? '#6b7280' : '#a03030'
+  const text = band === 'GREEN' ? '#5dd4a0' : band === 'YELLOW' ? '#e0b84a' : band === 'NOT_EVALUATED' ? '#9ca3af' : '#e07070'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div style={{ flex: 1, height: 4, background: 'var(--navy-border)' }}>

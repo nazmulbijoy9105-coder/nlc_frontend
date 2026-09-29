@@ -38,7 +38,7 @@ export default function CompaniesPage() {
                 <td style={{fontWeight:600,color:'var(--navy)'}}>{c.company_name || c.name || 'Unknown'}</td>
                 <td className="font-mono" style={{fontSize:11,color:'var(--text3)'}}>{c.rjsc_registration_number || c.registration_number || '—'}</td>
                 <td className="font-mono" style={{fontWeight:700,color:bandColor(c.current_risk_band)}}>{c.current_compliance_score ?? '—'}</td>
-                <td><span className={`badge badge-${(c.current_risk_band||'GREEN').toLowerCase()}`}>{c.current_risk_band || '—'}</span></td>
+                <td><span className={`badge badge-${(c.current_risk_band||'neutral').toLowerCase()}`}>{c.current_risk_band || '—'}</span></td>
                 <td className="font-mono" style={{color:'var(--text3)'}}>{c.active_flags ?? 0}</td>
               </tr>
             ))}
