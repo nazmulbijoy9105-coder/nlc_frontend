@@ -32,7 +32,7 @@ export default function CompanyProfilePage() {
     ? (compliance.current_score ?? compliance.compliance_score ?? null)
     : (company.current_compliance_score ?? company.compliance_score ?? null)
   const band = compliance?.risk_band || compliance?.band || company.band || company.current_risk_band || 'NOT_EVALUATED'
-  const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#0A0A0A'
+  const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#A855F7'
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
