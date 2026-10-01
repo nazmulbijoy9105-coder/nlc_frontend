@@ -3,7 +3,7 @@ export type Band = 'GREEN' | 'YELLOW' | 'RED' | 'BLACK'
 export function BandBadge({ band }: { band: string }) {
   const map: Record<string, string> = {
     GREEN: 'badge-green', YELLOW: 'badge-yellow',
-    RED: 'badge-red', BLACK: 'badge-red',
+    RED: 'badge-red', BLACK: 'badge-black',
     Filed: 'badge-green', FILED: 'badge-green',
     Pending: 'badge-yellow', PENDING: 'badge-yellow',
     Overdue: 'badge-red', OVERDUE: 'badge-red',

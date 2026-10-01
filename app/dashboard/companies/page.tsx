@@ -17,8 +17,8 @@ export default function CompaniesPage() {
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading companies...</div>
 
-  const bandColor = (b: any) => b==='GREEN'?'#1a7a52':b==='YELLOW'?'#D97706':b==='RED'?'#B91C1C':'#0A0A0A'
-  const bandBg = (b: any) => b==='GREEN'?'rgba(26,122,82,.15)':b==='YELLOW'?'rgba(160,120,32,.15)':b==='RED'?'rgba(160,48,48,.15)':'rgba(10,10,10,.15)'
+  const bandColor = (b: any) => b==='GREEN'?'#1a7a52':b==='YELLOW'?'#D97706':b==='RED'?'#B91C1C':b==='BLACK'?'#A855F7':'#6B7280'
+  const bandBg = (b: any) => b==='GREEN'?'rgba(26,122,82,.15)':b==='YELLOW'?'rgba(160,120,32,.15)':b==='RED'?'rgba(160,48,48,.15)':b==='BLACK'?'rgba(168,85,247,.15)':'rgba(107,114,128,.15)'
 
   return (
     <div style={{padding:24}}>
