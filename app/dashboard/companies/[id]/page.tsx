@@ -28,7 +28,9 @@ export default function CompanyProfilePage() {
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
 
-  const score = compliance?.current_score || compliance?.compliance_score || company.compliance_score || company.current_compliance_score || 0
+  const score: number | null = compliance
+    ? (compliance.current_score ?? compliance.compliance_score ?? null)
+    : (company.current_compliance_score ?? company.compliance_score ?? null)
   const band = compliance?.risk_band || compliance?.band || company.band || company.current_risk_band || 'NOT_EVALUATED'
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#0A0A0A'
 
@@ -44,7 +46,7 @@ export default function CompanyProfilePage() {
             </div>
             <div style={{display:'flex',gap:20,fontSize:11.5,color:'var(--text3)',fontFamily:"'JetBrains Mono', monospace"}}>
               <span>REG <strong style={{color:'var(--navy)'}}>{company.rjsc_registration_number || '—'}</strong></span>
-              <span>SCORE <strong style={{color:bandColor}}>{score}/100</strong></span>
+              <span>SCORE <strong style={{color:bandColor}}>{score === null ? 'Not evaluated' : `${score}/100`}</strong></span>
             </div>
           </div>
           <div style={{display:'flex',gap:10}}>
@@ -61,8 +63,8 @@ export default function CompanyProfilePage() {
           <div style={{textAlign:'center',marginBottom:16}}>
             <svg width="160" height="100" viewBox="0 0 160 100">
               <path d="M 13 90 A 67 67 0 0 1 147 90" fill="none" stroke="#E4E8EF" strokeWidth="8" strokeLinecap="round"/>
-              <path d="M 13 90 A 67 67 0 0 1 147 90" fill="none" stroke={bandColor} strokeWidth="8" strokeLinecap="round" strokeDasharray={`${(score/100)*105} 105`}/>
-              <text x="80" y="80" textAnchor="middle" fontSize="32" fontWeight="700" fill={bandColor} fontFamily="'DM Serif Display',serif">{score}</text>
+              <path d="M 13 90 A 67 67 0 0 1 147 90" fill="none" stroke={bandColor} strokeWidth="8" strokeLinecap="round" strokeDasharray={`${((score ?? 0)/100)*105} 105`}/>
+              <text x="80" y="80" textAnchor="middle" fontSize="32" fontWeight="700" fill={bandColor} fontFamily="'DM Serif Display',serif">{score === null ? '—' : score}</text>
             </svg>
           </div>
           <div className="nlc-card" style={{marginBottom:12}}>
@@ -81,8 +83,8 @@ export default function CompanyProfilePage() {
           <div className="sec-lbl gold">Active Compliance Flags ({flags.length})</div>
           {flags.length === 0 ? (
             <div className="nlc-card" style={{textAlign:'center',padding:30}}>
-              <div style={{fontSize:14,color:'var(--green)',fontWeight:600}}>{band==='NOT_EVALUATED' ? 'Not evaluated' : '✓ No active violations'}</div>
-              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>{band==='NOT_EVALUATED' ? 'This company has not been evaluated' : 'No violations detected by the rules evaluated'}</div>
+              <div style={{fontSize:14,color:band==='NOT_EVALUATED'?'var(--text3)':'var(--green)',fontWeight:600}}>{band==='NOT_EVALUATED' ? 'Not evaluated — insufficient data' : '✓ No active violations'}</div>
+              <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>{band==='NOT_EVALUATED' ? 'Not enough information on file to assess compliance. This is not a clean result.' : 'No violations detected by the rules evaluated'}</div>
             </div>
           ) : flags.map((f,i)=>(
             <div key={i} className="nlc-card" style={{marginBottom:8,borderLeft:`4px solid ${f.severity==='BLACK'?'#0A0A0A':f.severity==='RED'?'#B91C1C':f.severity==='YELLOW'?'#D97706':'var(--green)'}`}}>

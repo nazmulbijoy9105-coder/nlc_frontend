@@ -20,12 +20,12 @@ export interface ScoreBreakdown {
   register_score: number
   tax_score: number
   raw_total: number
-  final_score: number
+  final_score: number | null
   override_applied: boolean
   override_reason: string | null
   risk_band: string
-  exposure_band: string
-  revenue_tier: string
+  exposure_band: string | null
+  revenue_tier: string | null
   active_flag_count: number
   black_flag_count: number
   red_flag_count: number

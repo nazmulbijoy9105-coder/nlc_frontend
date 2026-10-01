@@ -20,15 +20,15 @@ export function BandBadge({ band }: { band: string }) {
   )
 }
 
-export function ScoreBar({ score, band }: { score: number; band: string }) {
+export function ScoreBar({ score, band }: { score: number | null; band: string }) {
   const fill = band === 'GREEN' ? 'var(--green)' : band === 'YELLOW' ? '#b8860b' : band === 'NOT_EVALUATED' ? '#6b7280' : '#a03030'
   const text = band === 'GREEN' ? '#5dd4a0' : band === 'YELLOW' ? '#e0b84a' : band === 'NOT_EVALUATED' ? '#9ca3af' : '#e07070'
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       <div style={{ flex: 1, height: 4, background: 'var(--navy-border)' }}>
-        <div style={{ height: 4, background: fill, width: `${score}%` }} />
+        <div style={{ height: 4, background: fill, width: `${score ?? 0}%` }} />
       </div>
-      <div style={{ fontSize: 12, fontWeight: 600, minWidth: 28, textAlign: 'right', color: text }}>{score}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, minWidth: 28, textAlign: 'right', color: text }}>{score ?? '—'}</div>
     </div>
   )
 }

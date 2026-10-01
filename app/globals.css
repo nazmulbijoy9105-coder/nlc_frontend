@@ -177,6 +177,7 @@ html, body {
 .badge-red, .badge-pill.badge-red { background: var(--red-bg); color: #e07070; }
 .badge-black, .badge-pill.badge-black { background: #111; color: #fff; }
 .badge-neutral, .badge-pill.badge-neutral { background: var(--white-4); color: var(--white-2); }
+.badge-not_evaluated, .badge-pill.badge-not_evaluated { background: var(--white-4); color: var(--white-2); }
 
 /* ── SECTION LABELS ── */
 .sec-lbl {

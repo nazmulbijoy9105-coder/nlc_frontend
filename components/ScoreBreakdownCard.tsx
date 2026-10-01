@@ -69,10 +69,10 @@ export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProp
         <div style={{
           padding: "4px 12px",
           borderRadius: "20px",
-          background: breakdown.final_score >= 85 ? "rgba(16, 185, 129, 0.2)" : 
-                      breakdown.final_score >= 50 ? "rgba(245, 158, 11, 0.2)" : "rgba(239, 68, 68, 0.2)",
-          color: breakdown.final_score >= 85 ? "#10b981" : 
-                 breakdown.final_score >= 50 ? "#f59e0b" : "#ef4444",
+          background: (breakdown.final_score ?? 0) >= 85 ? "rgba(16, 185, 129, 0.2)" : 
+                      (breakdown.final_score ?? 0) >= 50 ? "rgba(245, 158, 11, 0.2)" : "rgba(239, 68, 68, 0.2)",
+          color: (breakdown.final_score ?? 0) >= 85 ? "#10b981" : 
+                 (breakdown.final_score ?? 0) >= 50 ? "#f59e0b" : "#ef4444",
           fontSize: "12px",
           fontWeight: 700
         }}>
