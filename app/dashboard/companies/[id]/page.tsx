@@ -77,6 +77,7 @@ export default function CompanyProfilePage() {
 
         {/* Center: Flags */}
         <div style={{padding:20,overflowY:'auto'}}>
+        <div style={{padding:"12px 20px",marginTop:20,background:"rgba(201,168,76,0.08)",borderTop:"1px solid var(--border)",fontSize:11,color:"var(--text3)",textAlign:"center",fontFamily:"JetBrains Mono, monospace"}}>Automated compliance screening. Not legal advice. Consult your legal counsel.</div>
           <div className="sec-lbl gold">Active Compliance Flags ({flags.length})</div>
           {flags.length === 0 ? (
             <div className="nlc-card" style={{textAlign:'center',padding:30}}>
