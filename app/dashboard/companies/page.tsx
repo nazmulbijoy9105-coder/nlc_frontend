@@ -48,3 +48,21 @@ export default function CompaniesPage() {
     </div>
   )
 }
+
+// Disclaimer
+export function Disclaimer() {
+  return (
+    <div style={{
+      padding: "12px 20px",
+      marginTop: 20,
+      background: "rgba(201,168,76,0.08)",
+      borderTop: "1px solid var(--border)",
+      fontSize: 11,
+      color: "var(--text3)",
+      textAlign: "center",
+      fontFamily: "'JetBrains Mono', monospace"
+    }}>
+      Automated compliance screening. Not legal advice. Consult your legal counsel.
+    </div>
+  )
+}
