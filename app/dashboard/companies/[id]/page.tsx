@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { companiesApi } from '@/lib/api'
 
@@ -12,21 +12,20 @@ export default function CompanyProfilePage() {
   const [compliance, setCompliance] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!id) return
-    const load = async () => {
-      try {
-        const [c, f, comp] = await Promise.all([
-          companiesApi.get(id).catch(()=>null),
-          companiesApi.violations(id).catch(()=>[]),
-          companiesApi.modules(id).catch(()=>null),
-        ])
-        setCompany(c); setFlags(f||[]); setCompliance(comp)
-      } catch(e) { console.error(e) }
-      finally { setLoading(false) }
-    }
-    load()
+    try {
+      const [c, f, comp] = await Promise.all([
+        companiesApi.get(id).catch(()=>null),
+        companiesApi.violations(id).catch(()=>[]),
+        companiesApi.modules(id).catch(()=>null),
+      ])
+      setCompany(c); setFlags(f||[]); setCompliance(comp)
+    } catch(e) { console.error(e) }
+    finally { setLoading(false) }
   }, [id])
+
+  useEffect(() => { load() }, [load])
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
