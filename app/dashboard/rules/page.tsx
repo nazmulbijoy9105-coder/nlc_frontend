@@ -4,20 +4,22 @@ import { rulesApi } from '@/lib/api'
 import { getUser } from '@/lib/auth'
 
 export default function RulesPage() {
-  const _user = typeof window !== 'undefined' ? getUser() : null
-  if (_user && !_user.role?.includes('ADMIN') && !_user.role?.includes('SUPER')) {
-    return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Rules Engine is admin only</div>
-  }
-
   const [rules, setRules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('ALL')
 
-  useEffect(() => { load() }, [])
-  const load = async () => {
-    try { const data = await rulesApi.list(); setRules(data) }
-    catch(e) { console.error(e) }
-    finally { setLoading(false) }
+  useEffect(() => {
+    const load = async () => {
+      try { const data = await rulesApi.list(); setRules(data) }
+      catch(e) { console.error(e) }
+      finally { setLoading(false) }
+    }
+    load()
+  }, [])
+
+  const _user = typeof window !== 'undefined' ? getUser() : null
+  if (_user && !_user.role?.includes('ADMIN') && !_user.role?.includes('SUPER')) {
+    return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Rules Engine is admin only</div>
   }
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading rules...</div>

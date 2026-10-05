@@ -51,7 +51,7 @@ export default function LoginPage() {
           </div>
           <div style={{ borderLeft: '2px solid rgba(201,168,76,.25)', paddingLeft: 22 }}>
             <div className="font-garamond" style={{ color: 'rgba(255,255,255,.85)', fontSize: 19, marginBottom: 20, fontStyle: 'italic', lineHeight: 1.5 }}>
-              "Corporate Governance.<br />Structured. Defensible."
+              &quot;Corporate Governance.<br />Structured. Defensible.&quot;
             </div>
             {['Legal Rule Engine', 'Compliance Scoring', 'Default Rescue System', 'Revenue Intelligence'].map(f => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, fontSize: 12, color: 'rgba(255,255,255,.38)' }}>
@@ -99,7 +99,7 @@ export default function LoginPage() {
           </div>
           <div style={{textAlign:'center',marginTop:16}}>
             <button onClick={()=>router.push('/signup')} style={{background:'transparent',border:'none',color:'var(--text3)',fontSize:12,cursor:'pointer'}}>
-              Don't have an account? Sign up
+              Don&apos;t have an account? Sign up
             </button>
           </div>
         </div>
