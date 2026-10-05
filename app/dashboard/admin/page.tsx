@@ -4,18 +4,21 @@ import { useState, useEffect } from 'react'
 import { adminApi } from '@/lib/api'
 
 export default function AdminPage() {
-  const _user = typeof window !== 'undefined' ? getUser() : null
-  if (_user && !_user.role?.includes('ADMIN') && !_user.role?.includes('SUPER')) {
-    return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Admin is staff only</div>
-  }
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { load() }, [])
-  const load = async () => {
-    try { const data = await adminApi.listUsers(1); setUsers(Array.isArray(data)?data:[]) }
-    catch(e) { console.error(e) }
-    finally { setLoading(false) }
+  useEffect(() => {
+    const load = async () => {
+      try { const data = await adminApi.listUsers(1); setUsers(Array.isArray(data)?data:[]) }
+      catch(e) { console.error(e) }
+      finally { setLoading(false) }
+    }
+    load()
+  }, [])
+
+  const _user = typeof window !== 'undefined' ? getUser() : null
+  if (_user && !_user.role?.includes('ADMIN') && !_user.role?.includes('SUPER')) {
+    return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Admin is staff only</div>
   }
 
   if (loading) return <div style={{padding:40,color:'rgba(255,255,255,.35)'}}>Loading users...</div>

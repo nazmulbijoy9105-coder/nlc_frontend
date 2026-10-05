@@ -12,18 +12,21 @@ export default function CompanyProfilePage() {
   const [compliance, setCompliance] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { if(id) load() }, [id])
-  const load = async () => {
-    try {
-      const [c, f, comp] = await Promise.all([
-        companiesApi.get(id).catch(()=>null),
-        companiesApi.violations(id).catch(()=>[]),
-        companiesApi.modules(id).catch(()=>null),
-      ])
-      setCompany(c); setFlags(f||[]); setCompliance(comp)
-    } catch(e) { console.error(e) }
-    finally { setLoading(false) }
-  }
+  useEffect(() => {
+    if (!id) return
+    const load = async () => {
+      try {
+        const [c, f, comp] = await Promise.all([
+          companiesApi.get(id).catch(()=>null),
+          companiesApi.violations(id).catch(()=>[]),
+          companiesApi.modules(id).catch(()=>null),
+        ])
+        setCompany(c); setFlags(f||[]); setCompliance(comp)
+      } catch(e) { console.error(e) }
+      finally { setLoading(false) }
+    }
+    load()
+  }, [id])
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
