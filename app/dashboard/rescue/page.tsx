@@ -16,14 +16,7 @@ export default function RescuePage() {
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading rescue cases...</div>
 
   const steps = [
-    {id:1,title:'Retrospective Audit',desc:'Obtain audited financial statements for all defaulted years',rule:'AUD-001 / Sec. 151',comp:'HIGH',est:'30-45 days'},
-    {id:2,title:'Prepare Financial Accounts',desc:'Board adoption of retrospective accounts',rule:'Sec. 151',comp:'MEDIUM',est:'15-20 days'},
-    {id:3,title:'Hold Backlog AGMs',desc:'Conduct AGMs in sequence for defaulted years',rule:'AGM-002 / Sec. 81',comp:'HIGH',est:'30 days'},
-    {id:4,title:'File AGM Minutes',desc:'Lodge minutes within 30 days of holding',rule:'Sec. 96',comp:'LOW',est:'7 days'},
-    {id:5,title:'File Annual Returns',desc:'File Schedule X with RJSC',rule:'AR-001 / Sec. 119',comp:'MEDIUM',est:'14 days'},
-    {id:6,title:'File Director Forms',desc:'Formalize director changes',rule:'DIR-001 / Sec. 92',comp:'LOW',est:'3 days'},
-    {id:7,title:'Regularize Share Register',desc:'Confirm transfers documented',rule:'TR-006 / Sec. 34',comp:'LOW',est:'5 days'},
-    {id:8,title:'RJSC Acknowledgment',desc:'Confirm all filings received',rule:'Sec. 119',comp:'MEDIUM',est:'15-30 days'},
+    // Steps are now fetched from backend API (finding-driven rescue per R-014)
   ]
 
   return (
