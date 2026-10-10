@@ -220,6 +220,7 @@ export const documentsApi = {
 export const rescueApi = {
   list: () => api.get<any>("/api/v1/rescue/plans"),
   pipeline: () => api.get<any>("/api/v1/rescue/plans"),
+  getActive: (companyId: string) => api.get<any>("/api/v1/rescue/plans/" + companyId + "/active"),
 };
 
 export const commercialApi = {
