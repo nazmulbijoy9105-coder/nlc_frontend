@@ -147,7 +147,7 @@ export default function CompanyProfilePage() {
                     <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:50}}>{f.severity}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{f.rule_name || f.rule_id}</div>
-                      <div style={{fontSize:10,color:'var(--text3)'}}>Impact: -{f.score_impact} pts • {f.rule_id}</div>
+                      <div style={{fontSize:10,color:'var(--text3)'}}>{step.priority} • {step.estimated_days_min && step.estimated_days_max ? `${step.estimated_days_min}-${step.estimated_days_max} days` : 'N/A'}</div>
                     </div>
                     {f.is_black_override && <span style={{fontSize:9,color:'#A855F7',fontWeight:700}}>BLACK OVERRIDE</span>}
                   </div>
