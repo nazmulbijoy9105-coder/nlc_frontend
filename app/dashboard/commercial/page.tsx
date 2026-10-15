@@ -12,6 +12,7 @@ export default function CommercialPage() {
     <div style={{padding:24}}>
       <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:6}}>Revenue Intelligence</div>
       <div style={{fontSize:12,color:'var(--white-3)',marginBottom:22}}>Compliance risk to billable engagement conversion</div>
+      <div style={{padding:'8px 12px',marginBottom:16,background:'var(--yellowl)',color:'var(--yellow)',borderRadius:6,fontSize:11,fontWeight:600}}>Illustrative sample figures. Not live data.</div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:18}}>
         {[['Active Rescue','Corporate Rescue','#0A0A0A'],['Regularization','Structured Package','var(--red)'],['Compliance','Compliance Package','var(--yellow)']].map(([l,t,c])=>(
           <div key={l} className="nlc-card" style={{borderTop:`4px solid ${String(c)}`}}>
