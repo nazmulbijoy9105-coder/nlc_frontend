@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/auth'; // Adjust this import if needed
+import { getValidAccessToken } from '@/lib/auth';
 
 interface CalendarEvent {
   id: string;
@@ -13,19 +13,21 @@ interface CalendarEvent {
 }
 
 export default function CompanyCalendarPage({ params }: { params: { id: string } }) {
-  const { token } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const companyId = params.id;
-  const API_URL = "https://nlc-platform.onrender.com/api/v1";
+  const API_URL = process.env.NEXT_PUBLIC_API_BASE_PATH || "https://nlc-platform.onrender.com";
 
   const fetchCalendar = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/calendar/companies/${companyId}?days_ahead=365`, {
+      const token = await getValidAccessToken();
+      if (!token) throw new Error("Not authenticated");
+      
+      const res = await fetch(`${API_URL}/api/v1/calendar/companies/${companyId}?days_ahead=365`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Failed to fetch calendar");
@@ -39,19 +41,21 @@ export default function CompanyCalendarPage({ params }: { params: { id: string }
   };
 
   useEffect(() => {
-    if (companyId && token) fetchCalendar();
-  }, [companyId, token]);
+    if (companyId) fetchCalendar();
+  }, [companyId]);
 
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/calendar/companies/${companyId}/generate?years_ahead=3`, {
+      const token = await getValidAccessToken();
+      if (!token) throw new Error("Not authenticated");
+      
+      const res = await fetch(`${API_URL}/api/v1/calendar/companies/${companyId}/generate?years_ahead=3`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Generation failed");
-      // Refetch the events after successful generation
       await fetchCalendar();
     } catch (err) {
       setError("Failed to generate calendar. Make sure you have admin privileges.");
