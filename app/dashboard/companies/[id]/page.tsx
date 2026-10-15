@@ -165,7 +165,7 @@ export default function CompanyProfilePage() {
               </div>
               {rescueSteps.map((step:any, i:number) => (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
-                  <div style={{width:22,height:22,borderRadius:'50%',border:{`2px solid ${step.is_completed?'var(--teal)':'var(--border)'}`},display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:step.is_completed?'var(--teal)':'var(--text3)'}}>
+                  <div style={{width:22,height:22,borderRadius:'50%',border:`2px solid ${step.is_completed?'var(--teal)':'var(--border)'}`},display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:step.is_completed?'var(--teal)':'var(--text3)'}}>
                     {step.is_completed ? '✓' : i+1}
                   </div>
                   <div style={{flex:1}}>
