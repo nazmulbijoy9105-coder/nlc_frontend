@@ -180,7 +180,7 @@ export default function CompanyProfilePage() {
                   </div>
                   <div style={{flex:1}}>
                     <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{step.step_name || step.title}</div>
-                    <div style={{fontSize:10,color:var(--text3)}}>{step.priority} • {step.estimated_days_min && step.estimated_days_max ? '{step.estimated_days_min}-{step.estimated_days_max} days' : 'N/A'}</div>
+                    <div style={{fontSize:10,color:'var(--text3)'}}>{step.priority} • {step.estimated_days_min && step.estimated_days_max ? '{step.estimated_days_min}-{step.estimated_days_max} days' : 'N/A'}</div>
                   </div>
                 </div>
               ))}
