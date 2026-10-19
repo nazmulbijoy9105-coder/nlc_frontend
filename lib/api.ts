@@ -218,7 +218,7 @@ export const documentsApi = {
 };
 
 export const rescueApi = {
-  list: () => api.get<any>("/api/v1/rescue/plans"),
+  list: (companyId?: string) => api.get<any>("/api/v1/rescue/plans" + (companyId ? "?company_id=" + companyId : "")),
   pipeline: () => api.get<any>("/api/v1/rescue/plans"),
   getActive: (companyId: string) => api.get<any>("/api/v1/rescue/plans/" + companyId + "/active"),
 };

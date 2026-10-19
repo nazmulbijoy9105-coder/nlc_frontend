@@ -45,7 +45,7 @@ export default function CompanyProfilePage() {
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#A855F7'
 
   const _v = (val: any) => val === null || val === undefined ? '—' : String(val)
-  const _b = (val: any) => val === true ? '✅' : val === false ? '❌' : '—'
+  const _b = (val: any) => val === true ? '✅' : val === false ? '❌' : '❓'
   const _d = (val: any) => val ? new Date(val).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'
 
   const sevColor = (s: string) => s==='BLACK'?'#A855F7':s==='RED'?'#B91C1C':s==='YELLOW'?'#D97706':'#6B7280'
@@ -69,12 +69,12 @@ export default function CompanyProfilePage() {
             </div>
             <div style={{display:'flex',gap:20,fontSize:11.5,color:'var(--text3)',fontFamily:"'JetBrains Mono', monospace"}}>
               <span>REG <strong style={{color:'var(--navy)'}}>{_v(company.registration_number)}</strong></span>
-              <span>SCORE <strong style={{color:bandColor}}>{score === null ? 'Not evaluated' : `${score}/100`}</strong></span>
+              <span>SCORE <strong style={{color:bandColor}}>{score === null ? 'Not evaluated' : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
               <span>EVALUATED <strong style={{color:'var(--navy)'}}>{_d(company.last_evaluated_at || compliance?.last_evaluated_at)}</strong></span>
             </div>
           </div>
           <div style={{display:'flex',gap:10}}>
-            <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue')}>Rescue Plan</button>
+            <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue?company_id=' + id)}>Rescue Plan</button>
             <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+(e as Error).message)}}}>Re-evaluate</button>
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function CompanyProfilePage() {
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {flags.map((f,i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:'var(--surface)',borderRadius:6,borderLeft:`3px solid ${sevColor(f.severity)}`}}>
-                    <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:50}}>{f.severity}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:50}}>{f.severity}{f.state === 'UNKNOWN' ? ' ❓' : ''}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{f.rule_name || f.rule_id}</div>
                       <div style={{fontSize:10,color:'var(--text3)'}}>{f.rule_id || 'Compliance finding'}{f.description ? ` • ${f.description}` : ''}</div>
