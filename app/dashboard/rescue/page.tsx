@@ -1,14 +1,17 @@
 "use client"
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { rescueApi } from '@/lib/api'
 
 export default function RescuePage() {
   const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
+  const companyId = searchParams.get('company_id')
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [companyId])
   const load = async () => {
-    try { const data = await rescueApi.list(); setPlans(Array.isArray(data)?data:[]) }
+    try { const data = await rescueApi.list(companyId || undefined); setPlans(Array.isArray(data)?data:[]) }
     catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
@@ -17,12 +20,14 @@ export default function RescuePage() {
 
   // Extract steps from the most recent plan (finding-driven rescue per R-014)
   const latestPlan = plans[0]
-  const steps: any[] = latestPlan?.steps || []
+  const rawSteps: any[] = latestPlan?.steps || []
+  const complexityRank = (c: string) => { const u = (c || '').toUpperCase(); return u === 'CRITICAL' || u === 'HIGH' ? 0 : u === 'MEDIUM' ? 1 : 2 }
+  const steps: any[] = [...rawSteps].sort((a, b) => complexityRank(a.complexity) - complexityRank(b.complexity))
 
   return (
     <div style={{padding:24}}>
       <div style={{marginBottom:22}}>
-        <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:4}}>Default Rescue Roadmap</div>
+        <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:4}}>{companyId ? 'Company Rescue Plan' : 'Default Rescue Roadmap'}</div>
         <div style={{fontSize:12,color:'var(--white-3)'}}>Structured remediation for companies in default</div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:20}}>
