@@ -190,6 +190,22 @@ export const companiesApi = {
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
   update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
+  downloadPDF: async (id: string) => {
+    const token = await getValidAccessToken();
+    const res = await fetch(API_BASE + "/api/v1/companies/" + id + "/compliance-pdf", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!res.ok) throw new Error("PDF download failed: " + res.status);
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "NLC_Compliance_Report_" + id + ".pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  },
 };
 
 export const filingsApi = {
