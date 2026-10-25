@@ -18,7 +18,7 @@ export default function RulesPage() {
   }, [])
 
   const _user = typeof window !== 'undefined' ? getUser() : null
-  if (_user && !_user.role?.includes('ADMIN') && !_user.role?.includes('SUPER')) {
+  if (_user && _user.role !== 'SUPER_ADMIN') {
     return <div style={{padding:60,textAlign:'center',color:'#B91C1C'}}>⛔ Access Denied — Rules Engine is admin only</div>
   }
 
