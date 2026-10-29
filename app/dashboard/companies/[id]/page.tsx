@@ -162,7 +162,7 @@ export default function CompanyProfilePage() {
             <div className="nlc-card" style={{marginBottom:14}}>
               <div className="sec-lbl">Rescue Plan — {rescueSteps.length} Steps</div>
               <div style={{height:6,background:'#E4E8EF',borderRadius:3,marginBottom:12,overflow:'hidden'}}>
-                <div style={{height:'100%',width:`${(rescueSteps.filter((s:any)=>s.is_completed).length/rescueSteps.length)*100}%`,background:'var(--teal)',borderRadius:3}} />
+                <div style={{height:'100%',width:`${(rescueSteps.filter((s:any)=>s.status==="COMPLETED").length/rescueSteps.length)*100}%`,background:'var(--teal)',borderRadius:3}} />
               </div>
               {rescueSteps.map((step:any, i:number) => (
                 <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
