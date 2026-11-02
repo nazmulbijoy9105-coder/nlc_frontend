@@ -79,6 +79,11 @@ export const refreshToken = async (): Promise<string> => {
     return data.access_token
   } catch { clearAuth(); return '' }
 }
+export const getRefreshToken = () =>
+  typeof window !== 'undefined'
+    ? (localStorage.getItem(REFRESH_TOKEN) || Cookies.get(REFRESH_TOKEN) || '')
+    : ''
+
 export const setTokens = (access: string, refresh: string) => {
   Cookies.set(ACCESS_TOKEN, access, { ...cookieOptions(), expires: 1 })
   Cookies.set(REFRESH_TOKEN, refresh, { ...cookieOptions(), expires: 7 })
