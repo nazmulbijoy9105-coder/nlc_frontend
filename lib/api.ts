@@ -169,6 +169,8 @@ export const authApi = {
     api.post<any>("/api/v1/auth/signup", { email, password, full_name, role }, { auth: false }),
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }, { auth: false }),
+  confirm2FA: (totp_code: string) =>
+    api.post<any>("/api/v1/auth/2fa/confirm", { totp_code }),
   me: () => api.get<any>("/api/v1/auth/me"),
   logout: () => api.post("/api/v1/auth/logout"),
 };
