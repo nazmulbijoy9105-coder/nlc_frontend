@@ -71,10 +71,19 @@ export const refreshToken = async (): Promise<string> => {
     })
     if (!res.ok) { clearAuth(); return '' }
     const data = await res.json()
-    setTokens(data.access_token, token)
+    if (!data.access_token || !data.refresh_token) {
+      clearAuth()
+      return ''
+    }
+    setTokens(data.access_token, data.refresh_token)
     return data.access_token
   } catch { clearAuth(); return '' }
 }
+export const getRefreshToken = () =>
+  typeof window !== 'undefined'
+    ? (localStorage.getItem(REFRESH_TOKEN) || Cookies.get(REFRESH_TOKEN) || '')
+    : ''
+
 export const setTokens = (access: string, refresh: string) => {
   Cookies.set(ACCESS_TOKEN, access, { ...cookieOptions(), expires: 1 })
   Cookies.set(REFRESH_TOKEN, refresh, { ...cookieOptions(), expires: 7 })
@@ -89,6 +98,8 @@ export const setTempToken = (token: string) => {
 }
 
 export const getTempToken = () => Cookies.get(TEMP_TOKEN) || ''
+
+export const clearTempToken = () => Cookies.remove(TEMP_TOKEN, { path: '/' })
 
 export const clearAuth = () => removeStoredAuth()
 

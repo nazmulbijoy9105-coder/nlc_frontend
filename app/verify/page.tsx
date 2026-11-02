@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import { getTempToken, setTokens, setUser } from '@/lib/auth'
+import { clearTempToken, getTempToken, setTokens, setUser } from '@/lib/auth'
 
 export default function VerifyPage() {
   const router = useRouter()
@@ -32,7 +32,11 @@ export default function VerifyPage() {
     try {
       const res = await authApi.verify2FA(temp_token, totp_code)
       const { access_token, refresh_token, user } = res
+      if (!access_token || !refresh_token) {
+        throw new Error('The server did not issue a complete authenticated session.')
+      }
       setTokens(access_token, refresh_token)
+      clearTempToken()
       setUser(user as Record<string, unknown>)
       router.push('/dashboard')
     } catch (err: unknown) {
