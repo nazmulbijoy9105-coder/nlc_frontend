@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useState, type CSSProperties } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { articlesApi, authApi } from "@/lib/api"
 
@@ -126,9 +126,9 @@ export default function ArticlesVerificationPage() {
     }
   }
 
-  const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 18, marginBottom: 14 }
-  const field: React.CSSProperties = { width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, padding: "9px 10px", color: "var(--navy)", fontSize: 12 }
-  const label: React.CSSProperties = { display: "block", fontSize: 10, color: "var(--text3)", marginBottom: 5, letterSpacing: ".06em", textTransform: "uppercase" }
+  const card: CSSProperties = { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 18, marginBottom: 14 }
+  const field: CSSProperties = { width: "100%", background: "var(--surface2)", border: "1px solid var(--border)", borderRadius: 6, padding: "9px 10px", color: "var(--navy)", fontSize: 12 }
+  const label: CSSProperties = { display: "block", fontSize: 10, color: "var(--text3)", marginBottom: 5, letterSpacing: ".06em", textTransform: "uppercase" }
 
   return (
     <div style={{ minHeight: "100%", padding: 24, background: "var(--surface2)", color: "var(--navy)", overflowY: "auto" }}>
