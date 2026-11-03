@@ -80,7 +80,8 @@ export default function CompanyProfilePage() {
               <span>EVALUATED <strong style={{color:'var(--navy)'}}>{_d(company.last_evaluated_at || compliance?.last_evaluated_at)}</strong></span>
             </div>
           </div>
-          <div style={{display:'flex',gap:10}}>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+            <button className="nlc-btn-secondary" onClick={()=>router.push('/dashboard/companies/' + id + '/articles')}>Articles Review</button>
             <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue?company_id=' + id)}>Rescue Plan</button>
             <button style={{background:'#0f233c',color:'#C9A84C',border:'1px solid rgba(201,168,76,.3)',padding:'8px 14px',borderRadius:7,fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}} onClick={async()=>{try{await companiesApi.downloadPDF(id)}catch(e){alert('PDF download failed: '+(e as Error).message)}}}>Download PDF</button>
             <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+(e as Error).message)}}}>Re-evaluate</button>
