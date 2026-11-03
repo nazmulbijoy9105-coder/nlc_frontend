@@ -1,4 +1,4 @@
-export type Band = 'GREEN' | 'YELLOW' | 'RED' | 'BLACK'
+export type Band = 'GREEN' | 'YELLOW' | 'RED' | 'BLACK' | 'NOT_EVALUATED'
 
 export interface User {
   id: string
@@ -32,6 +32,27 @@ export interface ScoreBreakdown {
   yellow_flag_count: number
   green_flag_count: number
   score_hash: string
+}
+
+export interface ComplianceFlag {
+  flag_id: string
+  rule_id: string
+  rule_name: string
+  severity: 'GREEN' | 'YELLOW' | 'RED' | 'BLACK' | 'NOT_EVALUATED'
+  score_impact: number
+  evaluation_state:
+    | 'COMPLIANT'
+    | 'NON_COMPLIANT'
+    | 'UNKNOWN'
+    | 'CONTRADICTORY'
+    | 'NOT_APPLICABLE'
+    | 'REQUIRES_LAWYER_JUDGMENT'
+    | 'LEGACY_UNCLASSIFIED'
+  status: 'ACTIVE' | 'RESOLVED'
+  is_black_override: boolean
+  triggered_at: string
+  resolved_at: string | null
+  resolution_note: string | null
 }
 
 export interface Company {
