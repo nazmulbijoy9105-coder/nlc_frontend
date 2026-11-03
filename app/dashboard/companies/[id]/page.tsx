@@ -49,6 +49,13 @@ export default function CompanyProfilePage() {
   const _d = (val: any) => val ? new Date(val).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'
 
   const sevColor = (s: string) => s==='BLACK'?'#A855F7':s==='RED'?'#B91C1C':s==='YELLOW'?'#D97706':'#6B7280'
+  const evaluationLabel = (flag: any) => {
+    const state = flag.evaluation_state || flag.state || 'LEGACY_UNCLASSIFIED'
+    if (state === 'REQUIRES_LAWYER_JUDGMENT') return 'LAWYER REVIEW REQUIRED'
+    if (state === 'CONTRADICTORY') return 'CONTRADICTORY EVIDENCE'
+    if (state === 'UNKNOWN' || flag.severity === 'NOT_EVALUATED') return 'NOT EVALUATED'
+    return state.replaceAll('_', ' ')
+  }
 
   const blackFlags = flags.filter((f:any) => f.severity === 'BLACK')
   const redFlags = flags.filter((f:any) => f.severity === 'RED')
@@ -145,11 +152,12 @@ export default function CompanyProfilePage() {
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {flags.map((f,i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:'var(--surface)',borderRadius:6,borderLeft:`3px solid ${sevColor(f.severity)}`}}>
-                    <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:50}}>{f.severity}{f.state === 'UNKNOWN' ? ' ❓' : ''}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:82}}>{f.severity === 'NOT_EVALUATED' ? 'UNASSESSED' : f.severity}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{f.rule_name || f.rule_id}</div>
-                      <div style={{fontSize:10,color:'var(--text3)'}}>{f.rule_id || 'Compliance finding'}{f.description ? ` • ${f.description}` : ''}</div>
+                      <div style={{fontSize:10,color:'var(--text3)'}}>{f.rule_id || 'Compliance finding'} • {evaluationLabel(f)}</div>
                     </div>
+                    {f.evaluation_state === 'REQUIRES_LAWYER_JUDGMENT' && <span style={{fontSize:9,color:'#9A6700',fontWeight:700}}>LAWYER REVIEW</span>}
                     {f.is_black_override && <span style={{fontSize:9,color:'#A855F7',fontWeight:700}}>BLACK OVERRIDE</span>}
                   </div>
                 ))}
