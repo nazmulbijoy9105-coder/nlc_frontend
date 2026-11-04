@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { isAuthenticated, getUser, clearAuth } from '@/lib/auth'
+import { authApi } from '@/lib/api'
 
 const adminNav = [
   { section: 'Main', items: [
@@ -40,8 +41,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push('/'); return }
-    setUser(getUser())
+    let cancelled = false
+
+    const verifySession = async () => {
+      try {
+        const authenticated = await isAuthenticated()
+        if (cancelled) return
+        if (!authenticated) {
+          clearAuth()
+          router.replace('/')
+          return
+        }
+
+        const response = await authApi.me()
+        const currentUser = response?.user ?? response
+        if (cancelled) return
+        if (!currentUser || typeof currentUser.role !== 'string') {
+          clearAuth()
+          router.replace('/')
+          return
+        }
+        setUser(currentUser)
+      } catch {
+        if (!cancelled) {
+          clearAuth()
+          router.replace('/')
+        }
+      }
+    }
+
+    void verifySession()
+    return () => { cancelled = true }
   }, [router])
 
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
