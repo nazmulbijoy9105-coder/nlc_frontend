@@ -224,6 +224,35 @@ export const filingsApi = {
   list: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
 };
 
+export const articlesApi = {
+  list: (companyId: string) =>
+    api.get<any>("/api/v1/companies/" + companyId + "/articles-verification"),
+  submit: (companyId: string, documentId: string) =>
+    api.post<any>("/api/v1/companies/" + companyId + "/articles-verification", { document_id: documentId }),
+  review: (companyId: string, verificationId: string, data: any) =>
+    api.post<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/review", data),
+  revoke: (companyId: string, verificationId: string, reason: string) =>
+    api.post<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/revoke", { reason }),
+  events: (companyId: string, verificationId: string) =>
+    api.get<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/events"),
+  upload: async (companyId: string, file: File) => {
+    const token = await getValidAccessToken();
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(
+      API_BASE + "/api/v1/companies/" + companyId + "/articles-document",
+      {
+        method: "POST",
+        headers: token ? { Authorization: "Bearer " + token } : {},
+        credentials: "include",
+        body: form,
+      },
+    );
+    if (!res.ok) throw new Error(await readErrorMessage(res));
+    return res.json();
+  },
+};
+
 export const documentsApi = {
   list: () => api.get<any>("/api/v1/documents"),
   templates: () => api.get<any>("/api/v1/documents/templates"),

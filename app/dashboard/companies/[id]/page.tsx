@@ -49,6 +49,13 @@ export default function CompanyProfilePage() {
   const _d = (val: any) => val ? new Date(val).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'
 
   const sevColor = (s: string) => s==='BLACK'?'#A855F7':s==='RED'?'#B91C1C':s==='YELLOW'?'#D97706':'#6B7280'
+  const evaluationLabel = (flag: any) => {
+    const state = flag.evaluation_state || flag.state || 'LEGACY_UNCLASSIFIED'
+    if (state === 'REQUIRES_LAWYER_JUDGMENT') return 'LAWYER REVIEW REQUIRED'
+    if (state === 'CONTRADICTORY') return 'CONTRADICTORY EVIDENCE'
+    if (state === 'UNKNOWN' || flag.severity === 'NOT_EVALUATED') return 'NOT EVALUATED'
+    return state.replaceAll('_', ' ')
+  }
 
   const blackFlags = flags.filter((f:any) => f.severity === 'BLACK')
   const redFlags = flags.filter((f:any) => f.severity === 'RED')
@@ -73,7 +80,8 @@ export default function CompanyProfilePage() {
               <span>EVALUATED <strong style={{color:'var(--navy)'}}>{_d(company.last_evaluated_at || compliance?.last_evaluated_at)}</strong></span>
             </div>
           </div>
-          <div style={{display:'flex',gap:10}}>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+            <button className="nlc-btn-secondary" onClick={()=>router.push('/dashboard/companies/' + id + '/articles')}>Articles Review</button>
             <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue?company_id=' + id)}>Rescue Plan</button>
             <button style={{background:'#0f233c',color:'#C9A84C',border:'1px solid rgba(201,168,76,.3)',padding:'8px 14px',borderRadius:7,fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}} onClick={async()=>{try{await companiesApi.downloadPDF(id)}catch(e){alert('PDF download failed: '+(e as Error).message)}}}>Download PDF</button>
             <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+(e as Error).message)}}}>Re-evaluate</button>
@@ -145,11 +153,12 @@ export default function CompanyProfilePage() {
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {flags.map((f,i) => (
                   <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',background:'var(--surface)',borderRadius:6,borderLeft:`3px solid ${sevColor(f.severity)}`}}>
-                    <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:50}}>{f.severity}{f.state === 'UNKNOWN' ? ' ❓' : ''}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:sevColor(f.severity),minWidth:82}}>{f.severity === 'NOT_EVALUATED' ? 'UNASSESSED' : f.severity}</span>
                     <div style={{flex:1}}>
                       <div style={{fontSize:12,fontWeight:600,color:'var(--navy)'}}>{f.rule_name || f.rule_id}</div>
-                      <div style={{fontSize:10,color:'var(--text3)'}}>{f.rule_id || 'Compliance finding'}{f.description ? ` • ${f.description}` : ''}</div>
+                      <div style={{fontSize:10,color:'var(--text3)'}}>{f.rule_id || 'Compliance finding'} • {evaluationLabel(f)}</div>
                     </div>
+                    {f.evaluation_state === 'REQUIRES_LAWYER_JUDGMENT' && <span style={{fontSize:9,color:'#9A6700',fontWeight:700}}>LAWYER REVIEW</span>}
                     {f.is_black_override && <span style={{fontSize:9,color:'#A855F7',fontWeight:700}}>BLACK OVERRIDE</span>}
                   </div>
                 ))}
