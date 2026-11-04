@@ -64,7 +64,8 @@ export const refreshToken = async (): Promise<string> => {
   const token = typeof window !== 'undefined' ? (localStorage.getItem('nlc_refresh_token') || '') : ''
   if (!token) { clearAuth(); return '' }
   try {
-    const res = await fetch((process.env.NEXT_PUBLIC_API_BASE_PATH || '/api/backend') + '/api/v1/auth/refresh', {
+    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\/$/, '')
+    const res = await fetch(apiBase + '/api/v1/auth/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: token }),
@@ -103,7 +104,10 @@ export const clearTempToken = () => Cookies.remove(TEMP_TOKEN, { path: '/' })
 
 export const clearAuth = () => removeStoredAuth()
 
-export const isAuthenticated = () => !!getValidAccessToken()
+export const isAuthenticated = async (): Promise<boolean> => {
+  const token = await getValidAccessToken()
+  return Boolean(token)
+}
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')
