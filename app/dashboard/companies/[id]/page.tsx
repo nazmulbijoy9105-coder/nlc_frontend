@@ -92,6 +92,12 @@ export default function CompanyProfilePage() {
         </div>
       </div>
 
+      {band === 'NOT_EVALUATED' && (
+        <div role="status" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #D6B65A',borderRadius:10,background:'rgba(214,182,90,0.08)',color:'var(--text)',fontSize:12,lineHeight:1.6}}>
+          <strong>Authoritative compliance score not released.</strong> The legal-rule corpus is pending independent legal approval. Findings remain provisional, are not applied to a compliance score, and must not be treated as a legal certification.
+        </div>
+      )}
+
       {/* 3-column layout */}
       <div style={{display:'grid',gridTemplateColumns:'280px 1fr 300px',flex:1,overflow:'hidden'}}>
 
