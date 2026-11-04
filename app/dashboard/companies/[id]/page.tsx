@@ -61,6 +61,9 @@ export default function CompanyProfilePage() {
   const redFlags = flags.filter((f:any) => f.severity === 'RED')
   const yellowFlags = flags.filter((f:any) => f.severity === 'YELLOW')
   const rescueSteps = rescuePlan?.steps || []
+  const releasedScoreHistory = scoreHistory.filter((entry: any) =>
+    typeof entry.score === 'number' && entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+  )
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -205,17 +208,23 @@ export default function CompanyProfilePage() {
           {scoreHistory.length > 0 && (
             <div className="nlc-card" style={{marginBottom:14}}>
               <div className="sec-lbl">Score History</div>
-              <div style={{display:'flex',alignItems:'flex-end',gap:4,height:60,padding:'8px 0'}}>
-                {scoreHistory.slice(-12).map((h,i) => {
-                  const s = h.score ?? h.compliance_score ?? 0
-                  return (
-                    <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end'}}>
-                      <div style={{width:'100%',height:`${Math.max(s,2)}%`,background:s>=70?'#1a7a52':s>=40?'#D97706':'#B91C1C',borderRadius:2,minHeight:2}} title={`${s}/100`} />
-                      {i === scoreHistory.slice(-12).length-1 && <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>{s}</div>}
-                    </div>
-                  )
-                })}
-              </div>
+              {releasedScoreHistory.length > 0 ? (
+                <div style={{display:'flex',alignItems:'flex-end',gap:4,height:60,padding:'8px 0'}}>
+                  {releasedScoreHistory.slice(-12).map((h:any,i:number) => {
+                    const value = h.score as number
+                    return (
+                      <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end'}}>
+                        <div style={{width:'100%',height:`${Math.max(value,2)}%`,background:value>=70?'#1a7a52':value>=40?'#D97706':'#B91C1C',borderRadius:2,minHeight:2}} title={`${value}/100`} />
+                        {i === releasedScoreHistory.slice(-12).length-1 && <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>{value}</div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div style={{fontSize:12,color:'var(--text3)',padding:'12px 0',lineHeight:1.6}}>
+                  Numerical history is withheld because independent legal approval is pending. Historical snapshots remain preserved but are not presented as current authoritative scores.
+                </div>
+              )}
             </div>
           )}
 
