@@ -53,11 +53,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           return
         }
 
-        let currentUser = getUser()
-        if (!currentUser) {
-          const response = await authApi.me()
-          currentUser = response?.user ?? response
-        }
+        const response = await authApi.me()
+        const currentUser = response?.user ?? response
         if (cancelled) return
         if (!currentUser || typeof currentUser.role !== 'string') {
           clearAuth()
