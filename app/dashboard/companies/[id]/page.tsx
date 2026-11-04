@@ -79,7 +79,7 @@ export default function CompanyProfilePage() {
             </div>
             <div style={{display:'flex',gap:20,fontSize:11.5,color:'var(--text3)',fontFamily:"'JetBrains Mono', monospace"}}>
               <span>REG <strong style={{color:'var(--navy)'}}>{_v(company.registration_number)}</strong></span>
-              <span>SCORE <strong style={{color:bandColor}}>{score === null ? 'Not evaluated' : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
+              <span>SCORE <strong style={{color:bandColor}}>{score === null ? (band === 'NOT_EVALUATED' ? 'Pending legal approval' : 'Not evaluated') : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
               <span>EVALUATED <strong style={{color:'var(--navy)'}}>{_d(company.last_evaluated_at || compliance?.last_evaluated_at)}</strong></span>
             </div>
           </div>
