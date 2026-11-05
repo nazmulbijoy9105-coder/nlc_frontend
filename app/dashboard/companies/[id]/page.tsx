@@ -61,6 +61,9 @@ export default function CompanyProfilePage() {
   const redFlags = flags.filter((f:any) => f.severity === 'RED')
   const yellowFlags = flags.filter((f:any) => f.severity === 'YELLOW')
   const rescueSteps = rescuePlan?.steps || []
+  const releasedScoreHistory = scoreHistory.filter((entry: any) =>
+    typeof entry.score === 'number' && entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+  )
 
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
@@ -76,7 +79,7 @@ export default function CompanyProfilePage() {
             </div>
             <div style={{display:'flex',gap:20,fontSize:11.5,color:'var(--text3)',fontFamily:"'JetBrains Mono', monospace"}}>
               <span>REG <strong style={{color:'var(--navy)'}}>{_v(company.registration_number)}</strong></span>
-              <span>SCORE <strong style={{color:bandColor}}>{score === null ? 'Not evaluated' : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
+              <span>SCORE <strong style={{color:bandColor}}>{score === null ? (band === 'NOT_EVALUATED' ? 'Pending legal approval' : 'Not evaluated') : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
               <span>EVALUATED <strong style={{color:'var(--navy)'}}>{_d(company.last_evaluated_at || compliance?.last_evaluated_at)}</strong></span>
             </div>
           </div>
@@ -88,6 +91,12 @@ export default function CompanyProfilePage() {
           </div>
         </div>
       </div>
+
+      {band === 'NOT_EVALUATED' && (
+        <div role="status" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #D6B65A',borderRadius:10,background:'rgba(214,182,90,0.08)',color:'var(--text)',fontSize:12,lineHeight:1.6}}>
+          <strong>Authoritative compliance score not released.</strong> The legal-rule corpus is pending independent legal approval. Findings remain provisional, are not applied to a compliance score, and must not be treated as a legal certification.
+        </div>
+      )}
 
       {/* 3-column layout */}
       <div style={{display:'grid',gridTemplateColumns:'280px 1fr 300px',flex:1,overflow:'hidden'}}>
@@ -205,17 +214,23 @@ export default function CompanyProfilePage() {
           {scoreHistory.length > 0 && (
             <div className="nlc-card" style={{marginBottom:14}}>
               <div className="sec-lbl">Score History</div>
-              <div style={{display:'flex',alignItems:'flex-end',gap:4,height:60,padding:'8px 0'}}>
-                {scoreHistory.slice(-12).map((h,i) => {
-                  const s = h.score ?? h.compliance_score ?? 0
-                  return (
-                    <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end'}}>
-                      <div style={{width:'100%',height:`${Math.max(s,2)}%`,background:s>=70?'#1a7a52':s>=40?'#D97706':'#B91C1C',borderRadius:2,minHeight:2}} title={`${s}/100`} />
-                      {i === scoreHistory.slice(-12).length-1 && <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>{s}</div>}
-                    </div>
-                  )
-                })}
-              </div>
+              {releasedScoreHistory.length > 0 ? (
+                <div style={{display:'flex',alignItems:'flex-end',gap:4,height:60,padding:'8px 0'}}>
+                  {releasedScoreHistory.slice(-12).map((h:any,i:number) => {
+                    const value = h.score as number
+                    return (
+                      <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end'}}>
+                        <div style={{width:'100%',height:`${Math.max(value,2)}%`,background:value>=70?'#1a7a52':value>=40?'#D97706':'#B91C1C',borderRadius:2,minHeight:2}} title={`${value}/100`} />
+                        {i === releasedScoreHistory.slice(-12).length-1 && <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>{value}</div>}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div style={{fontSize:12,color:'var(--text3)',padding:'12px 0',lineHeight:1.6}}>
+                  Numerical history is withheld because independent legal approval is pending. Historical snapshots remain preserved but are not presented as current authoritative scores.
+                </div>
+              )}
             </div>
           )}
 
