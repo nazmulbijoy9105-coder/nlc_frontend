@@ -33,15 +33,21 @@ export default function CompaniesPage() {
           <tbody>
             {companies.length === 0 ? (
               <tr><td colSpan={5} style={{textAlign:'center',padding:30,color:'var(--text3)'}}>No companies yet. Create one to get started.</td></tr>
-            ) : companies.map((c) => (
-              <tr key={c.id} onClick={()=>router.push(`/dashboard/companies/${c.id}`)} style={{cursor:'pointer'}}>
-                <td style={{fontWeight:600,color:'var(--navy)'}}>{c.company_name || c.name || 'Unknown'}</td>
-                <td className="font-mono" style={{fontSize:11,color:'var(--text3)'}}>{c.rjsc_registration_number || c.registration_number || '—'}</td>
-                <td className="font-mono" style={{fontWeight:700,color:bandColor(c.current_risk_band)}}>{c.current_risk_band === 'NOT_EVALUATED' ? 'Not evaluated' : (c.current_compliance_score ?? '—')}</td>
-                <td><span className={`badge badge-${(c.current_risk_band||'neutral').toLowerCase()}`}>{c.current_risk_band || '—'}</span></td>
-                <td className="font-mono" style={{color:'var(--text3)'}}>{c.active_flags ?? 0}</td>
-              </tr>
-            ))}
+            ) : companies.map((c) => {
+              const riskBand = c.current_risk_band ?? c.band ?? 'NOT_EVALUATED'
+              const scoreValue = riskBand === 'NOT_EVALUATED'
+                ? 'Not evaluated'
+                : (c.current_compliance_score ?? c.compliance_score ?? '—')
+              return (
+                <tr key={c.id} onClick={()=>router.push(`/dashboard/companies/${c.id}`)} style={{cursor:'pointer'}}>
+                  <td style={{fontWeight:600,color:'var(--navy)'}}>{c.company_name || c.name || 'Unknown'}</td>
+                  <td className="font-mono" style={{fontSize:11,color:'var(--text3)'}}>{c.rjsc_registration_number || c.registration_number || '—'}</td>
+                  <td className="font-mono" style={{fontWeight:700,color:bandColor(riskBand)}}>{scoreValue}</td>
+                  <td><span className={`badge badge-${riskBand.toLowerCase()}`}>{riskBand}</span></td>
+                  <td className="font-mono" style={{color:'var(--text3)'}}>{c.active_flags ?? 0}</td>
+                </tr>
+              )
+            })
           </tbody>
         </table>
       </div>
