@@ -38,10 +38,10 @@ export default function CompanyProfilePage() {
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
 
-  const score: number | null = compliance
-    ? (compliance.current_score ?? null)
-    : (company.compliance_score ?? null)
   const band = compliance?.risk_band || company.band || 'NOT_EVALUATED'
+  const score: number | null = band === 'NOT_EVALUATED'
+    ? null
+    : (compliance ? (compliance.current_score ?? null) : (company.compliance_score ?? null))
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#A855F7'
 
   const _v = (val: any) => val === null || val === undefined ? '—' : String(val)
@@ -207,11 +207,13 @@ export default function CompanyProfilePage() {
               <div className="sec-lbl">Score History</div>
               <div style={{display:'flex',alignItems:'flex-end',gap:4,height:60,padding:'8px 0'}}>
                 {scoreHistory.slice(-12).map((h,i) => {
-                  const s = h.score ?? h.compliance_score ?? 0
+                  const notEvaluated = h.risk_band === 'NOT_EVALUATED'
+                  const s: number | null = notEvaluated ? null : (h.score ?? h.compliance_score ?? null)
+                  const barColor = s === null ? '#9CA3AF' : s >= 70 ? '#1a7a52' : s >= 40 ? '#D97706' : '#B91C1C'
                   return (
                     <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end'}}>
-                      <div style={{width:'100%',height:`${Math.max(s,2)}%`,background:s>=70?'#1a7a52':s>=40?'#D97706':'#B91C1C',borderRadius:2,minHeight:2}} title={`${s}/100`} />
-                      {i === scoreHistory.slice(-12).length-1 && <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>{s}</div>}
+                      <div style={{width:'100%',height:`${Math.max(s ?? 0,2)}%`,background:barColor,borderRadius:2,minHeight:2}} title={s === null ? 'Not evaluated' : `${s}/100`} />
+                      {i === scoreHistory.slice(-12).length-1 && <div style={{fontSize:9,color:'var(--text3)',marginTop:2}}>{s === null ? 'NE' : s}</div>}
                     </div>
                   )
                 })}
