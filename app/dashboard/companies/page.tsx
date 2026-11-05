@@ -47,7 +47,7 @@ export default function CompaniesPage() {
                   <td className="font-mono" style={{color:'var(--text3)'}}>{c.active_flags ?? 0}</td>
                 </tr>
               )
-            })
+            })}
           </tbody>
         </table>
       </div>
