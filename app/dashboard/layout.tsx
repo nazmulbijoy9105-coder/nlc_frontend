@@ -11,7 +11,8 @@ const adminNav = [
     { label: 'Rescue Cases', icon: '⚑', href: '/dashboard/rescue' },
   ]},
   { section: 'Intelligence', items: [
-    { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Commercial Pipeline', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -26,6 +27,7 @@ const clientNav = [
     { label: 'Dashboard', icon: '◈', href: '/dashboard' },
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/finance' },
     { label: 'Rescue Plan', icon: '⚑', href: '/dashboard/rescue' },
   ]},
   { section: 'Documents', items: [
@@ -47,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
 
   const isClient = user.role?.includes('CLIENT')
-  const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') })).filter(g => g.items.length > 0)
+  const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') && (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) && (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))) })).filter(g => g.items.length > 0)
   const handleLogout = () => { clearAuth(); router.push('/') }
   const initials = user?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
