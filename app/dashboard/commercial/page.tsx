@@ -239,6 +239,7 @@ export default function CommercialPage() {
         {[
           ["Estimated pipeline", money(pipeline?.grand_total_estimated_bdt), "Active engagement estimates"],
           ["Confirmed value", money(pipeline?.grand_total_confirmed_bdt), "Confirmed engagement value"],
+          ["Invoiced", money(pipeline?.grand_total_invoiced_bdt), "Issued invoices linked to engagements"],
           ["Collected", money(pipeline?.grand_total_collected_bdt), "Verified allocations from settled payments"],
           ["Collection rate", `${Number(pipeline?.collection_rate || 0).toFixed(1)}%`, "Collected ÷ confirmed value"],
         ].map(([label, value, caption]) => (
@@ -262,6 +263,7 @@ export default function CommercialPage() {
                 <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}><span>Estimated</span><strong>{money(data.total_estimated)}</strong></div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}><span>Confirmed</span><strong>{money(data.total_confirmed)}</strong></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}><span>Invoiced</span><strong>{money(data.total_invoiced)}</strong></div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12 }}><span>Collected</span><strong>{money(data.total_collected)}</strong></div>
                 </div>
                 <div style={{ borderTop: "1px solid var(--border)", marginTop: 12, paddingTop: 10 }}>
