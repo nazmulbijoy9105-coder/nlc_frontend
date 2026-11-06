@@ -25,7 +25,12 @@ export default function CommercialPage() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    setUser(getUser())
+    const currentUser = getUser()
+    setUser(currentUser)
+    if (!["ADMIN_STAFF", "SUPER_ADMIN"].includes(currentUser?.role || "")) {
+      setLoading(false)
+      return
+    }
     let active = true
     Promise.all([commercialApi.pipeline(), commercialApi.funnel()])
       .then(([pipelineData, funnelData]) => {
