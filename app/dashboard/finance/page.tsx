@@ -199,11 +199,15 @@ export default function FinancePage() {
     [invoices],
   )
   const outstanding = useMemo(
-    () => invoices.reduce((sum, invoice) => sum + Number(invoice.balance_bdt || 0), 0),
+    () => invoices
+      .filter((invoice) => ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status))
+      .reduce((sum, invoice) => sum + Number(invoice.balance_bdt || 0), 0),
     [invoices],
   )
   const paidTotal = useMemo(
-    () => payments.reduce((sum, payment) => sum + Number(payment.amount_bdt || 0), 0),
+    () => payments
+      .filter((payment) => payment.status === "SETTLED")
+      .reduce((sum, payment) => sum + Number(payment.amount_bdt || 0), 0),
     [payments],
   )
   const pendingCount = submissions.filter((item) => item.status === "PENDING_REVIEW").length
