@@ -295,3 +295,38 @@ export const rulesApi = {
   list: () => api.get<any>('/api/v1/rules'),
   summary: () => api.get<any>('/api/v1/rules/summary'),
 }
+
+
+export const financeApi = {
+  createInvoice: (data: {
+    company_id: string;
+    engagement_id?: string | null;
+    lines: Array<{ description: string; quantity: string; unit_price_bdt: string }>;
+    tax_bdt: string;
+    due_at?: string | null;
+    notes?: string | null;
+  }) => api.post<any>("/api/v1/finance/invoices", data),
+  issueInvoice: (invoiceId: string) =>
+    api.post<any>("/api/v1/finance/invoices/" + invoiceId + "/issue"),
+  invoices: (companyId: string) =>
+    api.get<any>("/api/v1/finance/companies/" + companyId + "/invoices"),
+  invoice: (invoiceId: string) =>
+    api.get<any>("/api/v1/finance/invoices/" + invoiceId),
+  submitOfflinePayment: (companyId: string, data: {
+    invoice_id: string;
+    method: "BANK_TRANSFER" | "CASH" | "CHEQUE" | "BKASH_MANUAL" | "NAGAD_MANUAL";
+    amount_bdt: string;
+    payer_reference?: string | null;
+    paid_at?: string | null;
+  }) => api.post<any>("/api/v1/finance/companies/" + companyId + "/payments/offline", data),
+  paymentSubmissions: (companyId: string) =>
+    api.get<any>("/api/v1/finance/companies/" + companyId + "/payment-submissions"),
+  approvePaymentSubmission: (submissionId: string, data: {
+    review_note?: string | null;
+    cheque_cleared_at?: string | null;
+  } = {}) => api.post<any>("/api/v1/finance/payment-submissions/" + submissionId + "/approve", data),
+  rejectPaymentSubmission: (submissionId: string, reason: string) =>
+    api.post<any>("/api/v1/finance/payment-submissions/" + submissionId + "/reject", { reason }),
+  payments: (companyId: string) =>
+    api.get<any>("/api/v1/finance/companies/" + companyId + "/payments"),
+};
