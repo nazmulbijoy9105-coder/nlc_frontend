@@ -115,7 +115,12 @@ export default function FinancePage() {
   const canSubmitPayment = role === "CLIENT_DIRECTOR"
 
   useEffect(() => {
-    setUser(getUser())
+    const currentUser = getUser()
+    setUser(currentUser)
+    if (!["ADMIN_STAFF", "SUPER_ADMIN", "CLIENT_DIRECTOR", "CLIENT_VIEW_ONLY"].includes(currentUser?.role || "")) {
+      setLoadingCompanies(false)
+      return
+    }
     const loadCompanies = async () => {
       try {
         const data = await companiesApi.list()
