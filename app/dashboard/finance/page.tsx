@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, type FormEvent } from "react"
-import { companiesApi, financeApi } from "@/lib/api"
+import { companiesApi, commercialApi, financeApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
 type Company = {
@@ -10,6 +10,13 @@ type Company = {
   name?: string
   rjsc_registration_number?: string
   registration_number?: string
+}
+
+type Engagement = {
+  engagement_id: string
+  description?: string | null
+  status?: string
+  revenue_tier?: string
 }
 
 type Invoice = {
@@ -88,6 +95,8 @@ export default function FinancePage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyId, setCompanyId] = useState("")
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [engagements, setEngagements] = useState<Engagement[]>([])
+  const [engagementId, setEngagementId] = useState("")
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
   const [loadingCompanies, setLoadingCompanies] = useState(true)
@@ -166,6 +175,24 @@ export default function FinancePage() {
     return () => { active = false }
   }, [companyId])
 
+  useEffect(() => {
+    setPaymentInvoiceId("")
+    setEngagementId("")
+    if (!companyId || !isFinanceStaff) {
+      setEngagements([])
+      return
+    }
+    let active = true
+    commercialApi.engagements(companyId)
+      .then((rows) => {
+        if (active) setEngagements(Array.isArray(rows) ? rows : [])
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof Error ? err.message : "Engagements could not be loaded.")
+      })
+    return () => { active = false }
+  }, [companyId, isFinanceStaff])
+
   const selectedCompany = companies.find((company) => String(company.id) === companyId)
   const openInvoices = useMemo(
     () => invoices.filter((invoice) => ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)),
@@ -202,6 +229,7 @@ export default function FinancePage() {
     try {
       await financeApi.createInvoice({
         company_id: companyId,
+        engagement_id: engagementId || null,
         lines: [{ description: invoiceDescription.trim(), quantity: "1.00", unit_price_bdt: invoiceAmount }],
         tax_bdt: invoiceTax || "0.00",
         due_at: invoiceDueDate || null,
@@ -363,6 +391,17 @@ export default function FinancePage() {
               <div className="sec-lbl gold">Create invoice · {selectedCompany?.company_name || selectedCompany?.name || "Selected company"}</div>
               <form onSubmit={createInvoice} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 12, alignItems: "end" }}>
                 <label style={{ display: "grid", gap: 6, fontSize: 11, color: "var(--text3)" }}>
+                  Link to engagement (recommended)
+                  <select className="nlc-input" value={engagementId} onChange={(event) => setEngagementId(event.target.value)}>
+                    <option value="">Unlinked invoice</option>
+                    {engagements.map((engagement) => (
+                      <option key={engagement.engagement_id} value={engagement.engagement_id}>
+                        {engagement.description || engagement.engagement_id} · {engagement.status || "—"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ display: "grid", gap: 6, fontSize: 11, color: "var(--text3)" }}>
                   Service / line description
                   <input className="nlc-input" value={invoiceDescription} onChange={(event) => setInvoiceDescription(event.target.value)} maxLength={500} required placeholder="e.g. Annual compliance retainer" />
                 </label>
@@ -382,6 +421,9 @@ export default function FinancePage() {
                   {busy ? "Saving…" : "Create draft"}
                 </button>
               </form>
+              <div style={{ fontSize: 10, color: "var(--white-3)", marginTop: 10 }}>
+                Unlinked invoices remain billable but are excluded from engagement-level revenue pipeline totals.
+              </div>
             </section>
           )}
 
