@@ -478,7 +478,7 @@ export default function FinancePage() {
                 </button>
               </form>
               <div style={{ fontSize: 10, color: "var(--white-3)", marginTop: 12 }}>
-                bKash and Nagad entries are manual claims only. Live gateway checkout, automatic callback verification and refunds are not enabled.
+                bKash and Nagad entries are manual claims only. Live gateway checkout, automatic callback verification, refunds and recurring subscription billing are not enabled.
               </div>
             </section>
           )}
