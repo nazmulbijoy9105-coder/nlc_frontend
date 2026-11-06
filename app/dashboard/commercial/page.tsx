@@ -63,7 +63,7 @@ export default function CommercialPage() {
     <div style={{ padding: 24, maxWidth: 1440, margin: "0 auto" }}>
       <div style={{ marginBottom: 22 }}>
         <div className="font-garamond" style={{ fontSize: 25, color: "var(--nlc-white)" }}>Commercial Pipeline</div>
-        <div style={{ fontSize: 12, color: "var(--white-3)", marginTop: 5 }}>Live engagement value, confirmed work and collected revenue from the commercial records.</div>
+        <div style={{ fontSize: 12, color: "var(--white-3)", marginTop: 5 }}>Live engagement value, confirmed work and verified collections reconciled to the finance ledger.</div>
       </div>
 
       {error && <div role="alert" style={{ padding: 12, borderRadius: 8, background: "rgba(185,28,28,.12)", color: "#FCA5A5", marginBottom: 16 }}>{error}</div>}
@@ -72,7 +72,7 @@ export default function CommercialPage() {
         {[
           ["Estimated pipeline", money(pipeline?.grand_total_estimated_bdt), "Active engagement estimates"],
           ["Confirmed value", money(pipeline?.grand_total_confirmed_bdt), "Confirmed engagement value"],
-          ["Collected", money(pipeline?.grand_total_collected_bdt), "Recorded collections in pipeline view"],
+          ["Collected", money(pipeline?.grand_total_collected_bdt), "Verified allocations from settled payments"],
           ["Collection rate", `${Number(pipeline?.collection_rate || 0).toFixed(1)}%`, "Collected ÷ confirmed value"],
         ].map(([label, value, caption]) => (
           <div className="nlc-card" key={label} style={{ padding: 16 }}>
@@ -130,7 +130,7 @@ export default function CommercialPage() {
       </section>
 
       <div style={{ fontSize: 10, color: "var(--white-3)", marginTop: 14 }}>
-        Values are sourced from recorded commercial engagements and the backend revenue view. They are not forecasts or guarantees of future collections.
+        Estimated and quoted values come from commercial engagements. Invoiced values and collections are derived from issued invoices and settled payment allocations. These figures are not forecasts or guarantees of future collections.
       </div>
     </div>
   )
