@@ -111,7 +111,8 @@ export default function FinancePage() {
 
   const role = user?.role || ""
   const isFinanceStaff = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
-  const isClient = role === "CLIENT"
+  const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY"
+  const canSubmitPayment = role === "CLIENT_DIRECTOR"
 
   useEffect(() => {
     setUser(getUser())
@@ -379,7 +380,13 @@ export default function FinancePage() {
             </section>
           )}
 
-          {!isFinanceStaff && (
+          {role === "CLIENT_VIEW_ONLY" && (
+            <div className="nlc-card" style={{ marginBottom: 18, color: "var(--white-3)", fontSize: 12 }}>
+              This account has view-only billing access. A company director or authorised finance contact must submit payment claims.
+            </div>
+          )}
+
+          {canSubmitPayment && (
             <section className="nlc-card" style={{ marginBottom: 18 }}>
               <div className="sec-lbl gold">Submit payment claim</div>
               <div style={{ fontSize: 11, color: "var(--white-3)", marginBottom: 12 }}>
