@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { commercialApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
@@ -46,16 +46,16 @@ export default function CommercialPage() {
 
   const authorised = ["ADMIN_STAFF", "SUPER_ADMIN"].includes(user?.role || "")
 
-  const refreshPipeline = async () => {
+  const refreshPipeline = useCallback(async () => {
     const [pipelineData, funnelData] = await Promise.all([
       commercialApi.pipeline(),
       commercialApi.funnel(),
     ])
     setPipeline(pipelineData)
     setFunnel(funnelData)
-  }
+  }, [])
 
-  const refreshCompanyWork = async (id: string) => {
+  const refreshCompanyWork = useCallback(async (id: string) => {
     if (!id) return
     const [engagementRows, taskRows] = await Promise.all([
       commercialApi.engagements(id),
@@ -71,7 +71,7 @@ export default function CommercialPage() {
         ]),
       ),
     )
-  }
+  }, [])
 
   useEffect(() => {
     const currentUser = getUser()
@@ -115,7 +115,7 @@ export default function CommercialPage() {
         if (active) setLoadingCompany(false)
       })
     return () => { active = false }
-  }, [companyId, authorised])
+  }, [companyId, authorised, refreshCompanyWork])
 
   const createEngagement = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
