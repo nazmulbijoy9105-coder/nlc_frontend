@@ -67,7 +67,7 @@ export default function RulesPage() {
           </select>
         </div>
         <div style={{overflowX:'auto'}}>
-          <table className="nlc-table" style={{minWidth:700}}>
+          <table className="nlc-table" style={{minWidth:1050}}>
             <thead><tr><th>Rule ID</th><th>Name</th><th>Statutory Basis</th><th>Effective Date</th><th>Legal Verification</th><th>Score</th><th>Severity</th><th>BLACK</th></tr></thead>
             <tbody>
               {filtered.map(r => (
@@ -80,7 +80,10 @@ export default function RulesPage() {
                     {(() => {
                       const status = (r.verification_status || 'PENDING').toUpperCase()
                       const meta = verificationStyles[status] || verificationStyles.PENDING
-                      return <span title={r.verified_at ? `Verified on ${r.verified_at}` : 'No completed legal verification recorded'} style={{display:'inline-flex',alignItems:'center',padding:'4px 8px',borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:'nowrap'}}>{meta.label}</span>
+                      return <div>
+                        <span title={r.verified_at ? `Verified on ${r.verified_at}` : 'No completed legal verification recorded'} style={{display:'inline-flex',alignItems:'center',padding:'4px 8px',borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:'nowrap'}}>{meta.label}</span>
+                        {r.verified_at && <div style={{fontSize:9,color:'var(--text3)',marginTop:3,whiteSpace:'nowrap'}}>Verified {r.verified_at}</div>}
+                      </div>
                     })()}
                   </td>
                   <td className="font-mono" style={{fontWeight:700,color:'var(--navy)',textAlign:'center'}}>-{r.score_impact||0}</td>
