@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
 
   const isClient = user.role?.includes('CLIENT')
-  const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') && (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))) })).filter(g => g.items.length > 0)
+  const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') && (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) && (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))) })).filter(g => g.items.length > 0)
   const handleLogout = () => { clearAuth(); router.push('/') }
   const initials = user?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
