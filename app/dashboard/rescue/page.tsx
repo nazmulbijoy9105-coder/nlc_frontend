@@ -6,17 +6,33 @@ import { rescueApi } from '@/lib/api'
 export default function RescuePage() {
   const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [legalReviewPending, setLegalReviewPending] = useState(false)
   const searchParams = useSearchParams()
   const companyId = searchParams.get('company_id')
 
   useEffect(() => { load() }, [companyId])
   const load = async () => {
     try { const data = await rescueApi.list(companyId || undefined); setPlans(Array.isArray(data)?data:[]) }
-    catch(e) { console.error(e) }
+    catch(e: any) {
+      if (e?.response?.status === 503) setLegalReviewPending(true)
+      else console.error(e)
+    }
     finally { setLoading(false) }
   }
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading rescue cases...</div>
+
+  if (legalReviewPending) return (
+    <div style={{padding:24}}>
+      <div className="nlc-card" style={{maxWidth:760,margin:'24px auto'}}>
+        <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:8}}>Rescue assessment unavailable</div>
+        <p style={{fontSize:13,lineHeight:1.7,color:'var(--text2)'}}>
+          NLC has withheld RED/BLACK-based rescue plans pending independent legal validation.
+          No company default or legal liability is determined by this screen.
+        </p>
+      </div>
+    </div>
+  )
 
   // Extract steps from the most recent plan (finding-driven rescue per R-014)
   const latestPlan = plans[0]
