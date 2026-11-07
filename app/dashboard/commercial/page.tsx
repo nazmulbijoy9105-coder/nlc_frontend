@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { commercialApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
@@ -24,6 +24,8 @@ export default function CommercialPage() {
   const [funnel, setFunnel] = useState<any>(null)
   const [companies, setCompanies] = useState<any[]>([])
   const [companyId, setCompanyId] = useState("")
+  const companyIdRef = useRef(companyId)
+  companyIdRef.current = companyId
   const [engagements, setEngagements] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
   const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({})
@@ -55,7 +57,7 @@ export default function CommercialPage() {
     setFunnel(funnelData)
   }, [])
 
-  const refreshCompanyWork = useCallback(async (id: string, isCurrent: () => boolean = () => true) => {
+  const refreshCompanyWork = useCallback(async (id: string, isCurrent: () => boolean = () => companyIdRef.current === id) => {
     if (!id) return
     const [engagementRows, taskRows] = await Promise.all([
       commercialApi.engagements(id),
@@ -108,7 +110,7 @@ export default function CommercialPage() {
     }
     let active = true
     setLoadingCompany(true)
-    refreshCompanyWork(companyId, () => active)
+    refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
       .catch((err) => {
         if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
       })
