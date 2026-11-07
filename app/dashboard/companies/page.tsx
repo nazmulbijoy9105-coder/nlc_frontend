@@ -8,12 +8,13 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { load() }, [])
-  const load = async () => {
+  async function load() {
     try { const data = await companiesApi.list(); setCompanies(data) }
     catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
+
+  useEffect(() => { void load() }, [])
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading companies...</div>
 
