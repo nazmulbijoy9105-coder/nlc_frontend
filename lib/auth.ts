@@ -5,6 +5,13 @@ const REFRESH_TOKEN = 'nlc_refresh_token'
 const TEMP_TOKEN = 'nlc_temp_token'
 const USER_KEY = 'nlc_user'
 
+export class AuthRefreshError extends Error {
+  constructor(public readonly status: number) {
+    super("Authentication service is temporarily unavailable.");
+    this.name = "AuthRefreshError";
+  }
+}
+
 const cookieOptions = () => ({
   path: '/',
   sameSite: 'lax' as const,
@@ -81,6 +88,9 @@ export const refreshToken = async (): Promise<string> => {
         body: JSON.stringify({ refresh_token: token }),
       })
       if (!res.ok) {
+        if (res.status === 429 || res.status >= 500) {
+          throw new AuthRefreshError(res.status)
+        }
         clearAuth()
         return ''
       }
@@ -93,9 +103,9 @@ export const refreshToken = async (): Promise<string> => {
 
       setTokens(data.access_token, data.refresh_token)
       return data.access_token
-    } catch {
-      clearAuth()
-      return ''
+    } catch (error) {
+      if (error instanceof AuthRefreshError) throw error
+      throw new AuthRefreshError(503)
     }
   })()
 
