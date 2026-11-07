@@ -10,7 +10,6 @@ export default function RescuePage() {
   const searchParams = useSearchParams()
   const companyId = searchParams.get('company_id')
 
-  useEffect(() => { load() }, [companyId])
   const load = async () => {
     try { const data = await rescueApi.list(companyId || undefined); setPlans(Array.isArray(data)?data:[]) }
     catch(e: any) {
@@ -19,6 +18,8 @@ export default function RescuePage() {
     }
     finally { setLoading(false) }
   }
+
+  useEffect(() => { void load() }, [companyId])
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading rescue cases...</div>
 
