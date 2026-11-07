@@ -326,8 +326,8 @@ export const billingApi = {
     api.post<any>(`/api/v1/subscriptions/${subscriptionId}/invoice`, {}),
   upsertPlan: (planCode: string, body: any) =>
     api.put<any>(`/api/v1/subscriptions/plans/${encodeURIComponent(planCode)}`, body),
-  approvePayment: (submissionId: string, reviewNote?: string) =>
-    api.post<any>(`/api/v1/finance/payment-submissions/${submissionId}/approve`, { review_note: reviewNote || null }),
+  approvePayment: (submissionId: string, reviewNote?: string, chequeClearedAt?: string) =>
+    api.post<any>(`/api/v1/finance/payment-submissions/${submissionId}/approve`, { review_note: reviewNote || null, cheque_cleared_at: chequeClearedAt || null }),
   rejectPayment: (submissionId: string, reason: string) =>
     api.post<any>(`/api/v1/finance/payment-submissions/${submissionId}/reject`, { reason }),
 };
