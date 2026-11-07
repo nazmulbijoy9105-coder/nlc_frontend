@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { companiesApi, commercialApi, financeApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
@@ -92,6 +92,8 @@ export default function FinancePage() {
   const [user, setUser] = useState<any>(null)
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyId, setCompanyId] = useState("")
+  const companyIdRef = useRef(companyId)
+  companyIdRef.current = companyId
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [engagements, setEngagements] = useState<Engagement[]>([])
   const [engagementId, setEngagementId] = useState("")
@@ -211,12 +213,14 @@ export default function FinancePage() {
   const pendingCount = submissions.filter((item) => item.status === "PENDING_REVIEW").length
 
   const refreshFinance = async () => {
-    if (!companyId) return
+    const requestedCompanyId = companyId
+    if (!requestedCompanyId) return
     const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
-      financeApi.invoices(companyId),
-      financeApi.paymentSubmissions(companyId),
-      financeApi.payments(companyId),
+      financeApi.invoices(requestedCompanyId),
+      financeApi.paymentSubmissions(requestedCompanyId),
+      financeApi.payments(requestedCompanyId),
     ])
+    if (companyIdRef.current !== requestedCompanyId) return
     setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
     setSubmissions(Array.isArray(submissionRows) ? submissionRows : [])
     setPayments(Array.isArray(paymentRows) ? paymentRows : [])
