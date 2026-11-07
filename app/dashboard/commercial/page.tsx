@@ -77,6 +77,8 @@ export default function CommercialPage() {
 
   useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
+
   useEffect(() => {
     const currentUser = getUser()
     setUser(currentUser)
