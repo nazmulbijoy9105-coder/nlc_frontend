@@ -84,7 +84,7 @@ export default function CompanyCalendarPage({ params }: { params: { id: string }
       <div className="space-y-4">
         {events.length === 0 ? (
           <div className="bg-white p-4 rounded-lg shadow text-gray-500">
-            No upcoming deadlines found. Click "Generate" to calculate the next 3 years of compliance deadlines based on the Companies Act 1994.
+            No upcoming deadlines found. Click &quot;Generate&quot; to calculate the next 3 years of compliance deadlines based on the Companies Act 1994.
           </div>
         ) : (
           events.map((event) => (

@@ -66,7 +66,7 @@ async function readErrorMessage(res: Response): Promise<string> {
 
   return (await res.text().catch(() => "")) || fallback;
 }
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com").replace(/\/$/, "");
 
 class ApiClient {
   private baseUrl: string;
@@ -106,6 +106,7 @@ class ApiClient {
 
       throw new Error(message);
     }
+    if (res.status === 204) return undefined as T;
     return res.json();
   }
 
@@ -116,19 +117,33 @@ class ApiClient {
       credentials: "include",
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (isAuthenticationFailure(res.status, message)) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
+    if (res.status === 204) return undefined as T;
     return res.json();
   }
 
   async delete<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: await this.getHeaders(),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json()
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const message = await readErrorMessage(res);
+      if (isAuthenticationFailure(res.status, message)) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
+    }
+    if (res.status === 204) return undefined as T;
+    return res.json();
   }
 
   async patch<T>(path: string, body?: unknown): Promise<T> {
@@ -136,12 +151,17 @@ class ApiClient {
       method: "PATCH",
       headers: await this.getHeaders(),
       credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (isAuthenticationFailure(res.status, message)) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
+    if (res.status === 204) return undefined as T;
     return res.json();
   }
 
@@ -150,12 +170,17 @@ class ApiClient {
       method: "PUT",
       headers: await this.getHeaders(),
       credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(err.detail || "HTTP " + res.status);
+      const message = await readErrorMessage(res);
+      if (isAuthenticationFailure(res.status, message)) {
+        handleAuthFailure(path);
+        throw new Error(AUTH_ERROR_MESSAGE);
+      }
+      throw new Error(message);
     }
+    if (res.status === 204) return undefined as T;
     return res.json();
   }
 }
@@ -283,6 +308,41 @@ export const commercialApi = {
   acceptQuotation: (id: string) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/accept"),
   rejectQuotation: (id: string, data: any) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/reject", data),
 }
+};
+
+export const financeApi = {
+  createInvoice: (data: {
+    company_id: string;
+    engagement_id?: string | null;
+    lines: Array<{ description: string; quantity: string; unit_price_bdt: string }>;
+    tax_bdt: string;
+    due_at?: string | null;
+    notes?: string | null;
+  }) => api.post<any>("/api/v1/finance/invoices", data),
+  issueInvoice: (invoiceId: string) =>
+    api.post<any>("/api/v1/finance/invoices/" + invoiceId + "/issue"),
+  invoices: (companyId: string) =>
+    api.get<any>("/api/v1/finance/companies/" + companyId + "/invoices"),
+  invoice: (invoiceId: string) =>
+    api.get<any>("/api/v1/finance/invoices/" + invoiceId),
+  submitOfflinePayment: (companyId: string, data: {
+    invoice_id: string;
+    method: "BANK_TRANSFER" | "CASH" | "CHEQUE";
+    amount_bdt: string;
+    payer_reference?: string | null;
+    paid_at?: string | null;
+  }) => api.post<any>("/api/v1/finance/companies/" + companyId + "/payments/offline", data),
+  paymentSubmissions: (companyId: string) =>
+    api.get<any>("/api/v1/finance/companies/" + companyId + "/payment-submissions"),
+  approvePaymentSubmission: (submissionId: string, data: {
+    review_note?: string | null;
+    cheque_cleared_at?: string | null;
+  } = {}) => api.post<any>("/api/v1/finance/payment-submissions/" + submissionId + "/approve", data),
+  rejectPaymentSubmission: (submissionId: string, reason: string) =>
+    api.post<any>("/api/v1/finance/payment-submissions/" + submissionId + "/reject", { reason }),
+  payments: (companyId: string) =>
+    api.get<any>("/api/v1/finance/companies/" + companyId + "/payments"),
+};
 
 export const adminApi = {
   listUsers:      (page = 1) => api.get<any>(`/api/v1/admin/users?page=${page}&per_page=50`),

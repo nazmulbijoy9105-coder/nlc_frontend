@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { commercialApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
@@ -24,6 +25,7 @@ export default function CommercialPage() {
   const [funnel, setFunnel] = useState<any>(null)
   const [companies, setCompanies] = useState<any[]>([])
   const [companyId, setCompanyId] = useState("")
+  const companyIdRef = useRef(companyId)
   const [engagements, setEngagements] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
   const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({})
@@ -56,11 +58,13 @@ export default function CommercialPage() {
   }, [])
 
   const refreshCompanyWork = useCallback(async (id: string) => {
+  const refreshCompanyWork = useCallback(async (id: string, isCurrent: () => boolean = () => companyIdRef.current === id) => {
     if (!id) return
     const [engagementRows, taskRows] = await Promise.all([
       commercialApi.engagements(id),
       commercialApi.tasks(id),
     ])
+    if (!isCurrent()) return
     setEngagements(Array.isArray(engagementRows) ? engagementRows : [])
     setTasks(Array.isArray(taskRows) ? taskRows : [])
     setStatusDrafts(
@@ -72,6 +76,10 @@ export default function CommercialPage() {
       ),
     )
   }, [])
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const currentUser = getUser()
@@ -108,6 +116,7 @@ export default function CommercialPage() {
     let active = true
     setLoadingCompany(true)
     refreshCompanyWork(companyId)
+    refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
       .catch((err) => {
         if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
       })
@@ -202,6 +211,16 @@ export default function CommercialPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (!user || loading) {
+    return <div style={{ padding: 32, color: "var(--white-3)" }}>Loading commercial intelligence…</div>
+  }
+
+  if (!authorised) {
+    return <div style={{ padding: 48, textAlign: "center", color: "#FCA5A5" }}>Access denied — revenue and commercial operations are restricted to authorised finance staff.</div>
+  }
+
   }
 
   if (!user || loading) {

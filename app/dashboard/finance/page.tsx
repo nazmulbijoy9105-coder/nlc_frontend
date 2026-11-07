@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { companiesApi, commercialApi, financeApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
@@ -94,6 +95,7 @@ export default function FinancePage() {
   const [user, setUser] = useState<any>(null)
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyId, setCompanyId] = useState("")
+  const companyIdRef = useRef(companyId)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [engagements, setEngagements] = useState<Engagement[]>([])
   const [engagementId, setEngagementId] = useState("")
@@ -122,6 +124,10 @@ export default function FinancePage() {
   const isFinanceStaff = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY"
   const canSubmitPayment = role === "CLIENT_DIRECTOR"
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const currentUser = getUser()
@@ -219,6 +225,14 @@ export default function FinancePage() {
       financeApi.paymentSubmissions(companyId),
       financeApi.payments(companyId),
     ])
+    const requestedCompanyId = companyId
+    if (!requestedCompanyId) return
+    const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
+      financeApi.invoices(requestedCompanyId),
+      financeApi.paymentSubmissions(requestedCompanyId),
+      financeApi.payments(requestedCompanyId),
+    ])
+    if (companyIdRef.current !== requestedCompanyId) return
     setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
     setSubmissions(Array.isArray(submissionRows) ? submissionRows : [])
     setPayments(Array.isArray(paymentRows) ? paymentRows : [])
@@ -346,6 +360,7 @@ export default function FinancePage() {
   }
 
   const requiresReference = ["BANK_TRANSFER", "CHEQUE", "BKASH_MANUAL", "NAGAD_MANUAL"].includes(paymentMethod)
+  const requiresReference = ["BANK_TRANSFER", "CHEQUE"].includes(paymentMethod)
 
   return (
     <div style={{ padding: 24, maxWidth: 1440, margin: "0 auto" }}>
@@ -479,6 +494,7 @@ export default function FinancePage() {
               </form>
               <div style={{ fontSize: 10, color: "var(--white-3)", marginTop: 12 }}>
                 bKash and Nagad entries are manual claims only. Live gateway checkout, automatic callback verification, refunds and recurring subscription billing are not enabled.
+                Only bank transfer, cash and cheque evidence is accepted here. Payment claims remain pending until finance verification.
               </div>
             </section>
           )}
