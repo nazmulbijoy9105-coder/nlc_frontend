@@ -15,7 +15,6 @@ export default function DashboardPage() {
   const [calendarReleasePending, setCalendarReleasePending] = useState(false)
 
   async function loadData() {
-    let cl: any[] = []
     try {
       const [k, cl, d, a] = await Promise.all([
         dashboardApi.getStats().catch((e: any) => { if (e?.status === 503) setScoreReleasePending(true); return null }),
@@ -36,12 +35,11 @@ export default function DashboardPage() {
   if (loading) return <div style={{ padding: 40, color: 'var(--white-3)' }}>Loading dashboard…</div>
 
   const total = kpis?.total_companies ?? kpis?.total ?? companyList.length
-  const active = kpis?.active_companies ?? 0
-  const inDefault = kpis?.black_companies ?? kpis?.red_companies ?? 0
+  const inDefault = kpis?.red_black_companies ?? kpis?.default_companies ?? ((kpis?.red_companies ?? 0) + (kpis?.black_companies ?? 0))
   const avgScore = kpis?.average_score ?? kpis?.avg_score ?? null
 
   const kpiCards = [
-    { lbl: 'Total Companies', val: total || '—', sub: 'Active portfolios', color: 'var(--navy-3)' },
+    { lbl: 'Total Companies', val: total || '—', sub: 'Registered portfolios', color: 'var(--navy-3)' },
     { lbl: 'In Default', val: inDefault || '—', sub: 'Require intervention', color: '#B91C1C' },
     { lbl: 'Avg Score', val: avgScore === null ? '—' : `${avgScore}/100`, sub: 'Portfolio average', color: 'var(--green)' },
     { lbl: 'Active Flags', val: scoreReleasePending ? '—' : (kpis?.total_active_flags ?? kpis?.active_flags ?? '—'), sub: scoreReleasePending ? 'Unavailable pending legal review' : 'Review signals', color: 'var(--yellow)' },
