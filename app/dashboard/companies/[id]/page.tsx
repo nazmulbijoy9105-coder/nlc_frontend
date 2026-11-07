@@ -65,6 +65,9 @@ export default function CompanyProfilePage() {
     typeof entry.score === 'number' &&
     entry.risk_band !== 'NOT_EVALUATED' &&
     entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+    entry.risk_band !== 'NOT_EVALUATED'
+    && entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+    && typeof entry.score === 'number'
   )
 
   return (

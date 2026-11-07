@@ -103,7 +103,7 @@ export const clearTempToken = () => Cookies.remove(TEMP_TOKEN, { path: '/' })
 
 export const clearAuth = () => removeStoredAuth()
 
-export const isAuthenticated = () => !!getValidAccessToken()
+export const isAuthenticated = async () => !!await getValidAccessToken()
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')
