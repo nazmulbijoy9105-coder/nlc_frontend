@@ -8,8 +8,7 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<any>(null)
 
-  useEffect(() => { load() }, [])
-  const load = async () => {
+  async function load() {
     try {
       const [d, t] = await Promise.all([
         documentsApi.list().catch(()=>[]),
@@ -19,6 +18,8 @@ export default function DocumentsPage() {
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
+
+  useEffect(() => { void load() }, [])
 
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading documents...</div>
 
