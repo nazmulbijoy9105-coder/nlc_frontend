@@ -24,7 +24,6 @@ export default function BillingPage() {
   const [companies, setCompanies] = useState<any[]>([])
   const [companyId, setCompanyId] = useState("")
   const selectedCompanyIdRef = useRef(companyId)
-  selectedCompanyIdRef.current = companyId
   const [plans, setPlans] = useState<any[]>([])
   const [current, setCurrent] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
@@ -60,6 +59,10 @@ export default function BillingPage() {
   const canSubmitPayment = role === "CLIENT_DIRECTOR"
   const canFinance = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const selectedCompany = useMemo(() => companies.find(c => String(c.id) === companyId), [companies, companyId])
+
+  useEffect(() => { selectedCompanyIdRef.current = companyId }, [companyId])
+
+  useEffect(() => { selectedCompanyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const sessionUser = getUser()

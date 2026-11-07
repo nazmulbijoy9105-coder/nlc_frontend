@@ -14,11 +14,7 @@ export default function DashboardPage() {
   const [scoreReleasePending, setScoreReleasePending] = useState(false)
   const [calendarReleasePending, setCalendarReleasePending] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  async function loadData() {
     let cl: any[] = []
     try {
       const [k, cl, d, a] = await Promise.all([
@@ -31,6 +27,8 @@ export default function DashboardPage() {
     } catch (e) { console.error('Dashboard load error:', e) }
     finally { setLoading(false) }
   }
+
+  useEffect(() => { void loadData() }, [])
 
   if (loading) return <div style={{ padding: 40, color: 'var(--white-3)' }}>Loading dashboard…</div>
 
