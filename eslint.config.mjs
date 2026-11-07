@@ -10,3 +10,9 @@ export default defineConfig([
     "next-env.d.ts",
   ]),
 ]);
+import next from 'eslint-config-next';
+
+export default [
+  ...next,
+  { ignores: ['node_modules/', '.next/', 'out/'] },
+];
