@@ -108,6 +108,7 @@ export const isAuthenticated = async (): Promise<boolean> => {
   const token = await getValidAccessToken()
   return Boolean(token)
 }
+export const isAuthenticated = async () => !!await getValidAccessToken()
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')

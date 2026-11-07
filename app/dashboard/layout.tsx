@@ -13,6 +13,7 @@ const adminNav = [
   ]},
   { section: 'Intelligence', items: [
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -28,6 +29,7 @@ const clientNav = [
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
     { label: 'Rescue Plan', icon: '⚑', href: '/dashboard/rescue' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
@@ -72,6 +74,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     void verifySession()
     return () => { cancelled = true }
+    const check = async () => {
+      if (!(await isAuthenticated())) { router.push('/'); return }
+      setUser(getUser())
+    }
+    check()
   }, [router])
 
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
