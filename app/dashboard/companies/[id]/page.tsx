@@ -38,10 +38,10 @@ export default function CompanyProfilePage() {
   if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
   if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
 
-  const score: number | null = compliance
-    ? (compliance.current_score ?? null)
-    : (company.compliance_score ?? null)
   const band = compliance?.risk_band || company.band || 'NOT_EVALUATED'
+  const score: number | null = band === 'NOT_EVALUATED'
+    ? null
+    : (compliance ? (compliance.current_score ?? null) : (company.compliance_score ?? null))
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#A855F7'
 
   const _v = (val: any) => val === null || val === undefined ? '—' : String(val)
@@ -62,7 +62,9 @@ export default function CompanyProfilePage() {
   const yellowFlags = flags.filter((f:any) => f.severity === 'YELLOW')
   const rescueSteps = rescuePlan?.steps || []
   const releasedScoreHistory = scoreHistory.filter((entry: any) =>
-    typeof entry.score === 'number' && entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+    entry.risk_band !== 'NOT_EVALUATED'
+    && entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+    && typeof entry.score === 'number'
   )
 
   return (

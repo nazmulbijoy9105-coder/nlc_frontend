@@ -8,7 +8,7 @@ interface ScoreBreakdownCardProps {
 }
 
 export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProps) {
-  if (!breakdown) {
+  if (!breakdown || (breakdown as any).risk_band === "NOT_EVALUATED" || breakdown.final_score == null) {
     return (
       <div style={{
         padding: "24px",
@@ -21,7 +21,7 @@ export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProp
         fontSize: "14px"
       }}>
         <Shield size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-        Run evaluation to see score breakdown
+        Not evaluated — statutory scoring is withheld pending independent legal approval.
       </div>
     );
   }
