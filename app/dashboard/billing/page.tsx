@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { billingApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
@@ -23,6 +23,8 @@ export default function BillingPage() {
   const [user, setUser] = useState<any>(null)
   const [companies, setCompanies] = useState<any[]>([])
   const [companyId, setCompanyId] = useState("")
+  const selectedCompanyIdRef = useRef(companyId)
+  selectedCompanyIdRef.current = companyId
   const [plans, setPlans] = useState<any[]>([])
   const [current, setCurrent] = useState<any>(null)
   const [history, setHistory] = useState<any[]>([])
@@ -88,13 +90,13 @@ export default function BillingPage() {
   }
 
   useEffect(() => {
-    if (companyId) void loadCompany(companyId)
-    else {
-      setCurrent(null); setHistory([]); setInvoices([]); setSubmissions([]); setPayments([])
-    }
+    let active = true
+    setCurrent(null); setHistory([]); setInvoices([]); setSubmissions([]); setPayments([])
+    if (companyId) void loadCompany(companyId, () => active)
+    return () => { active = false }
   }, [companyId])
 
-  async function loadCompany(id: string) {
+  async function loadCompany(id: string, isCurrent: () => boolean = () => selectedCompanyIdRef.current === id) {
     setLoading(true)
     setError("")
     try {
@@ -105,6 +107,7 @@ export default function BillingPage() {
         billingApi.paymentSubmissions(id),
         billingApi.payments(id),
       ])
+      if (!isCurrent()) return
       setCurrent(active || null)
       setHistory(Array.isArray(past) ? past : [])
       setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
@@ -119,14 +122,14 @@ export default function BillingPage() {
         setPaymentAmount("")
       }
     } catch (e: any) {
-      setError(e?.message || "Unable to load this company's billing records.")
+      if (isCurrent()) setError(e?.message || "Unable to load this company's billing records.")
     } finally {
-      setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }
 
   async function refresh() {
-    if (companyId) await loadCompany(companyId)
+    if (companyId) await loadCompany(companyId, () => selectedCompanyIdRef.current === companyId)
     const [freshPlans, freshQueue] = await Promise.all([
       billingApi.plans(canFinance).catch(() => []),
       canFinance ? billingApi.financeQueue("PENDING").catch(() => []) : Promise.resolve([]),

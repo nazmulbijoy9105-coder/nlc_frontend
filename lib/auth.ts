@@ -39,7 +39,7 @@ export const getValidAccessToken = async (): Promise<string> => {
   const token = (localStorage.getItem(ACCESS_TOKEN) || Cookies.get(ACCESS_TOKEN) || '').trim()
   if (!token || token === 'undefined' || token === 'null') {
     if (token) removeStoredAuth()
-    return ''
+    return await refreshToken()
   }
   const parts = token.split('.')
   const payload = parts.length === 3 && parts.every(Boolean) ? decodeJwtPayload(token) : null
@@ -60,6 +60,8 @@ export const getValidAccessToken = async (): Promise<string> => {
 
 
 
+let refreshPromise: Promise<string> | null = null
+
 export const refreshToken = async (): Promise<string> => {
   const token = typeof window !== 'undefined' ? (localStorage.getItem('nlc_refresh_token') || '') : ''
   if (!token) { clearAuth(); return '' }
@@ -73,12 +75,47 @@ export const refreshToken = async (): Promise<string> => {
     if (!res.ok) { clearAuth(); return '' }
     const data = await res.json()
     if (!data.access_token || !data.refresh_token) {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = (async () => {
+    const token = getRefreshToken()
+    if (!token) {
       clearAuth()
       return ''
     }
-    setTokens(data.access_token, data.refresh_token)
-    return data.access_token
-  } catch { clearAuth(); return '' }
+
+    try {
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\/$/, '')
+      const res = await fetch(apiBase + '/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ refresh_token: token }),
+      })
+      if (!res.ok) {
+        clearAuth()
+        return ''
+      }
+
+      const data = await res.json()
+      if (typeof data?.access_token !== 'string' || typeof data?.refresh_token !== 'string') {
+        clearAuth()
+        return ''
+      }
+
+      setTokens(data.access_token, data.refresh_token)
+      return data.access_token
+    } catch {
+      clearAuth()
+      return ''
+    }
+  })()
+
+  try {
+    return await refreshPromise
+  } finally {
+    refreshPromise = null
+  }
 }
 export const getRefreshToken = () =>
   typeof window !== 'undefined'
@@ -118,5 +155,11 @@ export const setUser = (user: Record<string, unknown>) => {
 export const getUser = () => {
   if (typeof window === 'undefined') return null
   const raw = localStorage.getItem(USER_KEY)
-  return raw ? JSON.parse(raw) : null
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    localStorage.removeItem(USER_KEY)
+    return null
+  }
 }
