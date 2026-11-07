@@ -73,7 +73,7 @@ export default function NotificationsPage() {
       <div className="space-y-4">
         {notifications.length === 0 ? (
           <div className="bg-white p-4 rounded-lg shadow text-gray-500 text-center">
-            You're all caught up! No pending notifications.
+            You&apos;re all caught up! No pending notifications.
           </div>
         ) : (
           notifications.map((notif) => (
