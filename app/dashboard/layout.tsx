@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push('/'); return }
+    if (!(await isAuthenticated())) { router.push('/'); return }
     setUser(getUser())
   }, [router])
 
