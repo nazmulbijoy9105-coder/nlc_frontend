@@ -79,11 +79,14 @@ class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private async getHeaders(auth = true): Promise<HeadersInit> {
+  private async getHeaders(auth = true, path = ''): Promise<HeadersInit> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (auth && typeof window !== "undefined") {
       const token = await getValidAccessToken();
-      if (!token) throw new ApiError(AUTH_ERROR_MESSAGE, 401);
+      if (!token) {
+        handleAuthFailure(path);
+        throw new ApiError(AUTH_ERROR_MESSAGE, 401);
+      }
       headers["Authorization"] = "Bearer " + token;
     }
     return headers;
@@ -93,7 +96,7 @@ class ApiClient {
     const auth = options.auth !== false;
     const res = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers: await this.getHeaders(auth),
+      headers: await this.getHeaders(auth, path),
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -117,7 +120,7 @@ class ApiClient {
   async get<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "GET",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
     });
     if (!res.ok) {
@@ -135,7 +138,7 @@ class ApiClient {
   async delete<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "DELETE",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
     });
     if (!res.ok) {
@@ -153,7 +156,7 @@ class ApiClient {
   async patch<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PATCH",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -172,7 +175,7 @@ class ApiClient {
   async put<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PUT",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
     });
