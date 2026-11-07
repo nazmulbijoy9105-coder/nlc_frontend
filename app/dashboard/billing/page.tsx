@@ -256,7 +256,7 @@ export default function BillingPage() {
                   <option value="BANK_TRANSFER">Bank transfer</option><option value="CASH">Cash</option><option value="CHEQUE">Cheque</option>
                 </select>
                 <input required type="number" min="0.01" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder="Amount (BDT)" style={field} />
-                <input value={paymentReference} onChange={e => setPaymentReference(e.target.value)} placeholder="Bank / instrument reference" style={field} />
+                <input value={paymentReference} onChange={e => setPaymentReference(e.target.value)} placeholder={paymentMethod === "CASH" ? "Optional receipt reference" : "Required bank / instrument reference"} required={paymentMethod !== "CASH"} style={field} />
                 <button type="submit" style={button} disabled={busy || !paymentInvoice}>{busy ? "Submitting…" : "Submit for review"}</button>
               </form>
             </section>
