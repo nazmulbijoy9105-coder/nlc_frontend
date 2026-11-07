@@ -12,6 +12,7 @@ const adminNav = [
   ]},
   { section: 'Intelligence', items: [
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -27,6 +28,7 @@ const clientNav = [
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
     { label: 'Rescue Plan', icon: '⚑', href: '/dashboard/rescue' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
