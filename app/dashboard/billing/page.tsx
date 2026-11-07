@@ -62,6 +62,8 @@ export default function BillingPage() {
 
   useEffect(() => { selectedCompanyIdRef.current = companyId }, [companyId])
 
+  useEffect(() => { selectedCompanyIdRef.current = companyId }, [companyId])
+
   useEffect(() => {
     const sessionUser = getUser()
     setUser(sessionUser)
