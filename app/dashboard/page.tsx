@@ -11,6 +11,8 @@ export default function DashboardPage() {
   const [deadlines, setDeadlines] = useState<any[]>([])
   const [activity, setActivity] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [scoreReleasePending, setScoreReleasePending] = useState(false)
+  const [calendarReleasePending, setCalendarReleasePending] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -20,9 +22,9 @@ export default function DashboardPage() {
     let cl: any[] = []
     try {
       const [k, cl, d, a] = await Promise.all([
-        dashboardApi.getStats().catch(() => null),
+        dashboardApi.getStats().catch((e: any) => { if (e?.response?.status === 503) setScoreReleasePending(true); return null }),
         (async () => { try { return await companiesApi.list() } catch { return [] } })(),
-        dashboardApi.upcomingDeadlines().catch(() => []),
+        dashboardApi.upcomingDeadlines().catch((e: any) => { if (e?.response?.status === 503) setCalendarReleasePending(true); return [] }),
         dashboardApi.recentActivity().catch(() => []),
       ])
       setKpis(k); setCompanyList(Array.isArray(cl) ? cl : (cl?.items || cl?.data || [])); setDeadlines(d || []); setActivity(a || [])
@@ -41,7 +43,7 @@ export default function DashboardPage() {
     { lbl: 'Total Companies', val: total || '—', sub: 'Active portfolios', color: 'var(--navy-3)' },
     { lbl: 'In Default', val: inDefault || '—', sub: 'Require intervention', color: '#B91C1C' },
     { lbl: 'Avg Score', val: avgScore ? `${avgScore}/100` : '—', sub: 'Portfolio average', color: 'var(--green)' },
-    { lbl: 'Active Flags', val: kpis?.total_active_flags || kpis?.active_flags || 0 || '—', sub: 'Compliance violations', color: 'var(--yellow)' },
+    { lbl: 'Active Flags', val: scoreReleasePending ? '—' : (kpis?.total_active_flags ?? kpis?.active_flags ?? '—'), sub: scoreReleasePending ? 'Unavailable pending legal review' : 'Review signals', color: 'var(--yellow)' },
   ]
 
   const bands = [
@@ -69,7 +71,11 @@ export default function DashboardPage() {
         {/* Risk Distribution */}
         <div className="nlc-card">
           <div className="sec-lbl">Risk Distribution</div>
-          {bands.map(b => (
+          {scoreReleasePending ? (
+            <div style={{fontSize:12,lineHeight:1.7,color:'var(--text2)',padding:'16px 4px'}}>
+              Not evaluated. Statutory scoring is withheld pending independent legal validation. This dashboard makes no company default or liability determination.
+            </div>
+          ) : bands.map(b => (
             <div key={b.name} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                 <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.label}</span>
@@ -89,8 +95,12 @@ export default function DashboardPage() {
         {/* Deadlines */}
         <div className="nlc-card">
           <div className="sec-lbl">Upcoming Deadlines</div>
-          {deadlines.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No upcoming deadlines</div>
+          {calendarReleasePending ? (
+            <div style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--text2)', textAlign: 'center', padding: 20 }}>
+              Statutory deadlines withheld pending rule-level legal validation and company-specific applicability review.
+            </div>
+          ) : deadlines.length === 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No deadline records available</div>
           ) : deadlines.slice(0, 5).map((d, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
               <div>

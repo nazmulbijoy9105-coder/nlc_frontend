@@ -25,7 +25,7 @@ export default function ProfilePage() {
         </div>
         <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',borderBottom:'1px solid #E4E8EF'}}>
           <span style={{fontSize:12,color:'#9CA3AF'}}>2FA Enabled</span>
-          <span style={{fontSize:12,fontWeight:600,color:'#9CA3AF'}}>{user.requires_2fa?'Yes':'No'}</span>
+          <span style={{fontSize:12,fontWeight:600,color:'#9CA3AF'}}>{user.totp_enabled?'Yes':'No'}</span>
         </div>
         <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0'}}>
           <span style={{fontSize:12,color:'#9CA3AF'}}>Account Status</span>

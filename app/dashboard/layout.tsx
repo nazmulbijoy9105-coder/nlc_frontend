@@ -13,6 +13,8 @@ const adminNav = [
   { section: 'Intelligence', items: [
     { label: 'Commercial Pipeline', icon: '◎', href: '/dashboard/commercial' },
     { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
+    { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -29,6 +31,7 @@ const clientNav = [
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
     { label: 'Billing', icon: '৳', href: '/dashboard/finance' },
     { label: 'Rescue Plan', icon: '⚑', href: '/dashboard/rescue' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
@@ -42,8 +45,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!isAuthenticated()) { router.push('/'); return }
-    setUser(getUser())
+    const check = async () => {
+      if (!(await isAuthenticated())) { router.push('/'); return }
+      setUser(getUser())
+    }
+    check()
   }, [router])
 
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
