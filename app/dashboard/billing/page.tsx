@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react"
 import { billingApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
-const billingIntervals = ["MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"]\nconst featureLabels: Record<string, string> = {
+const billingIntervals = ["MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"]
+const featureLabels: Record<string, string> = {
   compliance_package: "Compliance intelligence",
   document_management: "Document management",
   corporate_rescue: "Corporate rescue",
@@ -54,7 +55,8 @@ export default function BillingPage() {
 
   const role = String(user?.role || "")
   const canRequest = role === "CLIENT_DIRECTOR"
-  const canSubmitPayment = role === "CLIENT_DIRECTOR"\n  const canFinance = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
+  const canSubmitPayment = role === "CLIENT_DIRECTOR"
+  const canFinance = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const selectedCompany = useMemo(() => companies.find(c => String(c.id) === companyId), [companies, companyId])
 
   useEffect(() => {
