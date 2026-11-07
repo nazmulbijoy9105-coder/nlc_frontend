@@ -93,7 +93,6 @@ export default function FinancePage() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [companyId, setCompanyId] = useState("")
   const companyIdRef = useRef(companyId)
-  companyIdRef.current = companyId
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [engagements, setEngagements] = useState<Engagement[]>([])
   const [engagementId, setEngagementId] = useState("")
@@ -122,6 +121,8 @@ export default function FinancePage() {
   const isFinanceStaff = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY"
   const canSubmitPayment = role === "CLIENT_DIRECTOR"
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const currentUser = getUser()
