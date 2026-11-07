@@ -40,8 +40,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    if (!(await isAuthenticated())) { router.push('/'); return }
-    setUser(getUser())
+    const check = async () => {
+      if (!(await isAuthenticated())) { router.push('/'); return }
+      setUser(getUser())
+    }
+    check()
   }, [router])
 
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
