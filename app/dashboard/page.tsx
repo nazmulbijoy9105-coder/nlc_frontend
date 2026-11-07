@@ -15,15 +15,17 @@ export default function DashboardPage() {
   const [calendarReleasePending, setCalendarReleasePending] = useState(false)
 
   async function loadData() {
-    let cl: any[] = []
     try {
       const [k, cl, d, a] = await Promise.all([
-        dashboardApi.getStats().catch((e: any) => { if (e?.response?.status === 503) setScoreReleasePending(true); return null }),
+        dashboardApi.getStats().catch((e: any) => { if (e?.status === 503) setScoreReleasePending(true); return null }),
         (async () => { try { return await companiesApi.list() } catch { return [] } })(),
-        dashboardApi.upcomingDeadlines().catch((e: any) => { if (e?.response?.status === 503) setCalendarReleasePending(true); return [] }),
+        dashboardApi.upcomingDeadlines().catch((e: any) => { if (e?.status === 503) setCalendarReleasePending(true); return [] }),
         dashboardApi.recentActivity().catch(() => []),
       ])
-      setKpis(k); setCompanyList(Array.isArray(cl) ? cl : (cl?.items || cl?.data || [])); setDeadlines(d || []); setActivity(a || [])
+      setKpis(k);
+      setCompanyList(Array.isArray(cl) ? cl : (Array.isArray(cl?.items) ? cl.items : Array.isArray(cl?.data) ? cl.data : []));
+      setDeadlines(Array.isArray(d) ? d : (Array.isArray(d?.items) ? d.items : Array.isArray(d?.data) ? d.data : []));
+      setActivity(Array.isArray(a) ? a : (Array.isArray(a?.items) ? a.items : Array.isArray(a?.data) ? a.data : []));
     } catch (e) { console.error('Dashboard load error:', e) }
     finally { setLoading(false) }
   }
@@ -32,23 +34,22 @@ export default function DashboardPage() {
 
   if (loading) return <div style={{ padding: 40, color: 'var(--white-3)' }}>Loading dashboard…</div>
 
-  const total = kpis?.total_companies || kpis?.total || companyList.length || 0 || kpis?.total || 0 || 0
-  const active = kpis?.active_companies || kpis?.total_companies || 0 || 0
-  const inDefault = kpis?.black_companies || 0 || kpis?.red_companies || 0 || 0
-  const avgScore = kpis?.average_score || kpis?.avg_score || 0 || 0
+  const total = kpis?.total_companies ?? kpis?.total ?? companyList.length
+  const inDefault = kpis?.red_black_companies ?? kpis?.default_companies ?? ((kpis?.red_companies ?? 0) + (kpis?.black_companies ?? 0))
+  const avgScore = kpis?.average_score ?? kpis?.avg_score ?? null
 
   const kpiCards = [
-    { lbl: 'Total Companies', val: total || '—', sub: 'Active portfolios', color: 'var(--navy-3)' },
+    { lbl: 'Total Companies', val: total || '—', sub: 'Registered portfolios', color: 'var(--navy-3)' },
     { lbl: 'In Default', val: inDefault || '—', sub: 'Require intervention', color: '#B91C1C' },
-    { lbl: 'Avg Score', val: avgScore ? `${avgScore}/100` : '—', sub: 'Portfolio average', color: 'var(--green)' },
+    { lbl: 'Avg Score', val: avgScore === null ? '—' : `${avgScore}/100`, sub: 'Portfolio average', color: 'var(--green)' },
     { lbl: 'Active Flags', val: scoreReleasePending ? '—' : (kpis?.total_active_flags ?? kpis?.active_flags ?? '—'), sub: scoreReleasePending ? 'Unavailable pending legal review' : 'Review signals', color: 'var(--yellow)' },
   ]
 
   const bands = [
-    { name: 'GREEN', label: 'No violations detected', n: kpis?.green_companies || 0 || 0, c: '#1a7a52' },
-    { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies || 0 || 0, c: '#D97706' },
-    { name: 'RED', label: 'Default', n: kpis?.red_companies || 0 || 0, c: '#B91C1C' },
-    { name: 'BLACK', label: 'Severe', n: kpis?.black_companies || 0 || 0, c: '#A855F7' },
+    { name: 'GREEN', label: 'No violations detected', n: kpis?.green_companies ?? 0, c: '#1a7a52' },
+    { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies ?? 0, c: '#D97706' },
+    { name: 'RED', label: 'Default', n: kpis?.red_companies ?? 0, c: '#B91C1C' },
+    { name: 'BLACK', label: 'Severe', n: kpis?.black_companies ?? 0, c: '#A855F7' },
   ]
 
   return (

@@ -3,6 +3,13 @@ import { clearAuth, getRefreshToken, getValidAccessToken } from "@/lib/auth";
 
 const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 type RequestOptions = {
   auth?: boolean;
 };
@@ -72,15 +79,15 @@ class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private async getHeaders(auth = true): Promise<HeadersInit> {
+  private async getHeaders(auth = true, path = ''): Promise<HeadersInit> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (auth && typeof window !== "undefined") {
-      try {
-        const token = await getValidAccessToken();
-        if (token) headers["Authorization"] = "Bearer " + token;
-      } catch {
-        // token refresh failed — proceed without auth
+      const token = await getValidAccessToken();
+      if (!token) {
+        handleAuthFailure(path);
+        throw new ApiError(AUTH_ERROR_MESSAGE, 401);
       }
+      headers["Authorization"] = "Bearer " + token;
     }
     return headers;
   }
@@ -89,9 +96,9 @@ class ApiClient {
     const auth = options.auth !== false;
     const res = await fetch(this.baseUrl + path, {
       method: "POST",
-      headers: await this.getHeaders(auth),
+      headers: await this.getHeaders(auth, path),
       credentials: "include",
-      body: body ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (!res.ok) {
       const message = await readErrorMessage(res);
@@ -101,10 +108,10 @@ class ApiClient {
 
       if (authFailure) {
         handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
+        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
       }
 
-      throw new Error(message);
+      throw new ApiError(message, res.status);
     }
     if (res.status === 204) return undefined as T;
     return res.json();
@@ -113,16 +120,16 @@ class ApiClient {
   async get<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "GET",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
     });
     if (!res.ok) {
       const message = await readErrorMessage(res);
       if (isAuthenticationFailure(res.status, message)) {
         handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
+        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
       }
-      throw new Error(message);
+      throw new ApiError(message, res.status);
     }
     if (res.status === 204) return undefined as T;
     return res.json();
@@ -131,16 +138,16 @@ class ApiClient {
   async delete<T>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "DELETE",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
     });
     if (!res.ok) {
       const message = await readErrorMessage(res);
       if (isAuthenticationFailure(res.status, message)) {
         handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
+        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
       }
-      throw new Error(message);
+      throw new ApiError(message, res.status);
     }
     if (res.status === 204) return undefined as T;
     return res.json();
@@ -149,7 +156,7 @@ class ApiClient {
   async patch<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PATCH",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -157,9 +164,9 @@ class ApiClient {
       const message = await readErrorMessage(res);
       if (isAuthenticationFailure(res.status, message)) {
         handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
+        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
       }
-      throw new Error(message);
+      throw new ApiError(message, res.status);
     }
     if (res.status === 204) return undefined as T;
     return res.json();
@@ -168,7 +175,7 @@ class ApiClient {
   async put<T>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: "PUT",
-      headers: await this.getHeaders(),
+      headers: await this.getHeaders(true, path),
       credentials: "include",
       body: body === undefined ? undefined : JSON.stringify(body),
     });
@@ -176,9 +183,9 @@ class ApiClient {
       const message = await readErrorMessage(res);
       if (isAuthenticationFailure(res.status, message)) {
         handleAuthFailure(path);
-        throw new Error(AUTH_ERROR_MESSAGE);
+        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
       }
-      throw new Error(message);
+      throw new ApiError(message, res.status);
     }
     if (res.status === 204) return undefined as T;
     return res.json();
