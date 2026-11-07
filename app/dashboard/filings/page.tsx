@@ -33,9 +33,11 @@ export default function FilingsPage() {
             <div key={i} style={{padding:'10px 0',borderBottom:'1px solid #E4E8EF'}}>
               <div style={{display:'flex',justifyContent:'space-between'}}>
                 <span style={{fontSize:12,fontWeight:600,color:'#07172B'}}>FY {a.financial_year}</span>
-                <span className={`badge badge-${a.is_default?'red':'green'}`}>{a.is_default?'Default':'Filed'}</span>
+                <span className={`badge badge-${a.is_default===true?'red':a.is_default===null?'neutral':'green'}`}>
+                  {a.is_default===null ? 'Legal review pending' : a.is_default ? 'Potential default' : a.filed_date ? 'Filing recorded' : a.held_date ? 'Held — filing evidence pending' : 'No filing evidence'}
+                </span>
               </div>
-              <div style={{fontSize:10,color:'#9CA3AF',marginTop:2}}>Due: {a.agm_due_date || '—'} | Held: {a.agm_date || 'Not held'}</div>
+              <div style={{fontSize:10,color:'#9CA3AF',marginTop:2}}>Due: {a.agm_due_date || 'Not evaluated'} | Held: {a.held_date || 'Not recorded'}</div>
             </div>
           ))}
         </div>
@@ -47,9 +49,15 @@ export default function FilingsPage() {
             <div key={i} style={{padding:'10px 0',borderBottom:'1px solid #E4E8EF'}}>
               <div style={{display:'flex',justifyContent:'space-between'}}>
                 <span style={{fontSize:12,fontWeight:600,color:'#07172B'}}>FY {r.financial_year}</span>
-                <span className={`badge badge-${r.is_default?'red':'green'}`}>{r.is_default?'Default':'Filed'}</span>
+                <span className="badge badge-neutral">
+                  {r.filing_evidence_status === 'RECEIPT_REFERENCE_RECORDED_UNVERIFIED'
+                    ? 'Receipt reference recorded — unverified'
+                    : r.filing_evidence_status === 'DATE_RECORDED_UNVERIFIED'
+                      ? 'Filing date recorded — unverified'
+                      : 'No filing evidence recorded'}
+                </span>
               </div>
-              <div style={{fontSize:10,color:'#9CA3AF',marginTop:2}}>Filed: {r.filed_date || '—'}</div>
+              <div style={{fontSize:10,color:'#9CA3AF',marginTop:2}}>Filing date: {r.filed_date || '—'} | Legal deadline: {r.filing_deadline || 'Not evaluated'}</div>
             </div>
           ))}
         </div>
