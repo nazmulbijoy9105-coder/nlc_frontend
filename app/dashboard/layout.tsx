@@ -89,7 +89,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
     ),
   })).filter(g => g.items.length > 0)
-  const handleLogout = () => { clearAuth(); router.push('/') }
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // Local credentials must still be cleared if server-side logout is unavailable.
+    } finally {
+      clearAuth()
+      router.replace('/')
+    }
+  }
   const initials = user?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
   return (
