@@ -6,7 +6,7 @@ export default defineConfig([
   {
     rules: {
       // Existing client components still need targeted refactors. Keep these
-      // diagnostics visible without blocking the baseline lint gate.
+      // diagnostics visible without blocking the baseline lint gate; promote them after the component cleanup.
       "react-hooks/immutability": "warn",
       "react-hooks/refs": "warn",
       "react-hooks/set-state-in-effect": "warn",
