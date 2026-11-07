@@ -1,7 +1,8 @@
 "use client"
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { isAuthenticated, getUser, clearAuth } from '@/lib/auth'
+import { isAuthenticated, clearAuth, setUser as storeUser } from '@/lib/auth'
+import { authApi } from '@/lib/api'
 
 const adminNav = [
   { section: 'Main', items: [
@@ -12,6 +13,7 @@ const adminNav = [
   ]},
   { section: 'Intelligence', items: [
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
     { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
@@ -42,17 +44,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    const check = async () => {
-      if (!(await isAuthenticated())) { router.push('/'); return }
-      setUser(getUser())
+    let cancelled = false
+
+    const verifySession = async () => {
+      try {
+        const authenticated = await isAuthenticated()
+        if (cancelled) return
+        if (!authenticated) {
+          clearAuth()
+          router.replace('/')
+          return
+        }
+
+        const response = await authApi.me()
+        const currentUser = response?.user ?? response
+        if (cancelled) return
+        if (!currentUser || typeof currentUser.role !== 'string' || !currentUser.role.trim()) {
+          clearAuth()
+          router.replace('/')
+          return
+        }
+
+        storeUser(currentUser)
+        setUser(currentUser)
+      } catch {
+        if (!cancelled) {
+          clearAuth()
+          router.replace('/')
+        }
+      }
     }
-    check()
+
+    void verifySession()
+    return () => { cancelled = true }
   }, [router])
 
   if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
 
   const isClient = user.role?.includes('CLIENT')
-  const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') })).filter(g => g.items.length > 0)
+  const nav = isClient ? clientNav : adminNav.map(g => ({
+    ...g,
+    items: g.items.filter(i =>
+      (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
+      (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
+    ),
+  })).filter(g => g.items.length > 0)
   const handleLogout = () => { clearAuth(); router.push('/') }
   const initials = user?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
