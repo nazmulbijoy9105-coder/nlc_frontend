@@ -215,7 +215,7 @@ export default function BillingPage() {
     if (submission.method === "CHEQUE") {
       const entered = window.prompt("Enter cheque clearance timestamp with timezone offset (example: 2026-11-07T12:00:00+06:00)")
       if (!entered) return
-      if (!/[+-]\\d{2}:\\d{2}$/.test(entered) || Number.isNaN(Date.parse(entered))) {
+      if (!/[+-]\d{2}:\d{2}$/.test(entered) || Number.isNaN(Date.parse(entered))) {
         setError("Cheque clearance must be a valid ISO timestamp with an explicit timezone offset.")
         return
       }
