@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { billingApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
 
-const featureLabels: Record<string, string> = {
+const billingIntervals = ["MONTHLY", "QUARTERLY", "ANNUAL", "ONE_TIME"]\nconst featureLabels: Record<string, string> = {
   compliance_package: "Compliance intelligence",
   document_management: "Document management",
   corporate_rescue: "Corporate rescue",
@@ -38,28 +38,45 @@ export default function BillingPage() {
   const [paymentMethod, setPaymentMethod] = useState<"BANK_TRANSFER" | "CASH" | "CHEQUE">("BANK_TRANSFER")
   const [paymentAmount, setPaymentAmount] = useState("")
   const [paymentReference, setPaymentReference] = useState("")
+  const [financeQueue, setFinanceQueue] = useState<any[]>([])
+  const [planCode, setPlanCode] = useState("")
+  const [planName, setPlanName] = useState("")
+  const [planDescription, setPlanDescription] = useState("")
+  const [planGraceDays, setPlanGraceDays] = useState("0")
+  const [planActive, setPlanActive] = useState(true)
+  const [planPrices, setPlanPrices] = useState<Record<string, { enabled: boolean; amount: string; tax: string; reference: string }>>({
+    MONTHLY: { enabled: true, amount: "", tax: "0.00", reference: "" },
+    QUARTERLY: { enabled: false, amount: "", tax: "0.00", reference: "" },
+    ANNUAL: { enabled: false, amount: "", tax: "0.00", reference: "" },
+    ONE_TIME: { enabled: false, amount: "", tax: "0.00", reference: "" },
+  })
+  const [planFeatures, setPlanFeatures] = useState<string[]>(["compliance_package"])
 
   const role = String(user?.role || "")
   const canRequest = role === "CLIENT_DIRECTOR"
-  const canSubmitPayment = role === "CLIENT_DIRECTOR"
+  const canSubmitPayment = role === "CLIENT_DIRECTOR"\n  const canFinance = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const selectedCompany = useMemo(() => companies.find(c => String(c.id) === companyId), [companies, companyId])
 
   useEffect(() => {
-    setUser(getUser())
-    void loadInitial()
+    const sessionUser = getUser()
+    setUser(sessionUser)
+    void loadInitial(sessionUser)
   }, [])
 
-  async function loadInitial() {
+  async function loadInitial(sessionUser?: any) {
     setLoading(true)
     setError("")
     try {
-      const [companyResult, planResult] = await Promise.all([
+      const finance = ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(sessionUser?.role || ""))
+      const [companyResult, planResult, queueResult] = await Promise.all([
         companiesApi.list(),
-        billingApi.plans().catch(() => []),
+        billingApi.plans(finance).catch(() => []),
+        finance ? billingApi.financeQueue("PENDING").catch(() => []) : Promise.resolve([]),
       ])
       const rows = Array.isArray(companyResult) ? companyResult : (companyResult?.items || companyResult?.data || [])
       setCompanies(rows)
       setPlans(Array.isArray(planResult) ? planResult : [])
+      setFinanceQueue(Array.isArray(queueResult) ? queueResult : [])
       if (rows.length) setCompanyId(String(rows[0].id))
     } catch (e: any) {
       setError(e?.message || "Unable to load billing information.")
@@ -108,8 +125,97 @@ export default function BillingPage() {
 
   async function refresh() {
     if (companyId) await loadCompany(companyId)
-    const freshPlans = await billingApi.plans().catch(() => [])
+    const [freshPlans, freshQueue] = await Promise.all([
+      billingApi.plans(canFinance).catch(() => []),
+      canFinance ? billingApi.financeQueue("PENDING").catch(() => []) : Promise.resolve([]),
+    ])
     setPlans(Array.isArray(freshPlans) ? freshPlans : [])
+    setFinanceQueue(Array.isArray(freshQueue) ? freshQueue : [])
+  }
+
+  function editPlan(plan: any) {
+    setPlanCode(plan.plan_code || "")
+    setPlanName(plan.plan_name || "")
+    setPlanDescription(plan.description || "")
+    setPlanGraceDays(String(plan.grace_days ?? 0))
+    setPlanActive(Boolean(plan.is_active))
+    const nextPrices: Record<string, { enabled: boolean; amount: string; tax: string; reference: string }> = {
+      MONTHLY: { enabled: false, amount: "", tax: "0.00", reference: "" },
+      QUARTERLY: { enabled: false, amount: "", tax: "0.00", reference: "" },
+      ANNUAL: { enabled: false, amount: "", tax: "0.00", reference: "" },
+      ONE_TIME: { enabled: false, amount: "", tax: "0.00", reference: "" },
+    }
+    for (const price of plan.prices || []) {
+      nextPrices[price.billing_interval] = {
+        enabled: Boolean(price.is_active),
+        amount: String(price.amount_bdt ?? ""),
+        tax: String(price.tax_bdt ?? "0.00"),
+        reference: String(price.tax_policy_reference ?? ""),
+      }
+    }
+    setPlanPrices(nextPrices)
+    setPlanFeatures((plan.features || []).filter((item: any) => item.enabled).map((item: any) => item.feature_code))
+  }
+
+  function resetPlanDraft() {
+    setPlanCode(""); setPlanName(""); setPlanDescription(""); setPlanGraceDays("0"); setPlanActive(true)
+    setPlanPrices({
+      MONTHLY: { enabled: true, amount: "", tax: "0.00", reference: "" },
+      QUARTERLY: { enabled: false, amount: "", tax: "0.00", reference: "" },
+      ANNUAL: { enabled: false, amount: "", tax: "0.00", reference: "" },
+      ONE_TIME: { enabled: false, amount: "", tax: "0.00", reference: "" },
+    })
+    setPlanFeatures(["compliance_package"])
+  }
+
+  function updatePlanPrice(interval: string, key: "enabled" | "amount" | "tax" | "reference", value: any) {
+    setPlanPrices(previous => ({
+      ...previous,
+      [interval]: { ...previous[interval], [key]: value },
+    }))
+  }
+
+  async function savePlan(event: React.FormEvent) {
+    event.preventDefault()
+    const prices = billingIntervals.filter(interval => planPrices[interval]?.enabled).map(interval => ({
+      billing_interval: interval,
+      amount_bdt: planPrices[interval].amount,
+      tax_bdt: planPrices[interval].tax,
+      tax_policy_reference: planPrices[interval].reference,
+    }))
+    if (!planCode.trim() || !planName.trim() || !prices.length || !planFeatures.length) {
+      setError("Enter a plan code, name, at least one complete price interval and one feature mapping.")
+      return
+    }
+    if (prices.some(price => !price.amount || !price.tax || price.tax_policy_reference.trim().length < 3)) {
+      setError("Every enabled interval needs a positive price, a tax amount and a tax-policy reference.")
+      return
+    }
+    setBusy(true); setError(""); setNotice("")
+    try {
+      await billingApi.upsertPlan(planCode.trim().toUpperCase(), {
+        plan_name: planName.trim(),
+        description: planDescription.trim() || null,
+        grace_days: Number(planGraceDays),
+        is_active: planActive,
+        prices,
+        features: planFeatures.map(feature_code => ({ feature_code })),
+      })
+      setNotice("Plan configuration saved. Finance must independently verify the commercial prices and legal tax treatment before offering it to customers.")
+      await refresh()
+      resetPlanDraft()
+    } catch (e: any) { setError(e?.message || "Plan configuration failed.") }
+    finally { setBusy(false) }
+  }
+
+  async function issueInvoice(subscriptionId: string) {
+    setBusy(true); setError(""); setNotice("")
+    try {
+      const result = await billingApi.issueSubscriptionInvoice(subscriptionId)
+      setNotice("Invoice " + result.invoice_number + " issued for the pending subscription.")
+      await refresh()
+    } catch (e: any) { setError(e?.message || "Invoice issuance failed.") }
+    finally { setBusy(false) }
   }
 
   async function requestPlan() {
@@ -178,6 +284,60 @@ export default function BillingPage() {
         </select>
         {selectedCompany && <div style={{ color: "rgba(255,255,255,.4)", fontSize: 11, marginTop: 8 }}>Registration: {selectedCompany.registration_number || selectedCompany.rjsc_registration_number || "Not supplied"}</div>}
       </section>
+
+      {canFinance && (
+        <>
+          <section style={{ ...panel, marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <h2 className="font-garamond" style={{ fontSize: 20, margin: 0 }}>Finance plan configuration</h2>
+              <button type="button" style={button} onClick={resetPlanDraft}>New plan</button>
+            </div>
+            <p style={{ color: "rgba(255,255,255,.45)", fontSize: 11 }}>Enter prices and tax references supplied and approved by Finance. This screen stores the reference; it does not determine or validate VAT law.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+              {plans.map(plan => <button key={plan.plan_code} type="button" style={button} onClick={() => editPlan(plan)}>{plan.plan_code} · {plan.is_active ? "Active" : "Inactive"}</button>)}
+            </div>
+            <form onSubmit={savePlan}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10 }}>
+                <input required value={planCode} onChange={e => setPlanCode(e.target.value.toUpperCase())} placeholder="Plan code (e.g. BASIC)" style={field} />
+                <input required value={planName} onChange={e => setPlanName(e.target.value)} placeholder="Plan name" style={field} />
+                <input type="number" min="0" max="30" value={planGraceDays} onChange={e => setPlanGraceDays(e.target.value)} placeholder="Grace days" style={field} />
+                <input value={planDescription} onChange={e => setPlanDescription(e.target.value)} placeholder="Description" style={field} />
+              </div>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0", fontSize: 12 }}>
+                <input type="checkbox" checked={planActive} onChange={e => setPlanActive(e.target.checked)} /> Plan available to customers
+              </label>
+              <div style={{ color: "#C9A84C", fontSize: 10, textTransform: "uppercase", letterSpacing: ".12em", margin: "14px 0 8px" }}>Price intervals · BDT</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 10 }}>
+                {billingIntervals.map(interval => (
+                  <div key={interval} style={{ border: "1px solid rgba(255,255,255,.1)", borderRadius: 8, padding: 12 }}>
+                    <label style={{ display: "flex", gap: 8, fontSize: 12, marginBottom: 10 }}><input type="checkbox" checked={planPrices[interval]?.enabled || false} onChange={e => updatePlanPrice(interval, "enabled", e.target.checked)} /> {interval}</label>
+                    {planPrices[interval]?.enabled && (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        <input required type="number" min="0.01" step="0.01" value={planPrices[interval].amount} onChange={e => updatePlanPrice(interval, "amount", e.target.value)} placeholder="Fee before tax" style={field} />
+                        <input required type="number" min="0" step="0.01" value={planPrices[interval].tax} onChange={e => updatePlanPrice(interval, "tax", e.target.value)} placeholder="Tax amount" style={field} />
+                        <input required minLength={3} maxLength={500} value={planPrices[interval].reference} onChange={e => updatePlanPrice(interval, "reference", e.target.value)} placeholder="Approved tax-policy reference" style={field} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ color: "#C9A84C", fontSize: 10, textTransform: "uppercase", letterSpacing: ".12em", margin: "14px 0 8px" }}>Feature mapping</div>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
+                {Object.entries(featureLabels).map(([code, label]) => <label key={code} style={{ display: "flex", gap: 7, alignItems: "center" }}><input type="checkbox" checked={planFeatures.includes(code)} onChange={e => setPlanFeatures(previous => e.target.checked ? [...previous, code] : previous.filter(item => item !== code))} />{label}</label>)}
+              </div>
+              <button type="submit" style={{ ...button, marginTop: 16 }} disabled={busy}>{busy ? "Saving…" : "Save plan configuration"}</button>
+            </form>
+          </section>
+          <section style={{ ...panel, marginBottom: 18 }}>
+            <h2 className="font-garamond" style={{ fontSize: 20, margin: "0 0 12px" }}>Pending subscription requests</h2>
+            {financeQueue.length ? financeQueue.map(item => <div key={item.subscription_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", borderBottom: "1px solid rgba(255,255,255,.08)", padding: "10px 0", fontSize: 12 }}>
+              <span>{item.plan_name} · {item.billing_interval} · {money(Number(item.amount_bdt) + Number(item.tax_bdt))}</span>
+              <span style={{ color: "rgba(255,255,255,.45)" }}>Company {item.company_id}</span>
+              <button type="button" style={button} disabled={busy || Boolean(item.invoice_id)} onClick={() => void issueInvoice(item.subscription_id)}>{item.invoice_id ? "Invoice issued" : "Issue invoice"}</button>
+            </div>) : <div style={{ color: "rgba(255,255,255,.4)", fontSize: 12 }}>No pending subscription requests.</div>}
+          </section>
+        </>
+      )}
 
       {!companyId ? (
         <section style={panel}>No company account is available for this login. A company director or administrator must grant company access before billing can be viewed.</section>
