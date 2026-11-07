@@ -210,6 +210,39 @@ export default function BillingPage() {
     finally { setBusy(false) }
   }
 
+  async function reviewPayment(submission: any) {
+    let chequeClearedAt: string | undefined
+    if (submission.method === "CHEQUE") {
+      const entered = window.prompt("Enter cheque clearance timestamp with timezone offset (example: 2026-11-07T12:00:00+06:00)")
+      if (!entered) return
+      if (!/[+-]\\d{2}:\\d{2}$/.test(entered) || Number.isNaN(Date.parse(entered))) {
+        setError("Cheque clearance must be a valid ISO timestamp with an explicit timezone offset.")
+        return
+      }
+      chequeClearedAt = entered
+    }
+    const note = window.prompt("Optional finance review note") || ""
+    setBusy(true); setError(""); setNotice("")
+    try {
+      await billingApi.approvePayment(submission.submission_id, note, chequeClearedAt)
+      setNotice("Payment claim approved and posted to the invoice ledger.")
+      await refresh()
+    } catch (e: any) { setError(e?.message || "Payment approval failed.") }
+    finally { setBusy(false) }
+  }
+
+  async function rejectPayment(submission: any) {
+    const reason = window.prompt("Enter the reason for rejecting this payment claim")
+    if (!reason || reason.trim().length < 3) return
+    setBusy(true); setError(""); setNotice("")
+    try {
+      await billingApi.rejectPayment(submission.submission_id, reason.trim())
+      setNotice("Payment claim rejected.")
+      await refresh()
+    } catch (e: any) { setError(e?.message || "Payment rejection failed.") }
+    finally { setBusy(false) }
+  }
+
   async function issueInvoice(subscriptionId: string) {
     setBusy(true); setError(""); setNotice("")
     try {
@@ -428,10 +461,11 @@ export default function BillingPage() {
             <h2 className="font-garamond" style={{ fontSize: 20, margin: "0 0 12px" }}>Payment claims & receipts</h2>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead><tr style={{ color: "#C9A84C", textAlign: "left" }}>{["Method", "Reference", "Amount", "Status", "Submitted"].map(x => <th key={x} style={{ padding: "9px 8px", borderBottom: "1px solid rgba(255,255,255,.1)" }}>{x}</th>)}</tr></thead>
+                <thead><tr style={{ color: "#C9A84C", textAlign: "left" }}>{["Method", "Reference", "Amount", "Status", "Submitted", ...(canFinance ? ["Finance review"] : [])].map(x => <th key={x} style={{ padding: "9px 8px", borderBottom: "1px solid rgba(255,255,255,.1)" }}>{x}</th>)}</tr></thead>
                 <tbody>{submissions.length ? submissions.map(s => <tr key={s.submission_id}>
                   <td style={{ padding: "10px 8px" }}>{s.method}</td><td style={{ padding: "10px 8px" }}>{s.payer_reference || "—"}</td><td style={{ padding: "10px 8px" }}>{money(s.amount_bdt)}</td><td style={{ padding: "10px 8px" }}>{s.status}</td><td style={{ padding: "10px 8px" }}>{dateLabel(s.paid_at)}</td>
-                </tr>) : <tr><td colSpan={5} style={{ padding: 16, color: "rgba(255,255,255,.4)" }}>No payment claims submitted.</td></tr>}</tbody>
+                  {canFinance && <td style={{ padding: "10px 8px", whiteSpace: "nowrap" }}>{s.status === "PENDING_REVIEW" ? <><button type="button" style={button} disabled={busy} onClick={() => void reviewPayment(s)}>Approve</button> <button type="button" style={{ ...button, borderColor: "rgba(190,90,90,.6)", color: "#E8A0A0" }} disabled={busy} onClick={() => void rejectPayment(s)}>Reject</button></> : (s.review_note || "—")}</td>}
+                </tr>) : <tr><td colSpan={canFinance ? 6 : 5} style={{ padding: 16, color: "rgba(255,255,255,.4)" }}>No payment claims submitted.</td></tr>}</tbody>
               </table>
             </div>
             <div style={{ color: "rgba(255,255,255,.42)", fontSize: 10, marginTop: 12 }}>Verified receipts: {payments.length}. A pending claim is not a settled payment and does not unlock subscription features.</div>
