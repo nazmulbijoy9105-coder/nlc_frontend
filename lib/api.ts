@@ -295,3 +295,39 @@ export const rulesApi = {
   list: () => api.get<any>('/api/v1/rules'),
   summary: () => api.get<any>('/api/v1/rules/summary'),
 }
+
+
+export const billingApi = {
+  plans: (includeInactive = false) =>
+    api.get<any[]>(`/api/v1/subscriptions/plans${includeInactive ? "?include_inactive=true" : ""}`),
+  current: (companyId: string) =>
+    api.get<any>(`/api/v1/subscriptions/companies/${companyId}/current`),
+  history: (companyId: string) =>
+    api.get<any[]>(`/api/v1/subscriptions/companies/${companyId}/history`),
+  requestSubscription: (companyId: string, planCode: string, billingInterval: string) =>
+    api.post<any>(`/api/v1/subscriptions/companies/${companyId}`, {
+      plan_code: planCode, billing_interval: billingInterval,
+    }),
+  cancelAtPeriodEnd: (companyId: string, subscriptionId: string) =>
+    api.post<any>(`/api/v1/subscriptions/companies/${companyId}/${subscriptionId}/cancel`, {}),
+  invoices: (companyId: string) =>
+    api.get<any[]>(`/api/v1/finance/companies/${companyId}/invoices`),
+  paymentSubmissions: (companyId: string) =>
+    api.get<any[]>(`/api/v1/finance/companies/${companyId}/payment-submissions`),
+  payments: (companyId: string) =>
+    api.get<any[]>(`/api/v1/finance/companies/${companyId}/payments`),
+  submitOfflinePayment: (companyId: string, body: {
+    invoice_id: string; method: "BANK_TRANSFER" | "CASH" | "CHEQUE";
+    amount_bdt: string; payer_reference?: string;
+  }) => api.post<any>(`/api/v1/finance/companies/${companyId}/payments/offline`, body),
+  financeQueue: (status = "PENDING") =>
+    api.get<any[]>(`/api/v1/subscriptions/admin?status=${encodeURIComponent(status)}`),
+  issueSubscriptionInvoice: (subscriptionId: string) =>
+    api.post<any>(`/api/v1/subscriptions/${subscriptionId}/invoice`, {}),
+  upsertPlan: (planCode: string, body: any) =>
+    api.put<any>(`/api/v1/subscriptions/plans/${encodeURIComponent(planCode)}`, body),
+  approvePayment: (submissionId: string, reviewNote?: string) =>
+    api.post<any>(`/api/v1/finance/payment-submissions/${submissionId}/approve`, { review_note: reviewNote || null }),
+  rejectPayment: (submissionId: string, reason: string) =>
+    api.post<any>(`/api/v1/finance/payment-submissions/${submissionId}/reject`, { reason }),
+};
