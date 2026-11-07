@@ -66,7 +66,7 @@ async function readErrorMessage(res: Response): Promise<string> {
 
   return (await res.text().catch(() => "")) || fallback;
 }
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com").replace(/\/$/, "");
 
 class ApiClient {
   private baseUrl: string;
@@ -106,6 +106,7 @@ class ApiClient {
 
       throw new Error(message);
     }
+    if (res.status === 204) return undefined as T;
     return res.json();
   }
 
