@@ -88,13 +88,13 @@ export default function BillingPage() {
   }
 
   useEffect(() => {
-    if (companyId) void loadCompany(companyId)
-    else {
-      setCurrent(null); setHistory([]); setInvoices([]); setSubmissions([]); setPayments([])
-    }
+    let active = true
+    setCurrent(null); setHistory([]); setInvoices([]); setSubmissions([]); setPayments([])
+    if (companyId) void loadCompany(companyId, () => active)
+    return () => { active = false }
   }, [companyId])
 
-  async function loadCompany(id: string) {
+  async function loadCompany(id: string, isCurrent: () => boolean = () => true) {
     setLoading(true)
     setError("")
     try {
@@ -105,6 +105,7 @@ export default function BillingPage() {
         billingApi.paymentSubmissions(id),
         billingApi.payments(id),
       ])
+      if (!isCurrent()) return
       setCurrent(active || null)
       setHistory(Array.isArray(past) ? past : [])
       setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
@@ -119,9 +120,9 @@ export default function BillingPage() {
         setPaymentAmount("")
       }
     } catch (e: any) {
-      setError(e?.message || "Unable to load this company's billing records.")
+      if (isCurrent()) setError(e?.message || "Unable to load this company's billing records.")
     } finally {
-      setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }
 
