@@ -189,7 +189,7 @@ export default function BillingPage() {
       setError("Enter a plan code, name, at least one complete price interval and one feature mapping.")
       return
     }
-    if (prices.some(price => !price.amount || !price.tax || price.tax_policy_reference.trim().length < 3)) {
+    if (prices.some(price => !price.amount_bdt || !price.tax_bdt || price.tax_policy_reference.trim().length < 3)) {
       setError("Every enabled interval needs a positive price, a tax amount and a tax-policy reference.")
       return
     }
