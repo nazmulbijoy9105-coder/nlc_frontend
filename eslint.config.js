@@ -1,4 +1,4 @@
-const config = [
+export default [
   {
     ignores: ['node_modules/', '.next/', 'out/', 'build/'],
   },
@@ -15,5 +15,3 @@ const config = [
     },
   },
 ];
-
-export default config;
