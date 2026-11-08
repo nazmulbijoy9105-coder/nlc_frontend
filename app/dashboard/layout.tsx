@@ -13,6 +13,7 @@ const adminNav = [
   ]},
   { section: 'Intelligence', items: [
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -27,6 +28,7 @@ const clientNav = [
     { label: 'Dashboard', icon: '◈', href: '/dashboard' },
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
+    { label: 'Billing', icon: '৳', href: '/dashboard/finance' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
@@ -104,7 +106,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     items: g.items.filter(i =>
       (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
       (i.href !== '/dashboard/admin' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
-      (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
+      (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
+      (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
     ),
   })).filter(g => g.items.length > 0)
   const handleLogout = async () => {
