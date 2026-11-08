@@ -1,19 +1,13 @@
-const config = [
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+
+export default defineConfig([
+  ...nextVitals,
   {
-    ignores: ['node_modules/', '.next/', 'out/', 'build/'],
-  },
-  {
-    files: ['**/*.{js,jsx,ts,tsx}'],
     rules: {
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/immutability': 'off',
-      'react-hooks/exhaustive-deps': 'warn',
-      'react/no-unescaped-entities': 'off',
-      '@next/next/no-location-assign-relative-destination': 'off',
-      'import/no-anonymous-default-export': 'off',
+      // Existing data-fetch effects are being refactored; keep this diagnostic visible without blocking CI.
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
-];
-
-export default config;
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+]);

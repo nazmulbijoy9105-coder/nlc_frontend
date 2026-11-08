@@ -43,6 +43,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
+  const [sessionUnavailable, setSessionUnavailable] = useState(false)
+  const [retryNonce, setRetryNonce] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -68,9 +70,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
         storeUser(currentUser)
+        setSessionUnavailable(false)
         setUser(currentUser)
-      } catch {
+      } catch (error) {
         if (!cancelled) {
+          const status = error instanceof Error && "status" in error
+            ? Number(error.status)
+            : 0
+          if (status === 429 || status >= 500) {
+            setSessionUnavailable(true)
+            return
+          }
           clearAuth()
           router.replace('/')
         }
@@ -87,8 +97,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     void verifySession()
     return () => { cancelled = true }
   }, [router])
+  }, [router, retryNonce])
 
-  if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
+  if (!user) return (
+    <div style={{padding:40,color:'#9CA3AF'}}>
+      {sessionUnavailable ? (
+        <div role="alert">
+          <p>We cannot verify your session because the authentication service is temporarily unavailable. Your saved sign-in credentials have been retained.</p>
+          <button type="button" onClick={() => setRetryNonce(value => value + 1)}>Retry session verification</button>
+        </div>
+      ) : 'Loading...'}
+    </div>
+  )
 
   const isClient = user.role?.includes('CLIENT')
   const nav = isClient ? clientNav : adminNav.map(g => ({

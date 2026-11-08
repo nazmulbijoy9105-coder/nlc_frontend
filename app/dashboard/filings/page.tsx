@@ -7,8 +7,7 @@ export default function FilingsPage() {
   const [returns, setReturns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { load() }, [])
-  const load = async () => {
+  async function load() {
     try {
       const [a, r] = await Promise.all([
         filingsApi.listAGM().catch(()=>[]),
@@ -18,6 +17,8 @@ export default function FilingsPage() {
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }
+
+  useEffect(() => { void load() }, [])
 
   if (loading) return <div style={{padding:40,color:'rgba(255,255,255,.35)'}}>Loading filings...</div>
 

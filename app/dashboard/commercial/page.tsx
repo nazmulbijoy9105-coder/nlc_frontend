@@ -25,7 +25,6 @@ export default function CommercialPage() {
   const [companies, setCompanies] = useState<any[]>([])
   const [companyId, setCompanyId] = useState("")
   const companyIdRef = useRef(companyId)
-  companyIdRef.current = companyId
   const [engagements, setEngagements] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
   const [statusDrafts, setStatusDrafts] = useState<Record<string, string>>({})
@@ -75,6 +74,10 @@ export default function CommercialPage() {
       ),
     )
   }, [])
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const currentUser = getUser()
