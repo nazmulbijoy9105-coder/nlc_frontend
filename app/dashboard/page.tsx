@@ -1,135 +1,209 @@
-"use client"
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { dashboardApi, companiesApi } from '@/lib/api'
-import LegalDisclaimer from '@/components/LegalDisclaimer'
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { dashboardApi, companiesApi } from "@/lib/api";
+import { getUser } from "@/lib/auth";
+import LegalDisclaimer from "@/components/LegalDisclaimer";
+
+type Kpis = {
+  total_companies?: number;
+  green_count?: number;
+  yellow_count?: number;
+  red_black_count?: number;
+  not_evaluated_count?: number;
+  upcoming_deadlines?: number;
+};
+
+function asArray(value: any): any[] {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.data)) return value.data;
+  throw new Error("Dashboard service returned an unexpected list response.");
+}
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const [kpis, setKpis] = useState<any>(null)
-  const [companyList, setCompanyList] = useState<any[]>([])
-  const [deadlines, setDeadlines] = useState<any[]>([])
-  const [activity, setActivity] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [scoreReleasePending, setScoreReleasePending] = useState(false)
-  const [calendarReleasePending, setCalendarReleasePending] = useState(false)
+  const router = useRouter();
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const [kpis, setKpis] = useState<Kpis | null>(null);
+  const [companyList, setCompanyList] = useState<any[]>([]);
+  const [deadlines, setDeadlines] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [scoreReleasePending, setScoreReleasePending] = useState(false);
+  const [kpiScopeWarning, setKpiScopeWarning] = useState<string | null>(null);
+  const [calendarReleasePending, setCalendarReleasePending] = useState(false);
 
-  async function loadData() {
-    try {
-      const [k, cl, d, a] = await Promise.all([
-        dashboardApi.getStats().catch((e: any) => { if (e?.status === 503) setScoreReleasePending(true); return null }),
-        (async () => { try { return await companiesApi.list() } catch { return [] } })(),
-        dashboardApi.upcomingDeadlines().catch((e: any) => { if (e?.status === 503) setCalendarReleasePending(true); return [] }),
-        dashboardApi.recentActivity().catch(() => []),
-      ])
-      setKpis(k);
-      setCompanyList(Array.isArray(cl) ? cl : (Array.isArray(cl?.items) ? cl.items : Array.isArray(cl?.data) ? cl.data : []));
-      setDeadlines(Array.isArray(d) ? d : (Array.isArray(d?.items) ? d.items : Array.isArray(d?.data) ? d.data : []));
-      setActivity(Array.isArray(a) ? a : (Array.isArray(a?.items) ? a.items : Array.isArray(a?.data) ? a.data : []));
-    } catch (e) { console.error('Dashboard load error:', e) }
-    finally { setLoading(false) }
-  }
+  const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY";
+  const canViewPortfolioKpis = ["ADMIN_STAFF", "SUPER_ADMIN", "LEGAL_STAFF"].includes(String(role));
+  const canViewActivity = ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(role));
 
-  useEffect(() => { void loadData() }, [])
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    setKpis(null);
+    setKpiScopeWarning(null);
+    setCalendarReleasePending(false);
+    setDeadlines([]);
+    setActivity([]);
+    const companiesPromise = companiesApi.list().then(asArray);
+    const kpisPromise = canViewPortfolioKpis
+      ? dashboardApi.getStats().then((data: Kpis) => {
+          if (!data || typeof data !== "object" || typeof data.total_companies !== "number") {
+            throw new Error("The KPI endpoint returned an unexpected response contract.");
+          }
+          return data;
+        })
+      : Promise.resolve(null);
+    const deadlinesPromise = canViewPortfolioKpis
+      ? dashboardApi.upcomingDeadlines().then(asArray)
+      : Promise.resolve([]);
+    const activityPromise = canViewActivity
+      ? dashboardApi.recentActivity().then(asArray)
+      : Promise.resolve([]);
 
-  if (loading) return <div style={{ padding: 40, color: 'var(--white-3)' }}>Loading dashboard…</div>
+    const results = await Promise.allSettled([companiesPromise, kpisPromise, deadlinesPromise, activityPromise]);
+    const [companiesResult, kpisResult, deadlinesResult, activityResult] = results;
+    const accessibleCompanies = companiesResult.status === "fulfilled"
+      ? companiesResult.value
+      : [];
+    if (companiesResult.status === "fulfilled") {
+      setCompanyList(accessibleCompanies);
+    } else {
+      setLoadError(
+        companiesResult.reason instanceof Error
+          ? companiesResult.reason.message
+          : "Could not load company portfolio.",
+      );
+    }
 
-  const total = kpis?.total_companies ?? kpis?.total ?? companyList.length
-  const inDefault = kpis?.red_black_companies ?? kpis?.default_companies ?? ((kpis?.red_companies ?? 0) + (kpis?.black_companies ?? 0))
-  const avgScore = kpis?.average_score ?? kpis?.avg_score ?? null
+    if (
+      canViewPortfolioKpis
+      && kpisResult.status === "fulfilled"
+      && kpisResult.value !== null
+    ) {
+      const value = kpisResult.value;
+      setKpis(value);
+      const scopeMatches = companiesResult.status === "fulfilled"
+        && value.total_companies === accessibleCompanies.length;
+      setKpiScopeWarning(scopeMatches ? null : "The KPI endpoint scope does not match the accessible company list. Portfolio metrics are withheld rather than displaying inconsistent totals.");
+      setScoreReleasePending(!scopeMatches || Number(value.not_evaluated_count || 0) > 0);
+    } else if (canViewPortfolioKpis && kpisResult.status === "rejected") {
+      setScoreReleasePending(true);
+      setLoadError((current) => current || (
+        kpisResult.reason instanceof Error
+          ? kpisResult.reason.message
+          : "Could not load portfolio KPIs."
+      ));
+    } else if (canViewPortfolioKpis) {
+      setScoreReleasePending(true);
+      setLoadError((current) => current || "Could not load portfolio KPIs.");
+    }
 
-  const kpiCards = [
-    { lbl: 'Total Companies', val: total || '—', sub: 'Registered portfolios', color: 'var(--navy-3)' },
-    { lbl: 'In Default', val: inDefault || '—', sub: 'Require intervention', color: '#B91C1C' },
-    { lbl: 'Avg Score', val: avgScore === null ? '—' : `${avgScore}/100`, sub: 'Portfolio average', color: 'var(--green)' },
-    { lbl: 'Active Flags', val: scoreReleasePending ? '—' : (kpis?.total_active_flags ?? kpis?.active_flags ?? '—'), sub: scoreReleasePending ? 'Unavailable pending legal review' : 'Review signals', color: 'var(--yellow)' },
-  ]
+    if (deadlinesResult.status === "fulfilled") { setDeadlines(deadlinesResult.value); setCalendarReleasePending(false); }
+    else {
+      setCalendarReleasePending(true);
+      setLoadError((current) => current || (deadlinesResult.reason instanceof Error ? deadlinesResult.reason.message : "Could not load statutory deadlines."));
+    }
+    if (activityResult.status === "fulfilled") setActivity(activityResult.value);
+    else if (canViewActivity) setLoadError((current) => current || "Could not load recent activity.");
+    if (isClient) {
+      setScoreReleasePending(true);
+      setCalendarReleasePending(true);
+    }
+    setLoading(false);
+  }, [canViewActivity, canViewPortfolioKpis, isClient]);
 
-  const bands = [
-    { name: 'GREEN', label: 'No violations detected', n: kpis?.green_companies ?? 0, c: '#1a7a52' },
-    { name: 'YELLOW', label: 'Minor Risk', n: kpis?.yellow_companies ?? 0, c: '#D97706' },
-    { name: 'RED', label: 'Default', n: kpis?.red_companies ?? 0, c: '#B91C1C' },
-    { name: 'BLACK', label: 'Severe', n: kpis?.black_companies ?? 0, c: '#A855F7' },
-  ]
+  useEffect(() => { if (roleLoaded) void loadData(); }, [roleLoaded, loadData]);
+
+  if (loading || !roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading dashboard…</div>;
+
+  const total = companyList.length;
+  const notEvaluated = kpiScopeWarning ? null : kpis?.not_evaluated_count ?? null;
+  const redBlack = kpiScopeWarning ? null : kpis?.red_black_count ?? null;
+  const green = kpiScopeWarning ? null : kpis?.green_count ?? null;
+  const yellow = kpiScopeWarning ? null : kpis?.yellow_count ?? null;
 
   return (
-    <div style={{ padding: 24 }}>
-      {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-        {kpiCards.map((k, i) => (
-          <div key={i} className="nlc-card" style={{ borderTop: `3px solid ${k.color}`, cursor: 'pointer' }} onClick={() => router.push('/dashboard/companies')}>
-            <div className="sec-lbl" style={{ marginBottom: 8, paddingBottom: 0, border: 'none' }}>{k.lbl}</div>
-            <div className="font-garamond" style={{ fontSize: 34, lineHeight: 1, marginBottom: 4, color: k.color }}>{k.val}</div>
-            <div style={{ fontSize: 11, color: 'var(--text2)' }}>{k.sub}</div>
+    <div style={{padding:24}}>
+      {kpiScopeWarning && <div role="status" className="nlc-card" style={{marginBottom:16,fontSize:12,color:"var(--text2)"}}>{kpiScopeWarning}</div>}
+      {loadError && <div role="alert" className="nlc-card" style={{marginBottom:16}}>
+        <p style={{color:"var(--red)",fontSize:12}}>{loadError}</p>
+        <button type="button" className="nlc-btn-ghost" onClick={() => void loadData()}>Retry dashboard</button>
+      </div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14,marginBottom:20}}>
+        <div className="nlc-card" role="button" tabIndex={0} onClick={()=>router.push("/dashboard/companies")} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" ")router.push("/dashboard/companies")}}>
+          <div className="sec-lbl">Accessible Companies</div>
+          <div className="font-garamond" style={{fontSize:34,color:"var(--navy-3)"}}>{total}</div>
+          <div style={{fontSize:11,color:"var(--text2)"}}>Companies in your authorised portfolio</div>
+        </div>
+        {canViewPortfolioKpis && <>
+          <div className="nlc-card">
+            <div className="sec-lbl">Not Evaluated</div>
+            <div className="font-garamond" style={{fontSize:34,color:"var(--yellow)"}}>{notEvaluated ?? "—"}</div>
+            <div style={{fontSize:11,color:"var(--text2)"}}>Not a finding of compliance or breach</div>
           </div>
-        ))}
+          <div className="nlc-card">
+            <div className="sec-lbl">RED / BLACK</div>
+            <div className="font-garamond" style={{fontSize:34,color:"var(--red)"}}>{scoreReleasePending ? "—" : redBlack ?? "—"}</div>
+            <div style={{fontSize:11,color:"var(--text2)"}}>Combined count only where scoring is released</div>
+          </div>
+          <div className="nlc-card">
+            <div className="sec-lbl">Upcoming Deadlines</div>
+            <div className="font-garamond" style={{fontSize:34,color:"var(--navy-3)"}}>{calendarReleasePending ? "—" : deadlines.length}</div>
+            <div style={{fontSize:11,color:"var(--text2)"}}>Accessible deadline records</div>
+          </div>
+        </>}
       </div>
 
-      {/* Middle: Risk + Deadlines + Alerts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.5fr', gap: 14, marginBottom: 20 }}>
-        {/* Risk Distribution */}
-        <div className="nlc-card">
+      {canViewPortfolioKpis && <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:14,marginBottom:20}}>
+        <section className="nlc-card">
           <div className="sec-lbl">Risk Distribution</div>
           {scoreReleasePending ? (
-            <div style={{fontSize:12,lineHeight:1.7,color:'var(--text2)',padding:'16px 4px'}}>
-              Not evaluated. Statutory scoring is withheld pending independent legal validation. This dashboard makes no company default or liability determination.
-            </div>
-          ) : bands.map(b => (
-            <div key={b.name} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.label}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: b.c, fontFamily: "'JetBrains Mono', monospace" }}>{b.n}</span>
+            <p style={{fontSize:12,lineHeight:1.7,color:"var(--text2)",padding:"16px 4px"}}>
+              Statutory scoring is not released or all relevant companies remain not evaluated. This dashboard makes no company default, breach or liability determination.
+            </p>
+          ) : <>
+            {[["GREEN","Green",green],["YELLOW","Yellow",yellow],["RED / BLACK","RED / BLACK",redBlack]].map(([key,label,count])=>(
+              <div key={String(key)} style={{display:"flex",justifyContent:"space-between",padding:"9px 0",borderBottom:"1px solid var(--border)",fontSize:12}}>
+                <span>{label}</span><strong>{count ?? "—"}</strong>
               </div>
-              <div className="pbar">
-                <div className="pbar-fill" style={{ width: `${total ? (b.n / total) * 100 : 0}%`, background: b.c }} />
-              </div>
-            </div>
-          ))}
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, color: 'var(--text3)' }}>Total Portfolio</span>
-            <span className="font-garamond" style={{ fontSize: 15, fontWeight: 700, color: 'var(--navy)' }}>{total} Companies</span>
-          </div>
-        </div>
-
-        {/* Deadlines */}
-        <div className="nlc-card">
+            ))}
+          </>}
+        </section>
+        <section className="nlc-card">
           <div className="sec-lbl">Upcoming Deadlines</div>
-          {calendarReleasePending ? (
-            <div style={{ fontSize: 12, lineHeight: 1.7, color: 'var(--text2)', textAlign: 'center', padding: 20 }}>
-              Statutory deadlines withheld pending rule-level legal validation and company-specific applicability review.
-            </div>
-          ) : deadlines.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No deadline records available</div>
-          ) : deadlines.slice(0, 5).map((d, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--navy)' }}>{d.company_name || d.title || 'Unknown'}</div>
-                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1 }}>{d.event_type || d.description || ''}</div>
+          {calendarReleasePending ? <p style={{fontSize:12,color:"var(--text2)",padding:16}}>Deadline data is unavailable or restricted.</p> :
+            deadlines.length === 0 ? <p style={{fontSize:12,color:"var(--text3)",padding:16}}>No deadline records available.</p> :
+            deadlines.slice(0,8).map((item,index)=>(
+              <div key={item.id || item.event_id || index} style={{display:"flex",justifyContent:"space-between",gap:12,padding:"9px 0",borderBottom:"1px solid var(--border)"}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:600,color:"var(--navy)"}}>{item.company_name || item.title || "Company"}</div>
+                  <div style={{fontSize:10,color:"var(--text3)"}}>{item.event_type || item.description || item.filing_type || "Statutory event"}</div>
+                  {item.due_date && <div style={{fontSize:10,color:"var(--text3)"}}>Due: {item.due_date}</div>}
+                </div>
+                <span style={{fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{typeof item.days_remaining === "number" ? `${item.days_remaining}d` : "—"}</span>
               </div>
-              <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: d.days_remaining < 7 ? '#B91C1C' : d.days_remaining < 30 ? '#D97706' : 'var(--green)' }}>
-                {d.days_remaining}d
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+        </section>
+        {canViewActivity && <section className="nlc-card">
+          <div className="sec-lbl gold">Recent Activity</div>
+          {activity.length === 0 ? <p style={{fontSize:12,color:"var(--text3)",padding:16}}>No recent activity.</p> :
+            activity.slice(0,8).map((item,index)=>(
+              <div key={item.id || index} style={{padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+                <div style={{fontSize:12,fontWeight:500,color:"var(--navy)"}}>{item.message || item.description || "Activity"}</div>
+                <div style={{fontSize:10,color:"var(--text3)"}}>{item.actor || "System"} · {item.created_at ? new Date(item.created_at).toLocaleString() : ""}</div>
+              </div>
+            ))}
+        </section>}
+      </div>}
 
-        {/* Recent Activity */}
-        <div className="nlc-card">
-          <div className="sec-lbl gold">⚑ Recent Activity</div>
-          {activity.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No recent activity</div>
-          ) : activity.slice(0, 8).map((a, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: a.type === 'EVALUATION' ? 'var(--green)' : a.type === 'VIOLATION' ? '#B91C1C' : 'var(--teal)', flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.message || a.description || 'Activity'}</div>
-                <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1 }}>{a.actor || 'System'} · {a.created_at ? new Date(a.created_at).toLocaleDateString() : ''}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {isClient && <div className="nlc-card" style={{marginBottom:20}}>
+        <p style={{fontSize:12,lineHeight:1.7,color:"var(--text2)"}}>Your dashboard shows only companies accessible to your account. Portfolio-wide KPIs, staff activity and restricted statutory analytics are not requested for client roles.</p>
+      </div>}
       <LegalDisclaimer />
     </div>
-  )
+  );
 }
