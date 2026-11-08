@@ -6,11 +6,13 @@ import { getUser } from "@/lib/auth";
 
 export default function CompaniesPage() {
   const router=useRouter();
-  const [role]=useState(()=>typeof window==="undefined"?null:getUser()?.role??null);
+  const [role,setRole]=useState<string|null>(null);
+  const [roleLoaded,setRoleLoaded]=useState(false);
+  useEffect(()=>{setRole(getUser()?.role??null);setRoleLoaded(true);},[]);
   const [companies,setCompanies]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState<string|null>(null);
-  const canCreate=["ADMIN_STAFF","SUPER_ADMIN"].includes(String(role));
+  const canCreate=roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN"].includes(String(role));
 
   const load=useCallback(async()=>{
     setLoading(true);setError(null);
