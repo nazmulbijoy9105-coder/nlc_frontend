@@ -8,8 +8,11 @@ interface CalendarEvent {
   title: string;
   event_type: string;
   due_date: string;
-  status: string;
-  statutory_basis: string;
+  priority: string;
+  statutory_ref: string;
+  category: string;
+  description: string;
+  fiscal_year: string | null;
 }
 
 export default function CompanyCalendarPage() {
@@ -66,14 +69,14 @@ export default function CompanyCalendarPage() {
           {events.length === 0 ? <div className="rounded-lg bg-white p-4 text-gray-500 shadow">
             No calendar events are currently available. Use Generate to request the next three years of calendar events.
           </div> : events.map((event)=>(
-            <article key={event.id} className="rounded-lg border-l-4 border-blue-500 bg-white p-4 shadow">
+            <article key={`${event.event_type}:${event.due_date}:${event.title}`} className="rounded-lg border-l-4 border-blue-500 bg-white p-4 shadow">
               <div className="flex items-start justify-between gap-4">
                 <div><h2 className="font-semibold text-gray-900">{event.title}</h2>
                   <p className="mt-1 text-sm text-gray-600">Due: {new Date(event.due_date).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">{event.status.replace(/_/g," ")}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">{event.priority || event.category || "Scheduled"}</span>
               </div>
-              <p className="mt-3 text-xs text-gray-500"><strong>Statutory basis:</strong> {event.statutory_basis || "Not recorded"}</p>
+              <p className="mt-2 text-xs text-gray-600">{event.description}</p><p className="mt-3 text-xs text-gray-500"><strong>Statutory basis:</strong> {event.statutory_ref || "Not recorded"}</p>
             </article>
           ))}
         </div>

@@ -68,7 +68,7 @@ export default function DocumentsPage() {
               <ul style={{display:"grid",gap:10}}>
                 {templates.map((template,index)=>(
                   <li key={template.template_code || template.id || index} style={{borderBottom:"1px solid var(--border)",paddingBottom:10}}>
-                    <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{template.name || template.title || template.template_code || "Unnamed template"}</div>
+                    <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{template.template_name || template.name || template.title || template.template_code || "Unnamed template"}</div>
                     {template.description && <p style={{fontSize:11,color:"var(--text3)",marginTop:4}}>{template.description}</p>}
                     <span style={{fontSize:10,color:"var(--text3)"}}>{template.status || "Template metadata only"}</span>
                   </li>
