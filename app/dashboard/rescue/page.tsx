@@ -1,86 +1,114 @@
-"use client"
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { rescueApi } from '@/lib/api'
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ApiError, rescueApi } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 
 export default function RescuePage() {
-  const [plans, setPlans] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [legalReviewPending, setLegalReviewPending] = useState(false)
-  const searchParams = useSearchParams()
-  const companyId = searchParams.get('company_id')
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => {
+    setRole(getUser()?.role ?? null);
+    setRoleLoaded(true);
+  }, []);
+  const authorised = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN", "LEGAL_STAFF"].includes(String(role));
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [legalReviewPending, setLegalReviewPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const companyId = searchParams.get("company_id");
 
-  useEffect(() => { load() }, [companyId])
-  const load = async () => {
-    try { const data = await rescueApi.list(companyId || undefined); setPlans(Array.isArray(data)?data:[]) }
-    catch(e: any) {
-      if (e?.response?.status === 503) setLegalReviewPending(true)
-      else console.error(e)
+  const load = useCallback(async () => {
+    if (!roleLoaded) return;
+    if (!authorised) { setLoading(false); return; }
+    setLoading(true);
+    setError(null);
+    setLegalReviewPending(false);
+    try {
+      const data = await rescueApi.list(companyId || undefined);
+      if (!Array.isArray(data)) throw new Error("The rescue service returned an unexpected response.");
+      setPlans(data);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 503) setLegalReviewPending(true);
+      else setError(err instanceof Error ? err.message : "Could not load rescue plans.");
+    } finally {
+      setLoading(false);
     }
-    finally { setLoading(false) }
-  }
+  }, [authorised, companyId, roleLoaded]);
 
-  if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading rescue cases...</div>
+  useEffect(() => { void load(); }, [load]);
+
+  if (!roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Checking rescue access…</div>;
+  if (!authorised) return <div role="alert" style={{padding:48,color:"var(--red)"}}>Access denied — rescue planning is restricted to authorised legal and administrative staff.</div>;
+
+  if (loading) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading rescue cases…</div>;
 
   if (legalReviewPending) return (
     <div style={{padding:24}}>
-      <div className="nlc-card" style={{maxWidth:760,margin:'24px auto'}}>
-        <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:8}}>Rescue assessment unavailable</div>
-        <p style={{fontSize:13,lineHeight:1.7,color:'var(--text2)'}}>
+      <div className="nlc-card" role="status" style={{maxWidth:760,margin:"24px auto"}}>
+        <div className="font-garamond" style={{fontSize:22,color:"var(--nlc-white)",marginBottom:8}}>Rescue assessment unavailable</div>
+        <p style={{fontSize:13,lineHeight:1.7,color:"var(--text2)"}}>
           NLC has withheld RED/BLACK-based rescue plans pending independent legal validation.
           No company default or legal liability is determined by this screen.
         </p>
       </div>
     </div>
-  )
+  );
 
-  // Extract steps from the most recent plan (finding-driven rescue per R-014)
-  const latestPlan = plans[0]
-  const rawSteps: any[] = latestPlan?.steps || []
-  const complexityRank = (c: string) => { const u = (c || '').toUpperCase(); return u === 'CRITICAL' || u === 'HIGH' ? 0 : u === 'MEDIUM' ? 1 : 2 }
-  const steps: any[] = [...rawSteps].sort((a, b) => complexityRank(a.complexity) - complexityRank(b.complexity))
+  const latestPlan = plans[0];
+  const rawSteps: any[] = Array.isArray(latestPlan?.steps) ? latestPlan.steps : [];
+  const complexityRank = (value: string) => {
+    const level = (value || "").toUpperCase();
+    return level === "CRITICAL" || level === "HIGH" ? 0 : level === "MEDIUM" ? 1 : 2;
+  };
+  const steps = [...rawSteps].sort((a, b) => complexityRank(a.complexity) - complexityRank(b.complexity));
 
   return (
     <div style={{padding:24}}>
+      {error && <div role="alert" className="nlc-card" style={{marginBottom:16}}>
+        <p style={{color:"var(--red)"}}>{error}</p>
+        <button type="button" className="nlc-btn-ghost" onClick={() => void load()}>Retry</button>
+      </div>}
       <div style={{marginBottom:22}}>
-        <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:4}}>{companyId ? 'Company Rescue Plan' : 'Default Rescue Roadmap'}</div>
-        <div style={{fontSize:12,color:'var(--white-3)'}}>Structured remediation for companies in default</div>
+        <div className="font-garamond" style={{fontSize:22,color:"var(--nlc-white)",marginBottom:4}}>{companyId ? "Company Rescue Plan" : "Default Rescue Roadmap"}</div>
+        <div style={{fontSize:12,color:"var(--white-3)"}}>Structured remediation for companies in default</div>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:14,marginBottom:20}}>
         {[
-          ['Rescue Cases', plans.length, 'var(--red)'],
-          ['Total Steps', steps.length, 'var(--navy-3)'],
-          ['High Priority', steps.filter((s: any) => s.complexity === 'HIGH' || s.complexity === 'CRITICAL').length, 'var(--red)'],
-          ['Est. Timeline', steps.length > 0 ? `${steps.reduce((a: number, s: any) => a + (s.estimated_days_max || 0), 0)} days` : 'N/A', 'var(--yellow)']
-        ].map(([l,v,c])=>(
-          <div key={l as string} className="nlc-card" style={{borderTop:`3px solid ${String(c)}`,textAlign:'center'}}>
-            <div className="font-garamond" style={{fontSize:26,color:String(c),lineHeight:1}}>{v}</div>
-            <div className="font-mono" style={{fontSize:9,color:'var(--text3)',marginTop:4,letterSpacing:'.1em',textTransform:'uppercase'}}>{l}</div>
+          ["Rescue Cases", plans.length, "var(--red)"],
+          ["Total Steps", steps.length, "var(--navy-3)"],
+          ["High Priority", steps.filter((s: any) => ["HIGH","CRITICAL"].includes(String(s.complexity).toUpperCase())).length, "var(--red)"],
+          ["Est. Timeline", steps.length ? `${steps.reduce((sum: number, s: any) => sum + (Number(s.estimated_days_max) || 0), 0)} days` : "N/A", "var(--yellow)"]
+        ].map(([label,value,color]) => (
+          <div key={String(label)} className="nlc-card" style={{borderTop:`3px solid ${String(color)}`,textAlign:"center"}}>
+            <div className="font-garamond" style={{fontSize:26,color:String(color),lineHeight:1}}>{value}</div>
+            <div className="font-mono" style={{fontSize:9,color:"var(--text3)",marginTop:4,letterSpacing:".1em",textTransform:"uppercase"}}>{label}</div>
           </div>
         ))}
       </div>
       <div className="nlc-card">
         <div className="sec-lbl gold">Mandatory Rescue Sequence</div>
-        {steps.map((s: any, i: number) => (
-          <div key={i} style={{border:'1px solid var(--border)',borderRadius:9,borderLeft:'4px solid var(--navy)',marginBottom:8,overflow:'hidden'}}>
-            <div style={{display:'grid',gridTemplateColumns:'44px 1fr auto auto',gap:14,padding:'14px 18px',alignItems:'center'}}>
-              <div style={{width:34,height:34,borderRadius:'50%',background:'linear-gradient(135deg,var(--navy-3),var(--navy))',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <span style={{color:'var(--gold)',fontWeight:700,fontFamily:"'DM Serif Display',serif"}}>{s.step_number || i + 1}</span>
+        {steps.length === 0 ? <p style={{padding:16,color:"var(--text3)"}}>No rescue steps are available for this plan.</p> : steps.map((step: any,index: number) => (
+          <article key={step.step_id || step.step_number || index} style={{border:"1px solid var(--border)",borderRadius:9,borderLeft:"4px solid var(--navy)",marginBottom:8,overflow:"hidden"}}>
+            <div style={{display:"grid",gridTemplateColumns:"44px 1fr auto auto",gap:14,padding:"14px 18px",alignItems:"center"}}>
+              <div style={{width:34,height:34,borderRadius:"50%",background:"linear-gradient(135deg,var(--navy-3),var(--navy))",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <span style={{color:"var(--gold)",fontWeight:700}}>{step.step_number || index + 1}</span>
               </div>
               <div>
-                <div style={{fontSize:13,fontWeight:600,color:'var(--navy)'}}>{s.step_title || s.title}</div>
-                <div style={{fontSize:11,color:'var(--text2)',marginTop:3}}>{s.step_description || s.desc}</div>
+                <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{step.step_title || step.title || "Untitled step"}</div>
+                <div style={{fontSize:11,color:"var(--text2)",marginTop:3}}>{step.step_description || step.desc || "No description supplied."}</div>
               </div>
-              <span className="font-mono" style={{fontSize:9.5,fontWeight:700,padding:'3px 9px',borderRadius:4,background:(s.complexity||'').includes('HIGH')?'var(--redl)':s.complexity==='MEDIUM'?'var(--yellowl)':'var(--greenl)',color:(s.complexity||'').includes('HIGH')?'var(--red)':s.complexity==='MEDIUM'?'var(--yellow)':'var(--green)'}}>{s.complexity || s.comp}</span>
-              <span className="font-mono" style={{fontSize:11,color:'var(--text2)',minWidth:80,textAlign:'right'}}>{s.estimated_days_min && s.estimated_days_max ? `${s.estimated_days_min}-${s.estimated_days_max}d` : (s.est || 'N/A')}</span>
+              <span>{step.complexity || "UNSPECIFIED"}</span>
+              <span style={{fontSize:11,color:"var(--text2)",minWidth:80,textAlign:"right"}}>{step.estimated_days_min != null && step.estimated_days_max != null ? `${step.estimated_days_min}-${step.estimated_days_max}d` : "N/A"}</span>
             </div>
-            <div style={{padding:'10px 18px 14px 76px',background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
-              <span style={{fontSize:11,color:'var(--text2)'}}>Basis: </span><span className="font-mono" style={{fontSize:11,color:'var(--teal)'}}>{s.statutory_basis || s.rule || 'N/A'}</span>
-              <span style={{fontSize:11,color:'var(--text2)',marginLeft:20}}>Status: </span><strong style={{fontSize:11}}>{s.step_status || 'PENDING'}</strong>
+            <div style={{padding:"10px 18px 14px 76px",background:"var(--surface)",borderTop:"1px solid var(--border)"}}>
+              <span style={{fontSize:11,color:"var(--text2)"}}>Basis: </span><span style={{fontSize:11,color:"var(--teal)"}}>{step.statutory_basis || step.rule || "Not recorded"}</span>
+              <span style={{fontSize:11,color:"var(--text2)",marginLeft:20}}>Status: </span><strong style={{fontSize:11}}>{step.step_status || "PENDING"}</strong>
             </div>
-          </div>
+          </article>
         ))}
       </div>
     </div>
-  )
+  );
 }

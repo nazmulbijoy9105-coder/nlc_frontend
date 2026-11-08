@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
+    "lint": "eslint .",
+    "test:contracts": "node --test tests/frontend-contracts.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
