@@ -46,6 +46,9 @@ test("client navigation does not expose staff-only rescue or unavailable finance
   assert.doesNotMatch(layout, /href: '\/dashboard\/finance'|href: '\/dashboard\/billing'/);
   assert.match(read("app/dashboard/finance/page.tsx"), /temporarily unavailable/);
   assert.match(read("app/dashboard/billing/page.tsx"), /temporarily unavailable/);
+  const api = read("lib/api.ts");
+  assert.doesNotMatch(api, /BKASH_MANUAL|NAGAD_MANUAL/);
+  assert.match(api, /cancelAtPeriodEnd: \(companyId: string, subscriptionId: string, reason: string\)/);
 });
 
 test("filings page consumes the registered portfolio endpoint contract", () => {
