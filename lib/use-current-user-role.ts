@@ -1,15 +1,19 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { getUser } from "@/lib/auth";
+import { AUTH_STATE_CHANGE_EVENT, getUser } from "@/lib/auth";
 
 const SERVER_SNAPSHOT = "__NLC_SERVER_SNAPSHOT__";
 const ANONYMOUS_SNAPSHOT = "__NLC_ANONYMOUS__";
 
-function subscribeToSession() {
-  // The auth store is currently updated by the auth flow and followed by navigation.
-  // There is no independent event source to subscribe to yet.
-  return () => {};
+function subscribeToSession(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(AUTH_STATE_CHANGE_EVENT, onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    window.removeEventListener(AUTH_STATE_CHANGE_EVENT, onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
 }
 
 function getClientRoleSnapshot(): string {
