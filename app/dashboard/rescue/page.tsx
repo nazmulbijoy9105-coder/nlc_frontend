@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ApiError, rescueApi } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 
 export default function RescuePage() {
   const [plans, setPlans] = useState<any[]>([]);
@@ -12,6 +13,7 @@ export default function RescuePage() {
   const companyId = searchParams.get("company_id");
 
   const load = useCallback(async () => {
+    if (!authorised) { setLoading(false); return; }
     setLoading(true);
     setError(null);
     setLegalReviewPending(false);
@@ -25,9 +27,11 @@ export default function RescuePage() {
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, [authorised, companyId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  if (!authorised) return <div role="alert" style={{padding:48,color:"var(--red)"}}>Access denied — rescue planning is restricted to authorised legal and administrative staff.</div>;
 
   if (loading) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading rescue cases…</div>;
 
