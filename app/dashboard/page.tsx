@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [scoreReleasePending, setScoreReleasePending] = useState(false);
+  const [kpiScopeWarning, setKpiScopeWarning] = useState<string | null>(null);
   const [calendarReleasePending, setCalendarReleasePending] = useState(false);
 
   const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY";
@@ -40,6 +41,11 @@ export default function DashboardPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
+    setKpis(null);
+    setKpiScopeWarning(null);
+    setCalendarReleasePending(false);
+    setDeadlines([]);
+    setActivity([]);
     const companiesPromise = companiesApi.list().then(asArray);
     const kpisPromise = canViewPortfolioKpis
       ? dashboardApi.getStats().then((data: Kpis) => {
@@ -73,7 +79,7 @@ export default function DashboardPage() {
       setLoadError((current) => current || (kpisResult.reason instanceof Error ? kpisResult.reason.message : "Could not load portfolio KPIs."));
     }
 
-    if (deadlinesResult.status === "fulfilled") setDeadlines(deadlinesResult.value);
+    if (deadlinesResult.status === "fulfilled") { setDeadlines(deadlinesResult.value); setCalendarReleasePending(false); }
     else {
       setCalendarReleasePending(true);
       setLoadError((current) => current || (deadlinesResult.reason instanceof Error ? deadlinesResult.reason.message : "Could not load statutory deadlines."));
