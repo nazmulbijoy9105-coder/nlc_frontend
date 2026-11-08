@@ -68,22 +68,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setSessionUnavailable(false)
         setUser(currentUser)
       } catch (error) {
-        if (!cancelled) {
-          const status = error instanceof Error && "status" in error
-            ? Number(error.status)
-            : 0
-          if (status === 429 || status >= 500) {
-            setSessionUnavailable(true)
-            return
-          }
-          clearAuth()
-          router.replace('/')
+        if (cancelled) return
+        const status = error instanceof Error && 'status' in error
+          ? Number(error.status)
+          : 0
+        if (status === 429 || status >= 500) {
+          setSessionUnavailable(true)
+          return
         }
+        clearAuth()
+        router.replace('/')
       }
     }
 
     void verifySession()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [router, retryNonce])
 
   if (!user) return (

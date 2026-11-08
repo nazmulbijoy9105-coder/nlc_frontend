@@ -95,12 +95,14 @@ export const refreshToken = async (): Promise<string> => {
         if (res.status === 429 || res.status >= 500) {
           throw new AuthRefreshError(res.status)
         }
+        // A definitive client error means the refresh credential is no longer usable.
         clearAuth()
         return ''
       }
 
       const data = await res.json()
-      if (typeof data?.access_token !== 'string' || typeof data?.refresh_token !== 'string') {
+      if (typeof data?.access_token !== 'string' || !data.access_token ||
+          typeof data?.refresh_token !== 'string' || !data.refresh_token) {
         clearAuth()
         return ''
       }
@@ -109,6 +111,7 @@ export const refreshToken = async (): Promise<string> => {
       return data.access_token
     } catch (error) {
       if (error instanceof AuthRefreshError) throw error
+      // Network failures and malformed transient responses must not destroy a valid session.
       throw new AuthRefreshError(503)
     }
   })()
@@ -143,7 +146,10 @@ export const clearTempToken = () => Cookies.remove(TEMP_TOKEN, { path: '/' })
 
 export const clearAuth = () => removeStoredAuth()
 
-export const isAuthenticated = async () => !!await getValidAccessToken()
+export const isAuthenticated = async (): Promise<boolean> => {
+  const token = await getValidAccessToken()
+  return Boolean(token)
+}
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')
