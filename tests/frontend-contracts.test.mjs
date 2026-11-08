@@ -72,3 +72,16 @@ test("company editing submits only fields supported by CompanyUpdateRequest", ()
 test("static dashboard deadline badge is not fabricated", () => {
   assert.doesNotMatch(read("components/Topbar.tsx"), /3 Deadlines/);
 });
+
+test("JSON, multipart and binary requests share one transport implementation", () => {
+  const api = read("lib/api.ts");
+  const transport = read("lib/api-transport.ts");
+  assert.match(api, /requestApiResponse\(/);
+  assert.doesNotMatch(api, /\bfetch\s*\(/);
+  assert.equal((transport.match(/\bfetch\s*\(/g) || []).length, 1);
+  assert.match(transport, /requestApiResponse\(API_BASE, path, \{ method: "POST", body: form \}\)/);
+  assert.match(transport, /requestApiResponse\(API_BASE, path, \{ method: "GET" \}/);
+  assert.match(transport, /credentials: "include"/);
+  assert.match(transport, /auth\?: boolean/);
+  assert.match(api, /headers\.set\("Content-Type", "application\/json"\)/);
+});
