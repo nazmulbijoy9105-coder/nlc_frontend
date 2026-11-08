@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ApiError, api } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 interface RJSCFormRef {
   form_code: string;
@@ -19,13 +19,8 @@ interface RJSCReferenceResponse {
 }
 
 export default function RJSCPage() {
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-
-  useEffect(() => {
-    setIsSuperAdmin(getUser()?.role === "SUPER_ADMIN");
-    setRoleLoaded(true);
-  }, []);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
+  const isSuperAdmin = role === "SUPER_ADMIN";
   const [forms, setForms] = useState<RJSCFormRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +28,7 @@ export default function RJSCPage() {
 
   useEffect(() => {
     if (!roleLoaded) return;
-    if (!isSuperAdmin) {
-      setLoading(false);
-      return;
-    }
+    if (!isSuperAdmin) return;
     let cancelled = false;
     const controller = new AbortController();
     async function fetchRjscForms() {
@@ -52,7 +44,7 @@ export default function RJSCPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    void fetchRjscForms();
+    void Promise.resolve().then(fetchRjscForms);
     return () => { cancelled = true; controller.abort(); };
   }, [roleLoaded, isSuperAdmin, retry]);
 
