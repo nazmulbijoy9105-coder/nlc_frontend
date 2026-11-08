@@ -32,7 +32,7 @@ function expireSession(path: string, status: number, message: string): boolean {
     ["not authenticated", "invalid", "expired", "deactivated", "role mismatch"].some((term) => normalized.includes(term)));
   if (expired && typeof window !== "undefined" && !isAuthEndpoint(path)) {
     clearAuth();
-    if (window.location.pathname !== "/") window.location.assign("/");
+    if (window.location.pathname !== "/") window.location.replace("/");
   }
   return expired;
 }
