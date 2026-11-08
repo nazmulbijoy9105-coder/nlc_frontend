@@ -1,12 +1,7 @@
-import { clearAuth, getValidAccessToken } from "@/lib/auth";
+import { clearAuth, getValidAccessToken, refreshToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api-config";
+import { ApiError } from "@/lib/api-errors";
 
-export class ApiTransportError extends Error {
-  constructor(message: string, public readonly status: number) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
 async function errorMessage(response: Response): Promise<string> {
   const fallback = `HTTP ${response.status}`;
   const type = response.headers.get("content-type") || "";
@@ -20,6 +15,7 @@ async function errorMessage(response: Response): Promise<string> {
   }
   return (await response.text().catch(() => "")) || fallback;
 }
+
 function expireSession(path: string, status: number, message: string): boolean {
   const normalized = message.toLowerCase();
   const expired = status === 401 || (status === 403 &&
@@ -30,32 +26,56 @@ function expireSession(path: string, status: number, message: string): boolean {
   }
   return expired;
 }
+
 async function authenticatedFetch(path: string, init: RequestInit, retryRead = false): Promise<Response> {
   const token = await getValidAccessToken();
-  if (!token) throw new ApiTransportError("Your session has expired. Please sign in again.", 401);
+  if (!token) throw new ApiError("Your session has expired. Please sign in again.", 401);
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${token}`);
-  const attempts = retryRead ? 2 : 1;
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
+  let authRetried = false;
+  let transientRetried = false;
+
+  while (true) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
-      const response = await fetch(API_BASE + path, { ...init, headers, credentials: "include", cache: "no-store", signal: controller.signal });
+      const response = await fetch(API_BASE + path, {
+        ...init, headers, credentials: "include", cache: "no-store", signal: controller.signal,
+      });
       if (response.ok || response.status === 204) return response;
-      const message = await errorMessage(response);
-      if (expireSession(path, response.status, message)) throw new ApiTransportError("Your session has expired. Please sign in again.", response.status);
-      if (retryRead && attempt + 1 < attempts && [502, 503, 504].includes(response.status)) continue;
-      throw new ApiTransportError(message, response.status);
-    } catch (error) {
-      if (error instanceof ApiTransportError) throw error;
-      if (attempt + 1 >= attempts) {
-        if (error instanceof Error && error.name === "AbortError") throw new ApiTransportError("The request timed out. Please try again.", 408);
-        throw new ApiTransportError("The service is temporarily unavailable. Check your connection and try again.", 0);
+      if (response.status === 401 && !authRetried && !path.startsWith("/api/v1/auth/")) {
+        authRetried = true;
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          headers.set("Authorization", `Bearer ${refreshed}`);
+          continue;
+        }
       }
-    } finally { clearTimeout(timeout); }
+      const message = await errorMessage(response);
+      if (expireSession(path, response.status, message)) {
+        throw new ApiError("Your session has expired. Please sign in again.", response.status);
+      }
+      if (retryRead && !transientRetried && [502, 503, 504].includes(response.status)) {
+        transientRetried = true;
+        continue;
+      }
+      throw new ApiError(message, response.status);
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new ApiError("The request timed out. Please try again.", 408);
+      }
+      if (retryRead && !transientRetried) {
+        transientRetried = true;
+        continue;
+      }
+      throw new ApiError("The service is temporarily unavailable. Check your connection and try again.", 0);
+    } finally {
+      clearTimeout(timeout);
+    }
   }
-  throw new ApiTransportError("The service is temporarily unavailable.", 0);
 }
+
 export async function uploadAuthenticatedFile(path: string, file: File, fieldName = "file"): Promise<unknown> {
   const form = new FormData();
   form.append(fieldName, file);
@@ -63,6 +83,7 @@ export async function uploadAuthenticatedFile(path: string, file: File, fieldNam
   if (response.status === 204) return undefined;
   return response.json();
 }
+
 export async function downloadAuthenticatedFile(path: string, fallbackName: string): Promise<void> {
   const response = await authenticatedFetch(path, { method: "GET" }, true);
   const blob = await response.blob();

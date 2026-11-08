@@ -1,16 +1,10 @@
 import { clearAuth, getRefreshToken, getValidAccessToken, refreshToken } from "@/lib/auth";
+import { ApiError } from "@/lib/api-errors";
 import { API_BASE } from "@/lib/api-config";
 import { downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
 
 
 const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
-
-export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
 
 type RequestOptions = {
   auth?: boolean;
