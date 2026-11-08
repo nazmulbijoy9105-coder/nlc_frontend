@@ -201,11 +201,18 @@ export const filingsApi = {
   agms: (companyId: string) => api.get<any>("/api/v1/filings/agm/" + companyId),
   audits: (companyId: string) => api.get<any>("/api/v1/filings/audit/" + companyId),
   annualReturns: (companyId: string) => api.get<any>("/api/v1/filings/annual-return/" + companyId),
-  listAGM: (companyId?: string) => api.get<any>("/api/v1/filings/agm" + (companyId ? "/" + companyId : "")),
-  listAudit: (companyId?: string) => api.get<any>("/api/v1/filings/audit" + (companyId ? "/" + companyId : "")),
-  listAnnualReturn: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
-  listRegisters: (companyId?: string) => api.get<any>("/api/v1/filings/statutory-register" + (companyId ? "/" + companyId : "")),
-  list: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
+  portfolio: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
+  listAGM: (companyId?: string) => companyId
+    ? api.get<any>("/api/v1/filings/agm/" + encodeURIComponent(companyId))
+    : api.get<{ agms: any[] }>("/api/v1/filings").then((data) => data.agms),
+  listAudit: (companyId?: string) => companyId
+    ? api.get<any>("/api/v1/filings/audit/" + encodeURIComponent(companyId))
+    : api.get<{ audits: any[] }>("/api/v1/filings").then((data) => data.audits),
+  listAnnualReturn: (companyId?: string) => companyId
+    ? api.get<any>("/api/v1/filings/annual-return/" + encodeURIComponent(companyId))
+    : api.get<{ annual_returns: any[] }>("/api/v1/filings").then((data) => data.annual_returns),
+  listRegisters: (companyId: string) => api.get<any>("/api/v1/filings/statutory-register/" + encodeURIComponent(companyId)),
+  list: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
 };
 
 export const articlesApi = {
@@ -227,10 +234,20 @@ export const documentsApi = {
   templates: () => api.get<any>("/api/v1/documents/templates"),
   listByCompany: (companyId: string) => api.get<any>("/api/v1/documents/" + companyId),
   generate: (data: any) => api.post<any>("/api/v1/documents/generate", data),
-  approve: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/approve"),
-  release: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/release"),
+  approve: (id: string, data: { approval_note?: string | null } = {}) => api.post<any>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/approve", data),
+  release: (id: string, data: { release_note?: string | null; notify_client?: boolean } = {}) => api.post<any>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/release", data),
   detail: (id: string) => api.get<any>("/api/v1/documents/detail/" + id),
-  downloadPdf: (id: string) => api.get<any>("/api/v1/documents/detail/" + id + "/download-pdf"),
+  downloadPdf: async (id: string) => {
+    const result = await api.get<{ download_url: string; expires_in_seconds: number }>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/pdf");
+    if (!result?.download_url) throw new ApiError("The document download URL was not returned.", 502);
+    const link = document.createElement("a");
+    link.href = result.download_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
 };
 
 export const rescueApi = {
