@@ -70,18 +70,6 @@ export const getValidAccessToken = async (): Promise<string> => {
 let refreshPromise: Promise<string> | null = null
 
 export const refreshToken = async (): Promise<string> => {
-  const token = typeof window !== 'undefined' ? (localStorage.getItem('nlc_refresh_token') || '') : ''
-  if (!token) { clearAuth(); return '' }
-  try {
-    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\/$/, '')
-    const res = await fetch(apiBase + '/api/v1/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: token }),
-    })
-    if (!res.ok) { clearAuth(); return '' }
-    const data = await res.json()
-    if (!data.access_token || !data.refresh_token) {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {
@@ -92,23 +80,26 @@ export const refreshToken = async (): Promise<string> => {
     }
 
     try {
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\/$/, '')
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\\/$/, '')
       const res = await fetch(apiBase + '/api/v1/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ refresh_token: token }),
       })
+
       if (!res.ok) {
         if (res.status === 429 || res.status >= 500) {
           throw new AuthRefreshError(res.status)
         }
+        // A definitive client error means the refresh credential is no longer usable.
         clearAuth()
         return ''
       }
 
       const data = await res.json()
-      if (typeof data?.access_token !== 'string' || typeof data?.refresh_token !== 'string') {
+      if (typeof data?.access_token !== 'string' || !data.access_token ||
+          typeof data?.refresh_token !== 'string' || !data.refresh_token) {
         clearAuth()
         return ''
       }
@@ -117,6 +108,7 @@ export const refreshToken = async (): Promise<string> => {
       return data.access_token
     } catch (error) {
       if (error instanceof AuthRefreshError) throw error
+      // Network failures and malformed transient responses must not destroy a valid session.
       throw new AuthRefreshError(503)
     }
   })()
@@ -155,7 +147,6 @@ export const isAuthenticated = async (): Promise<boolean> => {
   const token = await getValidAccessToken()
   return Boolean(token)
 }
-export const isAuthenticated = async () => !!await getValidAccessToken()
 
 export const setUser = (user: Record<string, unknown>) => {
   if (typeof window !== 'undefined')
