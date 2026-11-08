@@ -27,7 +27,6 @@ const clientNav = [
     { label: 'Dashboard', icon: '◈', href: '/dashboard' },
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
-    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
