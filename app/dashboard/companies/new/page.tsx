@@ -16,7 +16,7 @@ export default function AddCompanyPage() {
   const [activeSection, setActiveSection] = useState<'basic' | 'tax' | 'enforcement'>('basic')
   
   const [evidenceReviewed, setEvidenceReviewed] = useState(false)
-  const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<Record<string, any>>({
     company_name: '',
     registration_number: '',
     company_type: 'PRIVATE_LIMITED',
