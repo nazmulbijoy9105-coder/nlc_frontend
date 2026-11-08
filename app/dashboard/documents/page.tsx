@@ -1,79 +1,83 @@
-"use client"
-import { useState, useEffect } from 'react'
-import { documentsApi } from '@/lib/api'
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { ApiError, documentsApi } from "@/lib/api";
+
+function toArray(value: unknown, key: string): any[] {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object" && Array.isArray((value as Record<string, unknown>)[key])) {
+    return (value as Record<string, any>)[key];
+  }
+  throw new Error("Document service returned an unexpected response.");
+}
 
 export default function DocumentsPage() {
-  const [docs, setDocs] = useState<any[]>([])
-  const [templates, setTemplates] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState<any>(null)
+  const [docs, setDocs] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
 
-  async function load() {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const [d, t] = await Promise.all([
-        documentsApi.list().catch(()=>[]),
-        documentsApi.templates().catch(()=>[]),
-      ])
-      setDocs(d||[]); setTemplates(t||[])
-    } catch(e) { console.error(e) }
-    finally { setLoading(false) }
-  }
+      const [documentResponse, templateResponse] = await Promise.all([
+        documentsApi.list(),
+        documentsApi.templates(),
+      ]);
+      setDocs(toArray(documentResponse, "items"));
+      setTemplates(toArray(templateResponse, "templates"));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load documents.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { void load() }, [])
-
-  if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading documents...</div>
-
-  const docTypes = [
-    {icon:'📋',name:'AGM Minutes'},{icon:'⚖',name:'Board Resolution'},{icon:'🔄',name:'Share Transfer'},
-    {icon:'📊',name:'Compliance Report'},{icon:'⚑',name:'Rescue Roadmap'},{icon:'💼',name:'Engagement Letter'},
-  ]
+  useEffect(() => { void load(); }, [load, retry]);
 
   return (
     <div style={{padding:24}}>
-      <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)',marginBottom:6}}>Document Engine</div>
-      <div style={{fontSize:12,color:'var(--white-3)',marginBottom:18}}>AI-assisted drafting. All outputs require review.</div>
-      <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:18,padding:'12px 14px',background:'var(--red-bg)',borderRadius:8,border:'1px solid rgba(160,48,48,.25)'}}>
-        <span style={{color:'var(--red)',fontSize:12}}>●</span>
-        <div>
-          <div style={{fontSize:11.5,color:'var(--red)',fontWeight:700}}>Prototype placeholder — document generation is not active on this screen</div>
-          <div style={{fontSize:11,lineHeight:1.6,color:'var(--text2)',marginTop:4}}>No AI document is generated, stored or legally reviewed by these controls. Do not use this preview for RJSC filing or as a legal opinion. Statutory notices, due-diligence conclusions and rescue plans remain withheld pending legal validation.</div>
-        </div>
+      <div className="font-garamond" style={{fontSize:22,color:"var(--nlc-white)",marginBottom:6}}>Document Engine</div>
+      <div style={{fontSize:12,color:"var(--white-3)",marginBottom:18}}>Document records and available templates. Drafts require authorised human review before release.</div>
+      <div role="note" className="nlc-card" style={{marginBottom:18,borderLeft:"4px solid var(--yellow)"}}>
+        <strong>Workflow limitation:</strong> This screen does not offer document generation, approval or filing until the complete backend workflow, permissions, audit trail and export integrity have been verified. No prototype controls are presented as working functionality.
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-        <div className="nlc-card">
-          <div className="sec-lbl">Select Document Type</div>
-          {docTypes.map(d => (
-            <button key={d.name} onClick={()=>setSelected(d.name)} className="nlc-btn-ghost" style={{width:'100%',padding:'10px 14px',textAlign:'left',marginBottom:6,fontSize:12,background:selected===d.name?'var(--navy)':'transparent',color:selected===d.name?'var(--gold)':'var(--navy)',borderColor:selected===d.name?'var(--navy)':'var(--border2)'}}>
-              {d.icon} {d.name}
-            </button>
-          ))}
+      {error && <div role="alert" className="nlc-card" style={{marginBottom:16}}>
+        <p style={{color:"var(--red)"}}>{error}</p>
+        <button type="button" className="nlc-btn-ghost" onClick={() => setRetry((value)=>value+1)}>Retry</button>
+      </div>}
+      {loading ? <p role="status" style={{color:"var(--white-3)"}}>Loading documents and templates…</p> : (
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
+          <section className="nlc-card">
+            <h2 className="sec-lbl gold">Stored documents ({docs.length})</h2>
+            {docs.length === 0 ? <p style={{fontSize:12,color:"var(--text3)"}}>No documents are currently available.</p> : (
+              <div style={{display:"grid",gap:10}}>
+                {docs.map((doc,index)=>(
+                  <article key={doc.id || doc.document_id || index} style={{borderBottom:"1px solid var(--border)",paddingBottom:10}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{doc.title || doc.document_name || doc.template_code || "Untitled document"}</div>
+                    <div style={{fontSize:11,color:"var(--text3)",marginTop:4}}>Status: {doc.status || "Not supplied"} · {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : "Date unavailable"}</div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+          <section className="nlc-card">
+            <h2 className="sec-lbl gold">Available templates ({templates.length})</h2>
+            {templates.length === 0 ? <p style={{fontSize:12,color:"var(--text3)"}}>No document templates are currently available.</p> : (
+              <ul style={{display:"grid",gap:10}}>
+                {templates.map((template,index)=>(
+                  <li key={template.template_code || template.id || index} style={{borderBottom:"1px solid var(--border)",paddingBottom:10}}>
+                    <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{template.name || template.title || template.template_code || "Unnamed template"}</div>
+                    {template.description && <p style={{fontSize:11,color:"var(--text3)",marginTop:4}}>{template.description}</p>}
+                    <span style={{fontSize:10,color:"var(--text3)"}}>{template.status || "Template metadata only"}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-        <div>
-          <div className="nlc-card" style={{marginBottom:14}}>
-            <div className="sec-lbl">Document Parameters</div>
-            {[['Company Name',''],['Registration No.',''],['Financial Year',''],['Date','']].map(([l,v])=>(
-              <div key={l} style={{marginBottom:14}}>
-                <label className="f-label">{l}</label>
-                <input className="nlc-input" placeholder={v||'Enter...'} />
-              </div>
-            ))}
-            <button className="nlc-btn-primary" style={{fontWeight:700,padding:'10px 20px',opacity:.55,cursor:'not-allowed'}} disabled>Generation unavailable — prototype only</button>
-          </div>
-          {selected && (
-            <div className="nlc-card" style={{borderLeft:'4px solid var(--gold)'}}>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:14}}>
-                <div className="sec-lbl" style={{margin:0,border:'none',padding:0}}>Preview — {selected}</div>
-                <span className="badge badge-yellow">DRAFT</span>
-              </div>
-              <textarea style={{width:'100%',padding:14,border:'1px solid var(--border)',borderRadius:7,fontSize:11.5,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.7,resize:'vertical',boxSizing:'border-box',background:'var(--surface)',outline:'none'}} rows={10} placeholder="AI-generated document will appear here..." defaultValue={`[SELECTED: ${selected}]\n\nThis document will be generated by the AI engine.\n\nAll AI-generated documents require human review\nbefore filing with RJSC.\n\nDRAFT — NOT FOR FILING`} />
-              <div style={{display:'flex',gap:8,marginTop:14}}>
-                <button className="nlc-btn-primary" disabled style={{opacity:.5,cursor:'not-allowed'}}>PDF export unavailable</button>
-                <button className="nlc-btn-ghost" disabled style={{opacity:.5,cursor:'not-allowed'}}>DOCX export unavailable</button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
-  )
+  );
 }
