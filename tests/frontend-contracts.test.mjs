@@ -51,7 +51,7 @@ test("client navigation does not expose staff-only rescue or unavailable finance
   assert.match(api, /NAGAD_MANUAL/);
   assert.match(api, /cancelAtPeriodEnd: \(companyId: string, subscriptionId: string, reason: string\)/);
   assert.match(api, /completeTask: \(id: string, companyId: string, data: any\)/);
-  assert.match(api, /complete\\?company_id=/);
+  assert.match(api, /complete\?company_id=/);
 });
 
 test("filings page consumes the registered portfolio endpoint contract", () => {
