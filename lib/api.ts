@@ -214,8 +214,10 @@ export const billingApi = {
     api.post<any>(`/api/v1/subscriptions/companies/${companyId}`, {
       plan_code: planCode, billing_interval: billingInterval,
     }),
-  cancelAtPeriodEnd: (companyId: string, subscriptionId: string) =>
-    api.post<any>(`/api/v1/subscriptions/companies/${companyId}/${subscriptionId}/cancel`, {}),
+  cancelAtPeriodEnd: (companyId: string, subscriptionId: string, reason: string) =>
+    api.post<any>(`/api/v1/subscriptions/companies/${companyId}/${subscriptionId}/cancel`, {
+      reason: reason.trim(),
+    }),
   invoices: (companyId: string) =>
     api.get<any[]>(`/api/v1/finance/companies/${companyId}/invoices`),
   paymentSubmissions: (companyId: string) =>
