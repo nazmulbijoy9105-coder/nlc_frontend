@@ -19,16 +19,20 @@ interface RJSCReferenceResponse {
 }
 
 export default function RJSCPage() {
-  const [isSuperAdmin] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return getUser()?.role === "SUPER_ADMIN";
-  });
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsSuperAdmin(getUser()?.role === "SUPER_ADMIN");
+    setRoleLoaded(true);
+  }, []);
   const [forms, setForms] = useState<RJSCFormRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    if (!roleLoaded) return;
     if (!isSuperAdmin) {
       setLoading(false);
       return;
@@ -50,8 +54,9 @@ export default function RJSCPage() {
     }
     void fetchRjscForms();
     return () => { cancelled = true; controller.abort(); };
-  }, [isSuperAdmin, retry]);
+  }, [roleLoaded, isSuperAdmin, retry]);
 
+  if (!roleLoaded) return <div role="status" className="p-8">Checking access…</div>;
   if (!isSuperAdmin) return (
     <div className="p-8" role="alert">
       <h1 className="text-xl font-semibold">Access restricted</h1>
