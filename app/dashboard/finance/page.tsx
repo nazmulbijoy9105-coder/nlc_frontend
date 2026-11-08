@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { companiesApi, commercialApi, financeApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
@@ -127,8 +126,6 @@ export default function FinancePage() {
 
   useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
-  useEffect(() => { companyIdRef.current = companyId }, [companyId])
-
   useEffect(() => {
     const currentUser = getUser()
     setUser(currentUser)
@@ -219,12 +216,6 @@ export default function FinancePage() {
   const pendingCount = submissions.filter((item) => item.status === "PENDING_REVIEW").length
 
   const refreshFinance = async () => {
-    if (!companyId) return
-    const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
-      financeApi.invoices(companyId),
-      financeApi.paymentSubmissions(companyId),
-      financeApi.payments(companyId),
-    ])
     const requestedCompanyId = companyId
     if (!requestedCompanyId) return
     const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
@@ -360,7 +351,6 @@ export default function FinancePage() {
   }
 
   const requiresReference = ["BANK_TRANSFER", "CHEQUE", "BKASH_MANUAL", "NAGAD_MANUAL"].includes(paymentMethod)
-  const requiresReference = ["BANK_TRANSFER", "CHEQUE"].includes(paymentMethod)
 
   return (
     <div style={{ padding: 24, maxWidth: 1440, margin: "0 auto" }}>
@@ -493,8 +483,7 @@ export default function FinancePage() {
                 </button>
               </form>
               <div style={{ fontSize: 10, color: "var(--white-3)", marginTop: 12 }}>
-                bKash and Nagad entries are manual claims only. Live gateway checkout, automatic callback verification, refunds and recurring subscription billing are not enabled.
-                Only bank transfer, cash and cheque evidence is accepted here. Payment claims remain pending until finance verification.
+                bKash and Nagad are manual payment claims only. Live gateway checkout, automatic callback verification, refunds and recurring subscription billing are not enabled. All claims remain pending until finance staff verify them.
               </div>
             </section>
           )}
@@ -603,13 +592,3 @@ export default function FinancePage() {
       )}
     </div>
   )
-"use client";
-export default function FinancePage() {
-  return <main className="mx-auto max-w-3xl p-6 sm:p-10">
-    <section className="nlc-card" role="status">
-      <h1 className="font-garamond text-2xl">Finance & collections</h1>
-      <p className="mt-3 text-sm leading-6" style={{color:"var(--text2)"}}>This module is temporarily unavailable in the connected backend release. The backend does not currently register the finance endpoints required for invoice creation, invoice issuance, payment submissions, payment approval or payment history.</p>
-      <p className="mt-3 text-sm leading-6" style={{color:"var(--text2)"}}>No payment or accounting action can be completed from this screen. Do not treat a displayed amount, payment reference or browser interaction as an invoice, receipt or proof of settlement.</p>
-    </section>
-  </main>;
-}
