@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ApiError, companiesApi, rescueApi } from '@/lib/api'
 import { getUser } from '@/lib/auth'
@@ -18,9 +18,11 @@ export default function CompanyProfilePage() {
   const [rescuePlan, setRescuePlan] = useState<any>(null)
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const loadRequest = useRef(0)
 
   const load = useCallback(async () => {
     if (!id) return;
+    const requestId = ++loadRequest.current;
     setLoading(true);
     setLoadError(null);
     setCompany(null);
@@ -32,6 +34,7 @@ export default function CompanyProfilePage() {
       companiesApi.get(id), companiesApi.violations(id), companiesApi.modules(id),
       rescueApi.getActive(id), companiesApi.scoreHistory(id),
     ]);
+    if (requestId !== loadRequest.current) return;
     const [companyResult, flagsResult, complianceResult, rescueResult, historyResult] = results;
     if (companyResult.status === "rejected") {
       const error = companyResult.reason;
@@ -53,7 +56,10 @@ export default function CompanyProfilePage() {
     setLoading(false);
   }, [id])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    void load();
+    return () => { loadRequest.current += 1; };
+  }, [load])
 
   if (loading) return <div role="status" style={{padding:40,color:'var(--white-3)'}}>Loading company…</div>
   if (!company) return <div role="alert" style={{padding:40,color:'var(--white-3')}}>{loadError || 'Company not found or access is unavailable.'}</div>
