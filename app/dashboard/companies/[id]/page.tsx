@@ -1,12 +1,17 @@
 "use client"
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { companiesApi, rescueApi } from '@/lib/api'
+import { ApiError, companiesApi, rescueApi } from '@/lib/api'
+import { getUser } from '@/lib/auth'
 
 export default function CompanyProfilePage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const [role] = useState(() => typeof window === 'undefined' ? null : getUser()?.role ?? null)
+  const isClient = role === 'CLIENT_DIRECTOR' || role === 'CLIENT_VIEW_ONLY'
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [company, setCompany] = useState<any>(null)
   const [flags, setFlags] = useState<any[]>([])
   const [compliance, setCompliance] = useState<any>(null)
@@ -15,28 +20,43 @@ export default function CompanyProfilePage() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    if (!id) return
-    try {
-      const [c, f, comp, rp, sh] = await Promise.all([
-        companiesApi.get(id).catch(()=>null),
-        companiesApi.violations(id).catch(()=>[]),
-        companiesApi.modules(id).catch(()=>null),
-        rescueApi.getActive(id).catch(()=>null),
-        companiesApi.scoreHistory(id).catch(()=>[]),
-      ])
-      setCompany(c)
-      setFlags(Array.isArray(f) ? f : [])
-      setCompliance(comp)
-      setRescuePlan(rp)
-      setScoreHistory(Array.isArray(sh) ? sh : [])
-    } catch(e) { console.error(e) }
-    finally { setLoading(false) }
+    if (!id) return;
+    setLoading(true);
+    setLoadError(null);
+    setCompany(null);
+    setFlags([]);
+    setCompliance(null);
+    setRescuePlan(null);
+    setScoreHistory([]);
+    const results = await Promise.allSettled([
+      companiesApi.get(id), companiesApi.violations(id), companiesApi.modules(id),
+      rescueApi.getActive(id), companiesApi.scoreHistory(id),
+    ]);
+    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult] = results;
+    if (companyResult.status === "rejected") {
+      const error = companyResult.reason;
+      setLoadError(error instanceof ApiError && error.status === 403
+        ? "You do not have permission to view this company."
+        : error instanceof Error ? error.message : "Could not load company details.");
+      setLoading(false);
+      return;
+    }
+    setCompany(companyResult.value);
+    if (flagsResult.status === "fulfilled" && Array.isArray(flagsResult.value)) setFlags(flagsResult.value);
+    else setLoadError("Company details loaded, but compliance flags could not be retrieved.");
+    if (complianceResult.status === "fulfilled") setCompliance(complianceResult.value);
+    else setLoadError((current) => current || "Compliance summary is temporarily unavailable.");
+    if (rescueResult.status === "fulfilled") setRescuePlan(rescueResult.value);
+    else if (!(rescueResult.reason instanceof ApiError && rescueResult.reason.status === 404)) setLoadError((current) => current || "Rescue plan status could not be verified.");
+    if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) setScoreHistory(historyResult.value);
+    else setLoadError((current) => current || "Score history could not be retrieved.");
+    setLoading(false);
   }, [id])
 
   useEffect(() => { load() }, [load])
 
-  if (loading) return <div style={{padding:40,color:'var(--white-3)'}}>Loading company...</div>
-  if (!company) return <div style={{padding:40,color:'var(--white-3)'}}>Company not found</div>
+  if (loading) return <div role="status" style={{padding:40,color:'var(--white-3)'}}>Loading company…</div>
+  if (!company) return <div role="alert" style={{padding:40,color:'var(--white-3')}}>{loadError || 'Company not found or access is unavailable.'}</div>
 
   const band = compliance?.risk_band || company.band || 'NOT_EVALUATED'
   const score: number | null = band === 'NOT_EVALUATED'
@@ -87,13 +107,15 @@ export default function CompanyProfilePage() {
           </div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
             <button className="nlc-btn-secondary" onClick={()=>router.push('/dashboard/companies/' + id + '/articles')}>Articles Review</button>
-            <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue?company_id=' + id)}>Rescue Plan</button>
-            <button style={{background:'#0f233c',color:'#C9A84C',border:'1px solid rgba(201,168,76,.3)',padding:'8px 14px',borderRadius:7,fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}} onClick={async()=>{try{await companiesApi.downloadPDF(id)}catch(e){alert('PDF download failed: '+(e as Error).message)}}}>Download PDF</button>
-            <button className="nlc-btn-primary" onClick={async()=>{try{await companiesApi.evaluate(id);load()}catch(e){alert('Re-evaluation failed: '+(e as Error).message)}}}>Re-evaluate</button>
+            {!isClient && <button className="nlc-btn-danger" onClick={()=>router.push('/dashboard/rescue?company_id=' + id)}>Rescue Plan</button>}
+            <button style={{background:'#0f233c',color:'#C9A84C',border:'1px solid rgba(201,168,76,.3)',padding:'8px 14px',borderRadius:7,fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}} onClick={async()=>{setActionError(null);try{await companiesApi.downloadPDF(id)}catch(e){setActionError(e instanceof Error?e.message:'PDF download failed.')}}}>Download PDF</button>
+            {!isClient && <button className="nlc-btn-primary" onClick={async()=>{setActionError(null);try{await companiesApi.evaluate(id);await load()}catch(e){setActionError(e instanceof Error?e.message:'Re-evaluation failed.')}}}>Re-evaluate</button>}
           </div>
         </div>
       </div>
 
+      {loadError && <div role="alert" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #A94442',borderRadius:8,color:'#FCA5A5',fontSize:12}}>{loadError}</div>}
+      {actionError && <div role="alert" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #A94442',borderRadius:8,color:'#FCA5A5',fontSize:12}}>{actionError}</div>}
       {band === 'NOT_EVALUATED' && (
         <div role="status" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #D6B65A',borderRadius:10,background:'rgba(214,182,90,0.08)',color:'var(--text)',fontSize:12,lineHeight:1.6}}>
           <strong>Authoritative compliance score not released.</strong> The legal-rule corpus is pending independent legal approval. Findings remain provisional, are not applied to a compliance score, and must not be treated as a legal certification.
