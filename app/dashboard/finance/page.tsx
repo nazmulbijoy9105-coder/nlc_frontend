@@ -153,11 +153,16 @@ export default function FinancePage() {
       setInvoices([])
       setSubmissions([])
       setPayments([])
+      setLoadingFinance(false)
       return
     }
     let active = true
     setLoadingFinance(true)
     setError("")
+    // Never leave the previous company's financial records visible during a tenant switch.
+    setInvoices([])
+    setSubmissions([])
+    setPayments([])
     Promise.all([
       financeApi.invoices(companyId),
       financeApi.paymentSubmissions(companyId),
