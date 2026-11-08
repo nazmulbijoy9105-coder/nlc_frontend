@@ -34,7 +34,7 @@ export default function RulesPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    void load();
+    void Promise.resolve().then(load);
     return () => { cancelled = true; };
   }, [roleLoaded, role, retry]);
 
