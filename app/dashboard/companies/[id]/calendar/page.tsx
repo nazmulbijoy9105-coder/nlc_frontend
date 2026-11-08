@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
 
@@ -18,14 +18,19 @@ interface CalendarEvent {
 export default function CompanyCalendarPage() {
   const params = useParams<{ id: string }>();
   const companyId = params.id;
+  const activeCompanyId = useRef(companyId);
+  const requestVersion = useRef(0);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
 
+  useEffect(() => { activeCompanyId.current = companyId; }, [companyId]);
+
   const fetchCalendar = useCallback(async () => {
     if (!companyId) return;
+    const version = ++requestVersion.current;
     setLoading(true);
     setError(null);
     try {
@@ -33,10 +38,11 @@ export default function CompanyCalendarPage() {
         `/api/v1/calendar/companies/${encodeURIComponent(companyId)}?days_ahead=365`
       );
       if (!data || !Array.isArray(data.events)) throw new Error("Calendar service returned an unexpected response.");
+      if (version !== requestVersion.current || activeCompanyId.current !== companyId) return;
       setEvents(data.events);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load calendar.");
-    } finally { setLoading(false); }
+      if (version === requestVersion.current && activeCompanyId.current === companyId) setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load calendar.");
+    } finally { if (version === requestVersion.current && activeCompanyId.current === companyId) setLoading(false); }
   }, [companyId]);
 
   useEffect(() => { void fetchCalendar(); }, [fetchCalendar, retry]);

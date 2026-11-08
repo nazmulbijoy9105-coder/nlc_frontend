@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
 import { getUser } from "@/lib/auth";
@@ -21,6 +21,8 @@ export default function CompanyFormsPage() {
   const companyId = params.id;
   const [role] = useState(() => typeof window === "undefined" ? null : getUser()?.role ?? null);
   const canRecordFiling = ["ADMIN_STAFF","SUPER_ADMIN","LEGAL_STAFF"].includes(String(role));
+  const activeCompanyId = useRef(companyId);
+  const requestVersion = useRef(0);
   const [forms, setForms] = useState<RJSCForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,17 +30,21 @@ export default function CompanyFormsPage() {
   const [filedDates, setFiledDates] = useState<Record<string,string>>({});
   const [receipts, setReceipts] = useState<Record<string,string>>({});
 
+  useEffect(() => { activeCompanyId.current = companyId; }, [companyId]);
+
   const fetchForms = useCallback(async () => {
     if (!companyId) return;
+    const version = ++requestVersion.current;
     setLoading(true);
     setError(null);
     try {
       const data = await api.get<RJSCForm[]>(`/api/v1/rjsc-forms/${encodeURIComponent(companyId)}/pending`);
       if (!Array.isArray(data)) throw new Error("RJSC filing service returned an unexpected response.");
+      if (version !== requestVersion.current || activeCompanyId.current !== companyId) return;
       setForms(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load RJSC forms.");
-    } finally { setLoading(false); }
+      if (version === requestVersion.current && activeCompanyId.current === companyId) setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load RJSC forms.");
+    } finally { if (version === requestVersion.current && activeCompanyId.current === companyId) setLoading(false); }
   }, [companyId]);
 
   useEffect(() => { void fetchForms(); }, [fetchForms]);

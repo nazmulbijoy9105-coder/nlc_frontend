@@ -25,6 +25,7 @@ export default function CompanyProfilePage() {
     const requestId = ++loadRequest.current;
     setLoading(true);
     setLoadError(null);
+    setActionError(null);
     setCompany(null);
     setFlags([]);
     setCompliance(null);
