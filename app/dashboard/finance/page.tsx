@@ -125,10 +125,22 @@ export default function FinancePage() {
   const isFinanceStaff = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY"
   const canSubmitPayment = role === "CLIENT_DIRECTOR"
-  const currentInvoices = financeDataCompanyId === companyId ? invoices : []
-  const currentSubmissions = financeDataCompanyId === companyId ? submissions : []
-  const currentPayments = financeDataCompanyId === companyId ? payments : []
-  const currentEngagements = engagementsCompanyId === companyId ? engagements : []
+  const currentInvoices = useMemo(
+    () => financeDataCompanyId === companyId ? invoices : [],
+    [financeDataCompanyId, companyId, invoices],
+  )
+  const currentSubmissions = useMemo(
+    () => financeDataCompanyId === companyId ? submissions : [],
+    [financeDataCompanyId, companyId, submissions],
+  )
+  const currentPayments = useMemo(
+    () => financeDataCompanyId === companyId ? payments : [],
+    [financeDataCompanyId, companyId, payments],
+  )
+  const currentEngagements = useMemo(
+    () => engagementsCompanyId === companyId ? engagements : [],
+    [engagementsCompanyId, companyId, engagements],
+  )
   const currentPaymentInvoiceId = currentInvoices.some((invoice) => invoice.invoice_id === paymentInvoiceId)
     ? paymentInvoiceId
     : ""
