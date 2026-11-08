@@ -13,8 +13,6 @@ const adminNav = [
   ]},
   { section: 'Intelligence', items: [
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
-    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
-    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -106,8 +104,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
       (i.href !== '/dashboard/admin' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
       (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
-      (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
-      (i.href !== '/dashboard/billing' || ['ADMIN_STAFF', 'SUPER_ADMIN', 'CLIENT_DIRECTOR', 'CLIENT_VIEW_ONLY'].includes(user.role))
     ),
   })).filter(g => g.items.length > 0)
   const handleLogout = async () => {
