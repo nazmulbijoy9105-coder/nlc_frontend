@@ -85,3 +85,17 @@ test("JSON, multipart and binary requests share one transport implementation", (
   assert.match(transport, /auth\?: boolean/);
   assert.match(api, /headers\.set\("Content-Type", "application\/json"\)/);
 });
+
+test("privileged client pages resolve roles after hydration instead of locking in the SSR role", () => {
+  for (const path of [
+    "app/dashboard/rules/page.tsx",
+    "app/dashboard/rjsc/page.tsx",
+    "app/dashboard/admin/page.tsx",
+    "app/dashboard/companies/[id]/edit/page.tsx",
+  ]) {
+    const source = read(path);
+    assert.match(source, /roleLoaded/);
+    assert.match(source, /getUser\(\)/);
+    assert.doesNotMatch(source, /useState\(\(\) => typeof window === "undefined"/);
+  }
+});
