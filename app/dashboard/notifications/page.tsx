@@ -41,7 +41,7 @@ export default function NotificationsPage() {
     }
   }, []);
 
-  useEffect(() => { void fetchNotifications(); }, [fetchNotifications]);
+  useEffect(() => { void Promise.resolve().then(fetchNotifications); }, [fetchNotifications]);
 
   const handleAcknowledge = async (id: string) => {
     setBusyId(id);
