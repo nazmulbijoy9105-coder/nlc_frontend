@@ -34,7 +34,7 @@ export default function FilingsPage() {
       <div className="sec-lbl gold">{title} ({items.length})</div>
       {items.length===0?<div style={{fontSize:12,color:"#9CA3AF",textAlign:"center",padding:20}}>No records returned.</div>:
         items.map((item,index)=>(
-          <article key={item.id||item.agm_id||item.audit_id||item.annual_return_id||index} style={{padding:"10px 0",borderBottom:"1px solid #E4E8EF"}}>
+          <article key={item.id||item.agm_id||item.audit_id||item.return_id||item.annual_return_id||index} style={{padding:"10px 0",borderBottom:"1px solid #E4E8EF"}}>
             <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
               <span style={{fontSize:12,fontWeight:600,color:"#07172B"}}>{item.company_name || item.company_id || "Company"} · FY {item.financial_year ?? "Not recorded"}</span>
               <span className="badge badge-neutral">
@@ -47,8 +47,8 @@ export default function FilingsPage() {
             </div>
             <div style={{fontSize:10,color:"#9CA3AF",marginTop:4}}>
               {kind==="agm"?`Due: ${item.agm_due_date||"Not evaluated"} | Held: ${item.held_date||"Not recorded"}`:
-               kind==="return"?`Filing date: ${item.filed_date||"—"} | Legal deadline: ${item.filing_deadline||"Not evaluated"}`:
-               `Financial year: ${item.financial_year??"Not recorded"} | Completion: ${item.completed_date||"Not recorded"}`}
+               kind==="return"?`Filing date: ${item.filed_date||"Not recorded"} | RJSC acknowledgement: ${item.rjsc_acknowledgment_number||"Not recorded"} | Late fee paid: ${item.late_fee_paid?"Yes":"Not recorded"}`:
+               `Signed date: ${item.signed_date||"Not recorded"} | Auditor: ${item.auditor_firm||"Not recorded"} | Opinion: ${item.audit_opinion||"Not recorded"}`}
             </div>
           </article>
         ))}
