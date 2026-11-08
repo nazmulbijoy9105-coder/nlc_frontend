@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { companiesApi } from '@/lib/api'
 import { getUser } from '@/lib/auth'
@@ -8,7 +8,9 @@ import { Building2, FileText, Shield, AlertCircle } from 'lucide-react'
 
 export default function AddCompanyPage() {
   const router = useRouter()
-  const [role] = useState(() => typeof window === 'undefined' ? null : getUser()?.role ?? null)
+  const [role, setRole] = useState<string | null>(null)
+  const [roleLoaded, setRoleLoaded] = useState(false)
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activeSection, setActiveSection] = useState<'basic' | 'tax' | 'enforcement'>('basic')
@@ -137,6 +139,7 @@ export default function AddCompanyPage() {
     fontWeight: 600
   })
 
+  if (!roleLoaded) return <div role="status" style={{ padding: 48, color: '#9CA3AF' }}>Checking access…</div>
   if (!['ADMIN_STAFF', 'SUPER_ADMIN'].includes(String(role))) return <div role="alert" style={{ padding: 48, color: '#B91C1C' }}>Access denied — company creation is restricted to authorised staff.</div>
 
   return (
