@@ -9,8 +9,10 @@ const tiers = ["COMPLIANCE_PACKAGE","STRUCTURED_REGULARIZATION","CORPORATE_RESCU
 export default function EditCompanyPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [role] = useState(() => typeof window === "undefined" ? null : getUser()?.role ?? null);
-  const authorised = ["ADMIN_STAFF","SUPER_ADMIN"].includes(String(role));
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const authorised = roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN"].includes(String(role));
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
   const [error,setError]=useState("");
@@ -19,6 +21,7 @@ export default function EditCompanyPage() {
   const [companyType,setCompanyType]=useState("");
 
   useEffect(()=>{
+    if(!roleLoaded)return;
     if(!authorised){setLoading(false);return;}
     if(!id)return;
     let active=true;
@@ -36,7 +39,7 @@ export default function EditCompanyPage() {
       if(active)setError(err instanceof ApiError?err.message:err instanceof Error?err.message:"Could not load company.");
     }).finally(()=>{if(active)setLoading(false);});
     return ()=>{active=false;};
-  },[authorised,id]);
+  },[roleLoaded,authorised,id]);
 
   const submit=async(event:React.FormEvent<HTMLFormElement>)=>{
     event.preventDefault();setSaving(true);setError("");
@@ -54,6 +57,7 @@ export default function EditCompanyPage() {
     }finally{setSaving(false);}
   };
 
+  if(!roleLoaded)return <div role="status" style={{padding:40}}>Checking access…</div>;
   if(!authorised)return <div role="alert" style={{padding:48,color:"#B91C1C"}}>Access denied — company editing is restricted to authorised staff.</div>;
   if(loading)return <div role="status" style={{padding:40,textAlign:"center"}}>Loading company…</div>;
 
