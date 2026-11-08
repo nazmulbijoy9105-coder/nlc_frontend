@@ -80,7 +80,7 @@ export const refreshToken = async (): Promise<string> => {
     }
 
     try {
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\\/$/, '')
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\/$/, '')
       const res = await fetch(apiBase + '/api/v1/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
