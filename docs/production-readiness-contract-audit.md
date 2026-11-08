@@ -22,3 +22,10 @@ The frontend Billing and Finance pages have been changed to explicit unavailable
 ## Verification status
 
 This audit is source-level contract verification. It does not replace live integration tests against a deployed backend, browser tests, Vercel preview checks or production smoke tests.
+
+## Additional backend contract blockers
+
+- CompanyCreateRequest currently supplies boolean defaults for multiple tax/evidence facts (mostly false, but TDS-deposited and minimum-tax-paid default true). The frontend cannot safely represent UNKNOWN while this request schema forces concrete booleans.
+- CompanyUpdateRequest accepts nullable evidence fields, but the current update handler excludes null values from its update payload. The advertised null-to-UNKNOWN behavior is therefore not consistently expressible for those fields.
+- The dashboard KPI service counts companies by assigned_staff_id, while the company list endpoint returns the broader staff portfolio for staff roles. The frontend now compares the KPI total with the accessible company list and withholds inconsistent portfolio metrics.
+- The backend source tree has no Articles upload/verification route. The Articles screen remains read-only and explicitly states that upload is disabled.

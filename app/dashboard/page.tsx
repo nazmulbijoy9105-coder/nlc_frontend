@@ -58,13 +58,16 @@ export default function DashboardPage() {
 
     const results = await Promise.allSettled([companiesPromise, kpisPromise, deadlinesPromise, activityPromise]);
     const [companiesResult, kpisResult, deadlinesResult, activityResult] = results;
-    if (companiesResult.status === "fulfilled") setCompanyList(companiesResult.value);
+    const accessibleCompanies = companiesResult.status === "fulfilled" ? companiesResult.value : null;
+    if (accessibleCompanies) setCompanyList(accessibleCompanies);
     else setLoadError(companiesResult.reason instanceof Error ? companiesResult.reason.message : "Could not load company portfolio.");
 
     if (kpisResult.status === "fulfilled") {
       setKpis(kpisResult.value);
       const value = kpisResult.value;
-      setScoreReleasePending(!!value && (Number(value.not_evaluated_count || 0) > 0));
+      const scopeMatches = !!accessibleCompanies && value.total_companies === accessibleCompanies.length;
+      setKpiScopeWarning(scopeMatches ? null : "The KPI endpoint scope does not match the accessible company list. Portfolio metrics are withheld rather than displaying inconsistent totals.");
+      setScoreReleasePending(!scopeMatches || Number(value.not_evaluated_count || 0) > 0);
     } else if (canViewPortfolioKpis) {
       setScoreReleasePending(true);
       setLoadError((current) => current || (kpisResult.reason instanceof Error ? kpisResult.reason.message : "Could not load portfolio KPIs."));
@@ -88,14 +91,15 @@ export default function DashboardPage() {
 
   if (loading) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading dashboard…</div>;
 
-  const total = kpis?.total_companies ?? companyList.length;
-  const notEvaluated = kpis?.not_evaluated_count ?? null;
-  const redBlack = kpis?.red_black_count ?? null;
-  const green = kpis?.green_count ?? null;
-  const yellow = kpis?.yellow_count ?? null;
+  const total = companyList.length;
+  const notEvaluated = kpiScopeWarning ? null : kpis?.not_evaluated_count ?? null;
+  const redBlack = kpiScopeWarning ? null : kpis?.red_black_count ?? null;
+  const green = kpiScopeWarning ? null : kpis?.green_count ?? null;
+  const yellow = kpiScopeWarning ? null : kpis?.yellow_count ?? null;
 
   return (
     <div style={{padding:24}}>
+      {kpiScopeWarning && <div role="status" className="nlc-card" style={{marginBottom:16,fontSize:12,color:"var(--text2)"}}>{kpiScopeWarning}</div>}
       {loadError && <div role="alert" className="nlc-card" style={{marginBottom:16}}>
         <p style={{color:"var(--red)",fontSize:12}}>{loadError}</p>
         <button type="button" className="nlc-btn-ghost" onClick={() => void loadData()}>Retry dashboard</button>
