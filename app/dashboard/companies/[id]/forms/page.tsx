@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { ApiError, api } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 interface RJSCForm {
   id: string;
@@ -19,9 +19,7 @@ interface RJSCForm {
 export default function CompanyFormsPage() {
   const params = useParams<{ id: string }>();
   const companyId = params.id;
-  const [role, setRole] = useState<string | null>(null);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
   const canRecordFiling = roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN","LEGAL_STAFF"].includes(String(role));
   const activeCompanyId = useRef(companyId);
   const requestVersion = useRef(0);
@@ -49,7 +47,7 @@ export default function CompanyFormsPage() {
     } finally { if (version === requestVersion.current && activeCompanyId.current === companyId) setLoading(false); }
   }, [companyId]);
 
-  useEffect(() => { void fetchForms(); }, [fetchForms]);
+  useEffect(() => { void Promise.resolve().then(fetchForms); }, [fetchForms]);
 
   const handleMarkFiled = async (formId: string) => {
     const filedDate = filedDates[formId];
