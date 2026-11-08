@@ -92,6 +92,11 @@ test("privileged client pages resolve roles after hydration instead of locking i
     "app/dashboard/rjsc/page.tsx",
     "app/dashboard/admin/page.tsx",
     "app/dashboard/companies/[id]/edit/page.tsx",
+    "app/dashboard/companies/[id]/forms/page.tsx",
+    "app/dashboard/companies/[id]/page.tsx",
+    "app/dashboard/companies/new/page.tsx",
+    "app/dashboard/companies/page.tsx",
+    "app/dashboard/page.tsx",
   ]) {
     const source = read(path);
     assert.match(source, /roleLoaded/);
