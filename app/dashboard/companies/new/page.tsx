@@ -2,15 +2,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { companiesApi } from '@/lib/api'
-import { getUser } from '@/lib/auth'
+import { useCurrentUserRole } from '@/lib/use-current-user-role'
 import Topbar from '@/components/Topbar'
 import { Building2, FileText, Shield, AlertCircle } from 'lucide-react'
 
 export default function AddCompanyPage() {
   const router = useRouter()
-  const [role, setRole] = useState<string | null>(null)
-  const [roleLoaded, setRoleLoaded] = useState(false)
-  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, [])
+  const { role, loaded: roleLoaded } = useCurrentUserRole()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activeSection, setActiveSection] = useState<'basic' | 'tax' | 'enforcement'>('basic')
