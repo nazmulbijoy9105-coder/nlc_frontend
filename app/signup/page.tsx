@@ -9,7 +9,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState('LEGAL_STAFF')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -17,7 +16,7 @@ export default function SignupPage() {
     if (!email || !password || !fullName) { setError('Please fill all fields.'); return }
     setLoading(true); setError('')
     try {
-      const res = await authApi.signup(email, password, fullName, role)
+      const res = await authApi.signup(email, password, fullName)
       if (res.access_token && res.refresh_token) {
         setTokens(res.access_token, res.refresh_token)
         if (res.user) setUser(res.user)
@@ -47,15 +46,7 @@ export default function SignupPage() {
           <label className="f-label">Password</label>
           <input className="nlc-input" type="password" placeholder="Min 8, 1 upper, 1 digit, 1 special" value={password} onChange={e => setPassword(e.target.value)} />
         </div>
-        <div style={{ marginBottom: 20 }}>
-          <label className="f-label">Role</label>
-          <select className="nlc-input" value={role} onChange={e => setRole(e.target.value)}>
-            <option value="LEGAL_STAFF">Legal Staff</option>
-            <option value="ADMIN_STAFF">Admin Staff</option>
-            <option value="CLIENT_DIRECTOR">Client Director</option>
-            <option value="CLIENT_VIEW_ONLY">Client View Only</option>
-          </select>
-        </div>
+        <div role="note" style={{ marginBottom: 20, fontSize: 11, lineHeight: 1.6, color: 'var(--text3)' }}>Public registrations receive the Client View Only role. Privileged staff roles and company access are granted separately by authorised administrators.</div>
         {error && <div style={{ background: 'var(--red-bg)', border: '1px solid rgba(160,48,48,.3)', color: '#e07070', padding: '10px 14px', fontSize: 12, marginBottom: 16, borderRadius: 7 }}>{error}</div>}
         <button className="nlc-btn-gold" onClick={handleSignup} disabled={loading}>{loading ? 'Creating...' : 'Create Account'}</button>
         <div style={{ textAlign: 'center', marginTop: 16 }}>
