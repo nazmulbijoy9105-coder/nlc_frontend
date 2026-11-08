@@ -23,7 +23,9 @@ function asArray(value: any): any[] {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [role] = useState(() => typeof window === "undefined" ? null : getUser()?.role ?? null);
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [companyList, setCompanyList] = useState<any[]>([]);
   const [deadlines, setDeadlines] = useState<any[]>([]);
@@ -93,9 +95,9 @@ export default function DashboardPage() {
     setLoading(false);
   }, [canViewActivity, canViewPortfolioKpis, isClient]);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => { if (roleLoaded) void loadData(); }, [roleLoaded, loadData]);
 
-  if (loading) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading dashboard…</div>;
+  if (loading || !roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading dashboard…</div>;
 
   const total = companyList.length;
   const notEvaluated = kpiScopeWarning ? null : kpis?.not_evaluated_count ?? null;
