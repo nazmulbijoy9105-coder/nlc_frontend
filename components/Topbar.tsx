@@ -14,9 +14,6 @@ export default function Topbar({ title }: Props) {
       <div className="font-garamond" style={{ fontSize: 18, fontWeight: 600 }}>{title}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span suppressHydrationWarning style={{ fontSize: 11, color: 'var(--white-3)' }}>{date}</span>
-        <span className="badge-pill badge-yellow" style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '.8px', textTransform: 'uppercase' }}>
-          3 Deadlines
-        </span>
       </div>
     </div>
   )

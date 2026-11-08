@@ -62,8 +62,6 @@ export default function BillingPage() {
 
   useEffect(() => { selectedCompanyIdRef.current = companyId }, [companyId])
 
-  useEffect(() => { selectedCompanyIdRef.current = companyId }, [companyId])
-
   useEffect(() => {
     const sessionUser = getUser()
     setUser(sessionUser)
@@ -74,11 +72,16 @@ export default function BillingPage() {
     setLoading(true)
     setError("")
     try {
+      const permitted = ["ADMIN_STAFF", "SUPER_ADMIN", "CLIENT_DIRECTOR", "CLIENT_VIEW_ONLY"].includes(String(sessionUser?.role || ""))
+      if (!permitted) {
+        setError("Billing access is not available for this account role.")
+        return
+      }
       const finance = ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(sessionUser?.role || ""))
       const [companyResult, planResult, queueResult] = await Promise.all([
         companiesApi.list(),
-        billingApi.plans(finance).catch(() => []),
-        finance ? billingApi.financeQueue("PENDING").catch(() => []) : Promise.resolve([]),
+        billingApi.plans(finance),
+        finance ? billingApi.financeQueue("PENDING") : Promise.resolve([]),
       ])
       const rows = Array.isArray(companyResult) ? companyResult : (companyResult?.items || companyResult?.data || [])
       setCompanies(rows)
@@ -132,13 +135,17 @@ export default function BillingPage() {
   }
 
   async function refresh() {
-    if (companyId) await loadCompany(companyId, () => selectedCompanyIdRef.current === companyId)
-    const [freshPlans, freshQueue] = await Promise.all([
-      billingApi.plans(canFinance).catch(() => []),
-      canFinance ? billingApi.financeQueue("PENDING").catch(() => []) : Promise.resolve([]),
-    ])
-    setPlans(Array.isArray(freshPlans) ? freshPlans : [])
-    setFinanceQueue(Array.isArray(freshQueue) ? freshQueue : [])
+    try {
+      if (companyId) await loadCompany(companyId, () => selectedCompanyIdRef.current === companyId)
+      const [freshPlans, freshQueue] = await Promise.all([
+        billingApi.plans(canFinance),
+        canFinance ? billingApi.financeQueue("PENDING") : Promise.resolve([]),
+      ])
+      setPlans(Array.isArray(freshPlans) ? freshPlans : [])
+      setFinanceQueue(Array.isArray(freshQueue) ? freshQueue : [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not refresh billing records.")
+    }
   }
 
   function editPlan(plan: any) {
