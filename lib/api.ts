@@ -22,10 +22,10 @@ class ApiClient {
   private async request<T>(method: string, path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
     const headers = new Headers();
     let requestBody: BodyInit | undefined;
-    if (body !== undefined) {
+    if (["POST", "PATCH", "PUT"].includes(method.toUpperCase())) {
       headers.set("Content-Type", "application/json");
-      requestBody = JSON.stringify(body);
     }
+    if (body !== undefined) requestBody = JSON.stringify(body);
     const response = await requestApiResponse(
       this.baseUrl,
       path,
