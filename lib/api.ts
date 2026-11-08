@@ -1,4 +1,4 @@
-import { clearAuth, getRefreshToken, getValidAccessToken } from "@/lib/auth";
+import { clearAuth, getRefreshToken, getValidAccessToken, refreshToken } from "@/lib/auth";
 import { API_BASE } from "@/lib/api-config";
 import { downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
 
@@ -93,38 +93,40 @@ class ApiClient {
     return headers;
   }
 
-  private async request<T>(
-    method: string,
-    path: string,
-    body?: unknown,
-    options: RequestOptions = {},
-  ): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
     const auth = options.auth !== false;
     const headers = await this.getHeaders(auth, path);
-    const hasBody = body !== undefined;
-    const requestBody = hasBody ? JSON.stringify(body) : undefined;
-    const attempts = method === "GET" ? 2 : 1;
+    const requestBody = body === undefined ? undefined : JSON.stringify(body);
+    let transientRetries = 0;
+    let authRetried = false;
 
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
+    while (true) {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30_000);
       try {
         const response = await fetch(this.baseUrl + path, {
-          method,
-          headers,
-          credentials: "include",
-          cache: "no-store",
-          signal: controller.signal,
-          body: requestBody,
+          method, headers, credentials: "include", cache: "no-store",
+          signal: controller.signal, body: requestBody,
         });
         if (!response.ok) {
           const message = await readErrorMessage(response);
+          if (auth && response.status === 401 && !authRetried && !isAuthEndpoint(path)) {
+            authRetried = true;
+            const refreshed = await refreshToken();
+            if (refreshed) {
+              headers.set("Authorization", "Bearer " + refreshed);
+              continue;
+            }
+          }
           const authFailure = !isAuthEndpoint(path) && isAuthenticationFailure(response.status, message);
           if (authFailure) {
             handleAuthFailure(path);
             throw new ApiError(AUTH_ERROR_MESSAGE, response.status);
           }
-          if (method === "GET" && attempt + 1 < attempts && [502, 503, 504].includes(response.status)) continue;
+          if (method === "GET" && transientRetries < 1 && [502, 503, 504].includes(response.status)) {
+            transientRetries += 1;
+            continue;
+          }
           throw new ApiError(message, response.status);
         }
         if (response.status === 204) return undefined as T;
@@ -132,38 +134,30 @@ class ApiClient {
         if (contentType.includes("application/json")) return await response.json() as T;
         const text = await response.text();
         if (!text) return undefined as T;
-        try { return JSON.parse(text) as T; }
-        catch { return text as T; }
+        try { return JSON.parse(text) as T; } catch { return text as T; }
       } catch (error) {
         if (error instanceof ApiError) throw error;
-        if (attempt + 1 >= attempts) {
-          if (error instanceof Error && error.name === "AbortError") {
-            throw new ApiError("The request timed out. Please try again.", 408);
-          }
-          throw new ApiError("The service is temporarily unavailable. Check your connection and try again.", 0);
+        if (error instanceof Error && error.name === "AbortError") {
+          throw new ApiError("The request timed out. Please try again.", 408);
         }
+        if (method === "GET" && transientRetries < 1) {
+          transientRetries += 1;
+          continue;
+        }
+        throw new ApiError("The service is temporarily unavailable. Check your connection and try again.", 0);
       } finally {
         clearTimeout(timeout);
       }
     }
-    throw new ApiError("The service is temporarily unavailable.", 0);
   }
 
-  get<T>(path: string): Promise<T> {
-    return this.request<T>("GET", path);
-  }
+  get<T>(path: string): Promise<T> { return this.request<T>("GET", path); }
   post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
     return this.request<T>("POST", path, body, options);
   }
-  patch<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("PATCH", path, body);
-  }
-  put<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("PUT", path, body);
-  }
-  delete<T>(path: string): Promise<T> {
-    return this.request<T>("DELETE", path);
-  }
+  patch<T>(path: string, body?: unknown): Promise<T> { return this.request<T>("PATCH", path, body); }
+  put<T>(path: string, body?: unknown): Promise<T> { return this.request<T>("PUT", path, body); }
+  delete<T>(path: string): Promise<T> { return this.request<T>("DELETE", path); }
 }
 export const api = new ApiClient(API_BASE);
 
