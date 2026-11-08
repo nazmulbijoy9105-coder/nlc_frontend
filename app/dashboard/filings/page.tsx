@@ -39,10 +39,10 @@ export default function FilingsPage() {
               <span style={{fontSize:12,fontWeight:600,color:"#07172B"}}>{item.company_name || item.company_id || "Company"} · FY {item.financial_year ?? "Not recorded"}</span>
               <span className="badge badge-neutral">
                 {kind==="agm"
-                  ? item.is_default===null?"Legal review pending":item.is_default?"Potential default":item.filed_date?"Filing date recorded":item.held_date?"Held — filing evidence pending":"No filing evidence"
+                  ? item.quorum_met == null ? "Quorum not evaluated" : item.is_default ? "Potential default — review required" : item.filed_date ? "Filing date recorded" : item.held_date ? "Held — filing evidence pending" : "No filing evidence"
                   : kind==="return"
-                    ? item.filing_evidence_status==="RECEIPT_REFERENCE_RECORDED_UNVERIFIED"?"Receipt reference recorded — unverified":item.filing_evidence_status==="DATE_RECORDED_UNVERIFIED"?"Filing date recorded — unverified":"No filing evidence recorded"
-                    : item.status || item.audit_status || "Status not supplied"}
+                    ? item.is_filed ? "Marked filed — RJSC acknowledgement not independently verified" : "Not marked filed"
+                    : item.is_complete ? "Audit record complete" : "Audit record incomplete"}
               </span>
             </div>
             <div style={{fontSize:10,color:"#9CA3AF",marginTop:4}}>
