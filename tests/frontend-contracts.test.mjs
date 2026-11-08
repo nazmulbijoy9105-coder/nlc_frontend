@@ -40,15 +40,30 @@ test("staff-only screens check role before invoking protected list APIs", () => 
   }
 });
 
-test("client navigation does not expose staff-only rescue or unavailable finance routes", () => {
+test("finance workspace exposes manual billing only through role-gated backend contracts", () => {
   const layout = read("app/dashboard/layout.tsx");
-  assert.doesNotMatch(layout, /href: '\/dashboard\/rescue'.*client|Rescue Plan/);
-  assert.doesNotMatch(layout, /href: '\/dashboard\/finance'|href: '\/dashboard\/billing'/);
-  assert.match(read("app/dashboard/finance/page.tsx"), /temporarily unavailable/);
-  assert.match(read("app/dashboard/billing/page.tsx"), /temporarily unavailable/);
+  const clientNav = layout.slice(layout.indexOf("const clientNav"), layout.indexOf("export default function"));
+  assert.match(clientNav, /href: '\/dashboard\/finance'/);
+  assert.doesNotMatch(clientNav, /href: '\/dashboard\/rescue'|Rescue Plan/);
+  assert.match(layout, /i\.href !== '\/dashboard\/finance' \|\| \['ADMIN_STAFF', 'SUPER_ADMIN'\]\.includes\(user\.role\)/);
+
+  const page = read("app/dashboard/finance/page.tsx");
+  assert.match(page, /financeApi\.invoices\(companyId\)/);
+  assert.match(page, /financeApi\.paymentSubmissions\(companyId\)/);
+  assert.match(page, /financeApi\.payments\(companyId\)/);
+  assert.match(page, /isFinanceStaff/);
+  assert.match(page, /canSubmitPayment/);
+  assert.match(page, /manual payment claims only/i);
+  assert.doesNotMatch(page, /temporarily unavailable/);
+
   const api = read("lib/api.ts");
-  assert.doesNotMatch(api, /BKASH_MANUAL|NAGAD_MANUAL/);
+  assert.match(api, /BKASH_MANUAL/);
+  assert.match(api, /NAGAD_MANUAL/);
+  assert.match(api, /\/api\/v1\/finance\/invoices/);
+  assert.match(api, /\/api\/v1\/finance\/payment-submissions/);
   assert.match(api, /cancelAtPeriodEnd: \(companyId: string, subscriptionId: string, reason: string\)/);
+  assert.match(api, /completeTask: \(id: string, companyId: string, data: any\)/);
+  assert.match(api, /complete\?company_id=/);
 });
 
 test("filings page consumes the registered portfolio endpoint contract", () => {
