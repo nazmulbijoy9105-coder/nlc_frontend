@@ -63,7 +63,19 @@ export default function CompanyProfilePage() {
   }, [load])
 
   if (loading) return <div role="status" style={{padding:40,color:'var(--white-3)'}}>Loading company…</div>
-  if (!company) return <div role="alert" style={{padding:40,color:'var(--white-3')}}>{loadError || 'Company not found or access is unavailable.'}</div>
+  if (!company) {
+    return (
+      <div
+        role="alert"
+        style={{
+          padding: 40,
+          color: "var(--white-3)",
+        }}
+      >
+        {loadError || "Company not found or access is unavailable."}
+      </div>
+    )
+  }
 
   const band = compliance?.risk_band || company.band || 'NOT_EVALUATED'
   const score: number | null = band === 'NOT_EVALUATED'
