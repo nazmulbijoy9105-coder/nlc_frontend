@@ -23,7 +23,7 @@ export default function CompanyProfilePage() {
   const loadRequest = useRef(0)
 
   const load = useCallback(async () => {
-    if (!id) return;
+    if (!roleLoaded || !id) return;
     const requestId = ++loadRequest.current;
     setLoading(true);
     setLoadError(null);
@@ -57,7 +57,7 @@ export default function CompanyProfilePage() {
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) setScoreHistory(historyResult.value);
     else setLoadError((current) => current || "Score history could not be retrieved.");
     setLoading(false);
-  }, [id])
+  }, [id, roleLoaded])
 
   useEffect(() => {
     void load();
