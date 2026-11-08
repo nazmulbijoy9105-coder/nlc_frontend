@@ -102,5 +102,9 @@ test("privileged client pages resolve roles after hydration instead of locking i
     assert.match(source, /roleLoaded/);
     assert.match(source, /getUser\(\)/);
     assert.doesNotMatch(source, /useState\(\(\) => typeof window === "undefined"/);
+    if (path === "app/dashboard/companies/[id]/page.tsx") {
+      assert.match(source, /if \(!roleLoaded \|\| !id\) return;/);
+      assert.match(source, /\}, \[id, roleLoaded\]\)/);
+    }
   }
 });
