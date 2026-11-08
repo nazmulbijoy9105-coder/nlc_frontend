@@ -55,6 +55,11 @@ test("finance workspace exposes manual billing only through role-gated backend c
   assert.match(page, /canSubmitPayment/);
   assert.match(page, /manual payment claims only/i);
   assert.doesNotMatch(page, /temporarily unavailable/);
+  assert.equal((page.match(/const refreshFinance = async/g) || []).length, 1);
+  assert.match(page, /const requestedCompanyId = companyId/);
+  assert.match(page, /companyIdRef\\.current !== requestedCompanyId/);
+  assert.equal((page.match(/const requiresReference =/g) || []).length, 1);
+  assert.doesNotMatch(page, /Only bank transfer, cash and cheque evidence is accepted/);
 
   const api = read("lib/api.ts");
   assert.match(api, /BKASH_MANUAL/);
@@ -127,13 +132,4 @@ test("privileged client pages resolve roles after hydration instead of locking i
       assert.match(source, /\}, \[id, roleLoaded\]\)/);
     }
   }
-});
-
-test("finance workspace refreshes are scoped to the currently selected company", () => {
-  const page = read("app/dashboard/finance/page.tsx");
-  assert.equal((page.match(/const refreshFinance = async/g) || []).length, 1);
-  assert.match(page, /const requestedCompanyId = companyId/);
-  assert.match(page, /companyIdRef\.current !== requestedCompanyId/);
-  assert.equal((page.match(/const requiresReference =/g) || []).length, 1);
-  assert.doesNotMatch(page, /Only bank transfer, cash and cheque evidence is accepted/);
 });
