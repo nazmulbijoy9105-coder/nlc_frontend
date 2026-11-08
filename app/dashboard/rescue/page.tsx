@@ -5,6 +5,13 @@ import { ApiError, rescueApi } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 
 export default function RescuePage() {
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => {
+    setRole(getUser()?.role ?? null);
+    setRoleLoaded(true);
+  }, []);
+  const authorised = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN", "LEGAL_STAFF"].includes(String(role));
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [legalReviewPending, setLegalReviewPending] = useState(false);
@@ -13,6 +20,7 @@ export default function RescuePage() {
   const companyId = searchParams.get("company_id");
 
   const load = useCallback(async () => {
+    if (!roleLoaded) return;
     if (!authorised) { setLoading(false); return; }
     setLoading(true);
     setError(null);
@@ -27,10 +35,11 @@ export default function RescuePage() {
     } finally {
       setLoading(false);
     }
-  }, [authorised, companyId]);
+  }, [authorised, companyId, roleLoaded]);
 
   useEffect(() => { void load(); }, [load]);
 
+  if (!roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Checking rescue access…</div>;
   if (!authorised) return <div role="alert" style={{padding:48,color:"var(--red)"}}>Access denied — rescue planning is restricted to authorised legal and administrative staff.</div>;
 
   if (loading) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading rescue cases…</div>;
