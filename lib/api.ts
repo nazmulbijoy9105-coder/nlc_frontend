@@ -1,195 +1,47 @@
-import { clearAuth, getRefreshToken, getValidAccessToken } from "@/lib/auth";
+import { getRefreshToken } from "@/lib/auth";
+import { ApiError } from "@/lib/api-errors";
+export { ApiError };
+import { API_BASE } from "@/lib/api-config";
+import { requestApiResponse, downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
 
+type RequestOptions = { auth?: boolean };
 
-const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
-
-export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) {
-    super(message);
-    this.name = "ApiError";
-  }
+async function decodeResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T;
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) return await response.json() as T;
+  const text = await response.text();
+  if (!text) return undefined as T;
+  try { return JSON.parse(text) as T; } catch { return text as T; }
 }
-
-type RequestOptions = {
-  auth?: boolean;
-};
-
-function isAuthEndpoint(path: string): boolean {
-  return (
-    path.startsWith("/api/v1/auth/login") ||
-    path.startsWith("/api/v1/auth/signup") ||
-    path.startsWith("/api/v1/auth/verify-2fa")
-  );
-}
-
-function handleAuthFailure(path: string): void {
-  if (typeof window === "undefined" || isAuthEndpoint(path)) return;
-
-  clearAuth();
-  if (window.location.pathname !== "/") {
-    window.location.assign("/");
-  }
-}
-
-function isAuthenticationFailure(status: number, message: string): boolean {
-  const normalized = message.toLowerCase();
-
-  if (status === 401) return true;
-  if (status !== 403) return false;
-
-  return (
-    normalized.includes("not authenticated") ||
-    normalized.includes("invalid") ||
-    normalized.includes("expired") ||
-    normalized.includes("deactivated") ||
-    normalized.includes("role mismatch")
-  );
-}
-
-async function readErrorMessage(res: Response): Promise<string> {
-  const fallback = "HTTP " + res.status;
-  const contentType = res.headers.get("content-type") || "";
-
-  if (contentType.includes("application/json")) {
-    const err = await res.json().catch(() => null);
-    const detail = err?.detail || err?.message || err?.error || err?.errors;
-
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((item) => {
-          if (typeof item === "string") return item;
-          const field = Array.isArray(item?.loc)
-            ? item.loc.join(".")
-            : item?.field;
-          return [field, item?.msg || item?.message].filter(Boolean).join(": ");
-        })
-        .filter(Boolean)
-        .join("; ") || fallback;
-    }
-
-    return fallback;
-  }
-
-  return (await res.text().catch(() => "")) || fallback;
-}
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com").replace(/\/$/, "");
 
 class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private async getHeaders(auth = true, path = ''): Promise<HeadersInit> {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (auth && typeof window !== "undefined") {
-      const token = await getValidAccessToken();
-      if (!token) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, 401);
-      }
-      headers["Authorization"] = "Bearer " + token;
+  private async request<T>(method: string, path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
+    const headers = new Headers();
+    let requestBody: BodyInit | undefined;
+    if (["POST", "PATCH", "PUT"].includes(method.toUpperCase())) {
+      headers.set("Content-Type", "application/json");
     }
-    return headers;
+    if (body !== undefined) requestBody = JSON.stringify(body);
+    const response = await requestApiResponse(
+      this.baseUrl,
+      path,
+      { method, headers, body: requestBody },
+      { auth: options.auth !== false, retryRead: method.toUpperCase() === "GET" },
+    );
+    return decodeResponse<T>(response);
   }
 
-  async post<T>(path: string, body?: unknown, options: {auth?: boolean} = {}): Promise<T> {
-    const auth = options.auth !== false;
-    const res = await fetch(this.baseUrl + path, {
-      method: "POST",
-      headers: await this.getHeaders(auth, path),
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      const authFailure =
-        !isAuthEndpoint(path) &&
-        isAuthenticationFailure(res.status, message);
-
-      if (authFailure) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
+  get<T>(path: string): Promise<T> { return this.request<T>("GET", path); }
+  post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>("POST", path, body, options);
   }
-
-  async get<T>(path: string): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "GET",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
-  }
-
-  async delete<T>(path: string): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "DELETE",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
-  }
-
-  async patch<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "PATCH",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
-  }
-
-  async put<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "PUT",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
-  }
+  patch<T>(path: string, body?: unknown): Promise<T> { return this.request<T>("PATCH", path, body); }
+  put<T>(path: string, body?: unknown): Promise<T> { return this.request<T>("PUT", path, body); }
+  delete<T>(path: string): Promise<T> { return this.request<T>("DELETE", path); }
 }
 
 export const api = new ApiClient(API_BASE);
@@ -197,8 +49,8 @@ export const api = new ApiClient(API_BASE);
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<any>("/api/v1/auth/login", { email, password }, { auth: false }),
-  signup: (email: string, password: string, full_name: string, role: string) =>
-    api.post<any>("/api/v1/auth/signup", { email, password, full_name, role }, { auth: false }),
+  signup: (email: string, password: string, full_name: string) =>
+    api.post<any>("/api/v1/auth/signup", { email, password, full_name }, { auth: false }),
   verify2FA: (temp_token: string, totp_code: string) =>
     api.post<any>("/api/v1/auth/verify-2fa", { temp_token, totp_code }, { auth: false }),
   confirm2FA: (totp_code: string) =>
@@ -224,22 +76,7 @@ export const companiesApi = {
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
   update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
-  downloadPDF: async (id: string) => {
-    const token = await getValidAccessToken();
-    const res = await fetch(API_BASE + "/api/v1/companies/" + id + "/compliance-pdf", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    if (!res.ok) throw new Error("PDF download failed: " + res.status);
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "NLC_Compliance_Report_" + id + ".pdf";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  },
+  downloadPDF: (id: string) => downloadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(id) + "/compliance-pdf", "NLC_Compliance_Report_" + id + ".pdf"),
 };
 
 export const filingsApi = {
@@ -249,11 +86,18 @@ export const filingsApi = {
   agms: (companyId: string) => api.get<any>("/api/v1/filings/agm/" + companyId),
   audits: (companyId: string) => api.get<any>("/api/v1/filings/audit/" + companyId),
   annualReturns: (companyId: string) => api.get<any>("/api/v1/filings/annual-return/" + companyId),
-  listAGM: (companyId?: string) => api.get<any>("/api/v1/filings/agm" + (companyId ? "/" + companyId : "")),
-  listAudit: (companyId?: string) => api.get<any>("/api/v1/filings/audit" + (companyId ? "/" + companyId : "")),
-  listAnnualReturn: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
-  listRegisters: (companyId?: string) => api.get<any>("/api/v1/filings/statutory-register" + (companyId ? "/" + companyId : "")),
-  list: (companyId?: string) => api.get<any>("/api/v1/filings/annual-return" + (companyId ? "/" + companyId : "")),
+  portfolio: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
+  listAGM: (companyId?: string) => companyId
+    ? api.get<any>("/api/v1/filings/agm/" + encodeURIComponent(companyId))
+    : api.get<{ agms: any[] }>("/api/v1/filings").then((data) => data.agms),
+  listAudit: (companyId?: string) => companyId
+    ? api.get<any>("/api/v1/filings/audit/" + encodeURIComponent(companyId))
+    : api.get<{ audits: any[] }>("/api/v1/filings").then((data) => data.audits),
+  listAnnualReturn: (companyId?: string) => companyId
+    ? api.get<any>("/api/v1/filings/annual-return/" + encodeURIComponent(companyId))
+    : api.get<{ annual_returns: any[] }>("/api/v1/filings").then((data) => data.annual_returns),
+  listRegisters: (companyId: string) => api.get<any>("/api/v1/filings/statutory-register/" + encodeURIComponent(companyId)),
+  list: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
 };
 
 export const articlesApi = {
@@ -267,22 +111,7 @@ export const articlesApi = {
     api.post<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/revoke", { reason }),
   events: (companyId: string, verificationId: string) =>
     api.get<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/events"),
-  upload: async (companyId: string, file: File) => {
-    const token = await getValidAccessToken();
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch(
-      API_BASE + "/api/v1/companies/" + companyId + "/articles-document",
-      {
-        method: "POST",
-        headers: token ? { Authorization: "Bearer " + token } : {},
-        credentials: "include",
-        body: form,
-      },
-    );
-    if (!res.ok) throw new Error(await readErrorMessage(res));
-    return res.json();
-  },
+  upload: (companyId: string, file: File) => uploadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(companyId) + "/articles-document", file),
 };
 
 export const documentsApi = {
@@ -290,10 +119,20 @@ export const documentsApi = {
   templates: () => api.get<any>("/api/v1/documents/templates"),
   listByCompany: (companyId: string) => api.get<any>("/api/v1/documents/" + companyId),
   generate: (data: any) => api.post<any>("/api/v1/documents/generate", data),
-  approve: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/approve"),
-  release: (id: string) => api.post<any>("/api/v1/documents/detail/" + id + "/release"),
+  approve: (id: string, data: { approval_note?: string | null } = {}) => api.post<any>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/approve", data),
+  release: (id: string, data: { release_note?: string | null; notify_client?: boolean } = {}) => api.post<any>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/release", data),
   detail: (id: string) => api.get<any>("/api/v1/documents/detail/" + id),
-  downloadPdf: (id: string) => api.get<any>("/api/v1/documents/detail/" + id + "/download-pdf"),
+  downloadPdf: async (id: string) => {
+    const result = await api.get<{ download_url: string; expires_in_seconds: number }>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/pdf");
+    if (!result?.download_url) throw new ApiError("The document download URL was not returned.", 502);
+    const link = document.createElement("a");
+    link.href = result.download_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
 };
 
 export const rescueApi = {
@@ -310,7 +149,8 @@ export const commercialApi = {
   advanceStatus: (id: string, data: any) => api.patch<any>("/api/v1/commercial/engagements/" + id + "/status", data),
   tasks: (companyId: string) => api.get<any>("/api/v1/commercial/tasks/" + companyId),
   createTask: (data: any) => api.post<any>("/api/v1/commercial/tasks", data),
-  completeTask: (id: string, data: any) => api.patch<any>("/api/v1/commercial/tasks/" + id + "/complete", data),
+  completeTask: (id: string, companyId: string, data: any) =>
+    api.patch<any>("/api/v1/commercial/tasks/" + id + "/complete?company_id=" + encodeURIComponent(companyId), data),
   createQuotation: (data: any) => api.post<any>("/api/v1/commercial/quotations", data),
   acceptQuotation: (id: string) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/accept"),
   rejectQuotation: (id: string, data: any) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/reject", data),
@@ -333,10 +173,11 @@ export const financeApi = {
     api.get<any>("/api/v1/finance/invoices/" + invoiceId),
   submitOfflinePayment: (companyId: string, data: {
     invoice_id: string;
-    method: "BANK_TRANSFER" | "CASH" | "CHEQUE";
+    method: "BANK_TRANSFER" | "CASH" | "CHEQUE" | "BKASH_MANUAL" | "NAGAD_MANUAL";
     amount_bdt: string;
     payer_reference?: string | null;
     paid_at?: string | null;
+    evidence_document_id?: string | null;
   }) => api.post<any>("/api/v1/finance/companies/" + companyId + "/payments/offline", data),
   paymentSubmissions: (companyId: string) =>
     api.get<any>("/api/v1/finance/companies/" + companyId + "/payment-submissions"),
@@ -371,12 +212,14 @@ export const billingApi = {
     api.get<any>(`/api/v1/subscriptions/companies/${companyId}/current`),
   history: (companyId: string) =>
     api.get<any[]>(`/api/v1/subscriptions/companies/${companyId}/history`),
-  requestSubscription: (companyId: string, planCode: string, billingInterval: string) =>
+  requestSubscription: (companyId: string, planCode: string, billingInterval: "MONTHLY" | "QUARTERLY" | "ANNUAL" | "ONE_TIME") =>
     api.post<any>(`/api/v1/subscriptions/companies/${companyId}`, {
       plan_code: planCode, billing_interval: billingInterval,
     }),
-  cancelAtPeriodEnd: (companyId: string, subscriptionId: string) =>
-    api.post<any>(`/api/v1/subscriptions/companies/${companyId}/${subscriptionId}/cancel`, {}),
+  cancelAtPeriodEnd: (companyId: string, subscriptionId: string, reason: string) =>
+    api.post<any>(`/api/v1/subscriptions/companies/${companyId}/${subscriptionId}/cancel`, {
+      reason: reason.trim(),
+    }),
   invoices: (companyId: string) =>
     api.get<any[]>(`/api/v1/finance/companies/${companyId}/invoices`),
   paymentSubmissions: (companyId: string) =>
@@ -384,8 +227,8 @@ export const billingApi = {
   payments: (companyId: string) =>
     api.get<any[]>(`/api/v1/finance/companies/${companyId}/payments`),
   submitOfflinePayment: (companyId: string, body: {
-    invoice_id: string; method: "BANK_TRANSFER" | "CASH" | "CHEQUE";
-    amount_bdt: string; payer_reference?: string;
+    invoice_id: string; method: "BANK_TRANSFER" | "CASH" | "CHEQUE" | "BKASH_MANUAL" | "NAGAD_MANUAL";
+    amount_bdt: string; payer_reference?: string; paid_at?: string | null; evidence_document_id?: string | null;
   }) => api.post<any>(`/api/v1/finance/companies/${companyId}/payments/offline`, body),
   financeQueue: (status = "PENDING") =>
     api.get<any[]>(`/api/v1/subscriptions/admin?status=${encodeURIComponent(status)}`),

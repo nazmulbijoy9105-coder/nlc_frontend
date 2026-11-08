@@ -1,68 +1,70 @@
-"use client"
-import { useState, useEffect } from 'react'
-import { filingsApi } from '@/lib/api'
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { ApiError, api } from "@/lib/api";
+
+interface FilingPortfolio {
+  agms: any[];
+  audits: any[];
+  annual_returns: any[];
+}
 
 export default function FilingsPage() {
-  const [agms, setAgms] = useState<any[]>([])
-  const [returns, setReturns] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [agms,setAgms]=useState<any[]>([]);
+  const [audits,setAudits]=useState<any[]>([]);
+  const [returns,setReturns]=useState<any[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState<string|null>(null);
 
-  async function load() {
-    try {
-      const [a, r] = await Promise.all([
-        filingsApi.listAGM().catch(()=>[]),
-        filingsApi.listAnnualReturn().catch(()=>[]),
-      ])
-      setAgms(Array.isArray(a)?a:[]); setReturns(Array.isArray(r)?r:[])
-    } catch(e) { console.error(e) }
-    finally { setLoading(false) }
-  }
+  const load=useCallback(async()=>{
+    setLoading(true);setError(null);
+    try{
+      const data=await api.get<FilingPortfolio>("/api/v1/filings");
+      if(!data||!Array.isArray(data.agms)||!Array.isArray(data.audits)||!Array.isArray(data.annual_returns)){
+        throw new Error("Filings service returned an unexpected portfolio response.");
+      }
+      setAgms(data.agms);setAudits(data.audits);setReturns(data.annual_returns);
+    }catch(err){
+      setError(err instanceof ApiError?err.message:err instanceof Error?err.message:"Could not load filings.");
+    }finally{setLoading(false);}
+  },[]);
+  useEffect(()=>{void load();},[load]);
 
-  useEffect(() => { void load() }, [])
-
-  if (loading) return <div style={{padding:40,color:'rgba(255,255,255,.35)'}}>Loading filings...</div>
-
-  return (
-    <div style={{padding:24}}>
-      <div className="font-garamond" style={{fontSize:22,color:'#f4f1ea',marginBottom:20}}>Filings</div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-        <div className="nlc-card">
-          <div className="sec-lbl gold">AGM Records ({agms.length})</div>
-          {agms.length === 0 ? (
-            <div style={{fontSize:12,color:'#9CA3AF',textAlign:'center',padding:20}}>No AGM records</div>
-          ) : agms.map((a,i) => (
-            <div key={i} style={{padding:'10px 0',borderBottom:'1px solid #E4E8EF'}}>
-              <div style={{display:'flex',justifyContent:'space-between'}}>
-                <span style={{fontSize:12,fontWeight:600,color:'#07172B'}}>FY {a.financial_year}</span>
-                <span className={`badge badge-${a.is_default===true?'red':a.is_default===null?'neutral':'green'}`}>
-                  {a.is_default===null ? 'Legal review pending' : a.is_default ? 'Potential default' : a.filed_date ? 'Filing recorded' : a.held_date ? 'Held — filing evidence pending' : 'No filing evidence'}
-                </span>
-              </div>
-              <div style={{fontSize:10,color:'#9CA3AF',marginTop:2}}>Due: {a.agm_due_date || 'Not evaluated'} | Held: {a.held_date || 'Not recorded'}</div>
+  const section=(title:string,items:any[],kind:"agm"|"audit"|"return")=>(
+    <section className="nlc-card">
+      <div className="sec-lbl gold">{title} ({items.length})</div>
+      {items.length===0?<div style={{fontSize:12,color:"#9CA3AF",textAlign:"center",padding:20}}>No records returned.</div>:
+        items.map((item,index)=>(
+          <article key={item.id||item.agm_id||item.audit_id||item.return_id||item.annual_return_id||index} style={{padding:"10px 0",borderBottom:"1px solid #E4E8EF"}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+              <span style={{fontSize:12,fontWeight:600,color:"#07172B"}}>{item.company_name || item.company_id || "Company"} · FY {item.financial_year ?? "Not recorded"}</span>
+              <span className="badge badge-neutral">
+                {kind==="agm"
+                  ? item.quorum_met == null ? "Quorum not evaluated" : item.is_default ? "Potential default — review required" : item.filed_date ? "Filing date recorded" : item.held_date ? "Held — filing evidence pending" : "No filing evidence"
+                  : kind==="return"
+                    ? item.is_filed ? "Marked filed — RJSC acknowledgement not independently verified" : "Not marked filed"
+                    : item.is_complete ? "Audit record complete" : "Audit record incomplete"}
+              </span>
             </div>
-          ))}
-        </div>
-        <div className="nlc-card">
-          <div className="sec-lbl gold">Annual Returns ({returns.length})</div>
-          {returns.length === 0 ? (
-            <div style={{fontSize:12,color:'#9CA3AF',textAlign:'center',padding:20}}>No return records</div>
-          ) : returns.map((r,i) => (
-            <div key={i} style={{padding:'10px 0',borderBottom:'1px solid #E4E8EF'}}>
-              <div style={{display:'flex',justifyContent:'space-between'}}>
-                <span style={{fontSize:12,fontWeight:600,color:'#07172B'}}>FY {r.financial_year}</span>
-                <span className="badge badge-neutral">
-                  {r.filing_evidence_status === 'RECEIPT_REFERENCE_RECORDED_UNVERIFIED'
-                    ? 'Receipt reference recorded — unverified'
-                    : r.filing_evidence_status === 'DATE_RECORDED_UNVERIFIED'
-                      ? 'Filing date recorded — unverified'
-                      : 'No filing evidence recorded'}
-                </span>
-              </div>
-              <div style={{fontSize:10,color:'#9CA3AF',marginTop:2}}>Filing date: {r.filed_date || '—'} | Legal deadline: {r.filing_deadline || 'Not evaluated'}</div>
+            <div style={{fontSize:10,color:"#9CA3AF",marginTop:4}}>
+              {kind==="agm"?`Due: ${item.agm_due_date||"Not evaluated"} | Held: ${item.held_date||"Not recorded"}`:
+               kind==="return"?`Filing date: ${item.filed_date||"Not recorded"} | RJSC acknowledgement: ${item.rjsc_acknowledgment_number||"Not recorded"} | Late fee paid: ${item.late_fee_paid?"Yes":"Not recorded"}`:
+               `Signed date: ${item.signed_date||"Not recorded"} | Auditor: ${item.auditor_firm||"Not recorded"} | Opinion: ${item.audit_opinion||"Not recorded"}`}
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+          </article>
+        ))}
+    </section>
+  );
+
+  return <div style={{padding:24}}>
+    <div className="font-garamond" style={{fontSize:22,color:"#f4f1ea",marginBottom:20}}>Filings</div>
+    {error&&<div role="alert" className="nlc-card" style={{marginBottom:16}}>
+      <p style={{fontSize:12,color:"var(--red)"}}>{error}</p><button type="button" className="nlc-btn-ghost" onClick={()=>void load()}>Retry</button>
+    </div>}
+    {loading?<p role="status" style={{color:"rgba(255,255,255,.45)"}}>Loading filings…</p>:
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:14}}>
+        {section("AGM Records",agms,"agm")}
+        {section("Audit Records",audits,"audit")}
+        {section("Annual Returns",returns,"return")}
+      </div>}
+  </div>;
 }

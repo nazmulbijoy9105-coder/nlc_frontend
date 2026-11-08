@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie'
+import { API_BASE } from '@/lib/api-config'
 
 const ACCESS_TOKEN = 'nlc_access_token'
 const REFRESH_TOKEN = 'nlc_refresh_token'
@@ -80,14 +81,18 @@ export const refreshToken = async (): Promise<string> => {
     }
 
     try {
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'https://nlc-platform.onrender.com').replace(/\/$/, '')
-      const res = await fetch(apiBase + '/api/v1/auth/refresh', {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 15000)
+      const res = await fetch(API_BASE + '/api/v1/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        cache: 'no-store',
+        signal: controller.signal,
         body: JSON.stringify({ refresh_token: token }),
       })
 
+      }).finally(() => clearTimeout(timeout))
       if (!res.ok) {
         if (res.status === 429 || res.status >= 500) {
           throw new AuthRefreshError(res.status)
