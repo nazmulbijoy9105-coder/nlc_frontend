@@ -128,3 +128,12 @@ test("privileged client pages resolve roles after hydration instead of locking i
     }
   }
 });
+
+test("finance workspace refreshes are scoped to the currently selected company", () => {
+  const page = read("app/dashboard/finance/page.tsx");
+  assert.equal((page.match(/const refreshFinance = async/g) || []).length, 1);
+  assert.match(page, /const requestedCompanyId = companyId/);
+  assert.match(page, /companyIdRef\.current !== requestedCompanyId/);
+  assert.equal((page.match(/const requiresReference =/g) || []).length, 1);
+  assert.doesNotMatch(page, /Only bank transfer, cash and cheque evidence is accepted/);
+});
