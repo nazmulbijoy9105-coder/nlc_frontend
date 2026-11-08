@@ -60,6 +60,12 @@ test("finance workspace exposes manual billing only through role-gated backend c
   assert.match(page, /companyIdRef\.current !== requestedCompanyId/);
   assert.equal((page.match(/const requiresReference =/g) || []).length, 1);
   assert.doesNotMatch(page, /Only bank transfer, cash and cheque evidence is accepted/);
+  assert.match(page, /const currentInvoices = financeDataCompanyId === companyId \? invoices : \[\]/);
+  assert.match(page, /const currentSubmissions = financeDataCompanyId === companyId \? submissions : \[\]/);
+  assert.match(page, /const currentPayments = financeDataCompanyId === companyId \? payments : \[\]/);
+  assert.match(page, /const currentEngagements = engagementsCompanyId === companyId \? engagements : \[\]/);
+  assert.match(page, /setFinanceDataCompanyId\(requestedCompanyId\)/);
+  assert.doesNotMatch(page, /setLoadingFinance/);
 
   const api = read("lib/api.ts");
   assert.match(api, /BKASH_MANUAL/);
