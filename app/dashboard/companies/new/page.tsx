@@ -2,11 +2,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { companiesApi } from '@/lib/api'
+import { getUser } from '@/lib/auth'
 import Topbar from '@/components/Topbar'
 import { Building2, FileText, Shield, AlertCircle } from 'lucide-react'
 
 export default function AddCompanyPage() {
   const router = useRouter()
+  const [role] = useState(() => typeof window === 'undefined' ? null : getUser()?.role ?? null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activeSection, setActiveSection] = useState<'basic' | 'tax' | 'enforcement'>('basic')
@@ -115,6 +117,8 @@ export default function AddCompanyPage() {
     textAlign: 'center' as const,
     fontWeight: 600
   })
+
+  if (!['ADMIN_STAFF', 'SUPER_ADMIN'].includes(String(role))) return <div role="alert" style={{ padding: 48, color: '#B91C1C' }}>Access denied — company creation is restricted to authorised staff.</div>
 
   return (
     <>

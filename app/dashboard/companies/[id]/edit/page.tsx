@@ -3,16 +3,19 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { companiesApi } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 
 export default function EditCompanyPage() {
   const { id } = useParams();
   const router = useRouter();
+  const [role] = useState(() => typeof window === "undefined" ? null : getUser()?.role ?? null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<any>({});
 
   useEffect(() => {
+    if (!["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(role))) { setLoading(false); return; }
     if (!id) return;
     companiesApi.get(id as string)
       .then((c: any) => {
@@ -33,7 +36,7 @@ export default function EditCompanyPage() {
         setError(err.message || "Failed to load company");
         setLoading(false);
       });
-  }, [id]);
+  }, [id, role]);
 
   const handleChange = (field: string, value: string) => {
     setForm((prev: any) => ({ ...prev, [field]: value }));
@@ -52,7 +55,8 @@ export default function EditCompanyPage() {
     }
   };
 
-  if (loading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
+  if (!["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(role))) return <div role="alert" style={{ padding: 48, color: "#B91C1C" }}>Access denied — company editing is restricted to authorised staff.</div>;
+  if (loading) return <div role="status" style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: 40 }}>
