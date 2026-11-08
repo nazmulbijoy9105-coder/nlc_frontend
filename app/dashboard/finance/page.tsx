@@ -222,13 +222,13 @@ export default function FinancePage() {
     [currentInvoices],
   )
   const outstanding = useMemo(
-    () => invoices
+    () => currentInvoices
       .filter((invoice) => ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status))
       .reduce((sum, invoice) => sum + Number(invoice.balance_bdt || 0), 0),
-    [invoices],
+    [currentInvoices],
   )
   const paidTotal = useMemo(
-    () => payments
+    () => currentPayments
       .filter((payment) => payment.status === "SETTLED")
       .reduce((sum, payment) => sum + Number(payment.amount_bdt || 0), 0),
     [currentPayments],
@@ -412,7 +412,7 @@ export default function FinancePage() {
             {[
               ["Outstanding", money(outstanding), "Issued invoice balance"],
               ["Payments received", money(paidTotal), "Verified ledger receipts"],
-              ["Invoices", String(invoices.length), "Draft and issued"],
+              ["Invoices", String(currentInvoices.length), "Draft and issued"],
               ["Claims awaiting review", String(pendingCount), "Manual payment submissions"],
             ].map(([label, value, caption]) => (
               <div className="nlc-card" key={label} style={{ padding: 16 }}>
