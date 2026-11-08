@@ -80,119 +80,91 @@ class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private async getHeaders(auth = true, path = ''): Promise<HeadersInit> {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+  private async getHeaders(auth = true, path = ""): Promise<Headers> {
+    const headers = new Headers({ "Content-Type": "application/json" });
     if (auth && typeof window !== "undefined") {
       const token = await getValidAccessToken();
       if (!token) {
         handleAuthFailure(path);
         throw new ApiError(AUTH_ERROR_MESSAGE, 401);
       }
-      headers["Authorization"] = "Bearer " + token;
+      headers.set("Authorization", "Bearer " + token);
     }
     return headers;
   }
 
-  async post<T>(path: string, body?: unknown, options: {auth?: boolean} = {}): Promise<T> {
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    options: RequestOptions = {},
+  ): Promise<T> {
     const auth = options.auth !== false;
-    const res = await fetch(this.baseUrl + path, {
-      method: "POST",
-      headers: await this.getHeaders(auth, path),
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      const authFailure =
-        !isAuthEndpoint(path) &&
-        isAuthenticationFailure(res.status, message);
+    const headers = await this.getHeaders(auth, path);
+    const hasBody = body !== undefined;
+    const requestBody = hasBody ? JSON.stringify(body) : undefined;
+    const attempts = method === "GET" ? 2 : 1;
 
-      if (authFailure) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
+      try {
+        const response = await fetch(this.baseUrl + path, {
+          method,
+          headers,
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+          body: requestBody,
+        });
+        if (!response.ok) {
+          const message = await readErrorMessage(response);
+          const authFailure = !isAuthEndpoint(path) && isAuthenticationFailure(response.status, message);
+          if (authFailure) {
+            handleAuthFailure(path);
+            throw new ApiError(AUTH_ERROR_MESSAGE, response.status);
+          }
+          if (method === "GET" && attempt + 1 < attempts && [502, 503, 504].includes(response.status)) continue;
+          throw new ApiError(message, response.status);
+        }
+        if (response.status === 204) return undefined as T;
+        const contentType = response.headers.get("content-type") || "";
+        if (contentType.includes("application/json")) return await response.json() as T;
+        const text = await response.text();
+        if (!text) return undefined as T;
+        try { return JSON.parse(text) as T; }
+        catch { return text as T; }
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        if (attempt + 1 >= attempts) {
+          if (error instanceof Error && error.name === "AbortError") {
+            throw new ApiError("The request timed out. Please try again.", 408);
+          }
+          throw new ApiError("The service is temporarily unavailable. Check your connection and try again.", 0);
+        }
+      } finally {
+        clearTimeout(timeout);
       }
-
-      throw new ApiError(message, res.status);
     }
-    if (res.status === 204) return undefined as T;
-    return res.json();
+    throw new ApiError("The service is temporarily unavailable.", 0);
   }
 
-  async get<T>(path: string): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "GET",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
+  get<T>(path: string): Promise<T> {
+    return this.request<T>("GET", path);
   }
-
-  async delete<T>(path: string): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "DELETE",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
+  post<T>(path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
+    return this.request<T>("POST", path, body, options);
   }
-
-  async patch<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "PATCH",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
+  patch<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>("PATCH", path, body);
   }
-
-  async put<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: "PUT",
-      headers: await this.getHeaders(true, path),
-      credentials: "include",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const message = await readErrorMessage(res);
-      if (isAuthenticationFailure(res.status, message)) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, res.status);
-      }
-      throw new ApiError(message, res.status);
-    }
-    if (res.status === 204) return undefined as T;
-    return res.json();
+  put<T>(path: string, body?: unknown): Promise<T> {
+    return this.request<T>("PUT", path, body);
+  }
+  delete<T>(path: string): Promise<T> {
+    return this.request<T>("DELETE", path);
   }
 }
-
 export const api = new ApiClient(API_BASE);
 
 export const authApi = {
