@@ -1,5 +1,7 @@
 "use client"
 
+// Validation mirror of PR #35; this branch is not intended for merge.
+
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { companiesApi, commercialApi, financeApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
