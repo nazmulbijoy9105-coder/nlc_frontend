@@ -34,7 +34,7 @@ export default function DocumentsPage() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load, retry]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load, retry]);
 
   return (
     <div style={{padding:24}}>

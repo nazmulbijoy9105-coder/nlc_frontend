@@ -5,6 +5,7 @@ const ACCESS_TOKEN = 'nlc_access_token'
 const REFRESH_TOKEN = 'nlc_refresh_token'
 const TEMP_TOKEN = 'nlc_temp_token'
 const USER_KEY = 'nlc_user'
+export const AUTH_STATE_CHANGE_EVENT = 'nlc:auth-state-change'
 
 export class AuthRefreshError extends Error {
   constructor(public readonly status: number) {
@@ -39,6 +40,7 @@ function removeStoredAuth() {
     localStorage.removeItem(ACCESS_TOKEN)
     localStorage.removeItem(REFRESH_TOKEN)
     localStorage.removeItem(USER_KEY)
+    window.dispatchEvent(new Event(AUTH_STATE_CHANGE_EVENT))
   }
 }
 
@@ -152,8 +154,10 @@ export const isAuthenticated = async (): Promise<boolean> => {
 }
 
 export const setUser = (user: Record<string, unknown>) => {
-  if (typeof window !== 'undefined')
+  if (typeof window !== 'undefined') {
     localStorage.setItem(USER_KEY, JSON.stringify(user))
+    window.dispatchEvent(new Event(AUTH_STATE_CHANGE_EVENT))
+  }
 }
 
 export const getUser = () => {

@@ -2,16 +2,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ApiError, companiesApi } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 const tiers = ["COMPLIANCE_PACKAGE","STRUCTURED_REGULARIZATION","CORPORATE_RESCUE"];
 
 export default function EditCompanyPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
   const authorised = roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN"].includes(String(role));
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState(false);
@@ -22,7 +20,7 @@ export default function EditCompanyPage() {
 
   useEffect(()=>{
     if(!roleLoaded)return;
-    if(!authorised){setLoading(false);return;}
+    if(!authorised)return;
     if(!id)return;
     let active=true;
     companiesApi.get(id).then((company:any)=>{

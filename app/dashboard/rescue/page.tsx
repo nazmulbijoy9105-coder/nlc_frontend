@@ -2,15 +2,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ApiError, rescueApi } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 export default function RescuePage() {
-  const [role, setRole] = useState<string | null>(null);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-  useEffect(() => {
-    setRole(getUser()?.role ?? null);
-    setRoleLoaded(true);
-  }, []);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
   const authorised = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN", "LEGAL_STAFF"].includes(String(role));
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +32,7 @@ export default function RescuePage() {
     }
   }, [authorised, companyId, roleLoaded]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
   if (!roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Checking rescue access…</div>;
   if (!authorised) return <div role="alert" style={{padding:48,color:"var(--red)"}}>Access denied — rescue planning is restricted to authorised legal and administrative staff.</div>;

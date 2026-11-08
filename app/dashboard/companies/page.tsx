@@ -2,13 +2,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, companiesApi } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 export default function CompaniesPage() {
   const router=useRouter();
-  const [role,setRole]=useState<string|null>(null);
-  const [roleLoaded,setRoleLoaded]=useState(false);
-  useEffect(()=>{setRole(getUser()?.role??null);setRoleLoaded(true);},[]);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
   const [companies,setCompanies]=useState<any[]>([]);
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState<string|null>(null);
@@ -24,7 +22,7 @@ export default function CompaniesPage() {
       setError(err instanceof ApiError?err.message:err instanceof Error?err.message:"Could not load companies.");
     }finally{setLoading(false);}
   },[]);
-  useEffect(()=>{void load();},[load]);
+  useEffect(()=>{void Promise.resolve().then(load);},[load]);
 
   const bandColor=(band:string)=>band==="GREEN"?"#1a7a52":band==="YELLOW"?"#D97706":band==="RED"?"#B91C1C":band==="BLACK"?"#A855F7":"#6B7280";
 

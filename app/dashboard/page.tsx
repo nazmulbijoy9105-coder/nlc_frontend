@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { dashboardApi, companiesApi } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
 
 type Kpis = {
@@ -23,9 +23,7 @@ function asArray(value: any): any[] {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
   const [kpis, setKpis] = useState<Kpis | null>(null);
   const [companyList, setCompanyList] = useState<any[]>([]);
   const [deadlines, setDeadlines] = useState<any[]>([]);
@@ -116,7 +114,7 @@ export default function DashboardPage() {
     setLoading(false);
   }, [canViewActivity, canViewPortfolioKpis, isClient]);
 
-  useEffect(() => { if (roleLoaded) void loadData(); }, [roleLoaded, loadData]);
+  useEffect(() => { if (roleLoaded) void Promise.resolve().then(loadData); }, [roleLoaded, loadData]);
 
   if (loading || !roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading dashboard…</div>;
 

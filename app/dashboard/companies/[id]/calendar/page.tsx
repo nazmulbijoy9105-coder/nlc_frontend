@@ -45,7 +45,7 @@ export default function CompanyCalendarPage() {
     } finally { if (version === requestVersion.current && activeCompanyId.current === companyId) setLoading(false); }
   }, [companyId]);
 
-  useEffect(() => { void fetchCalendar(); }, [fetchCalendar, retry]);
+  useEffect(() => { void Promise.resolve().then(fetchCalendar); }, [fetchCalendar, retry]);
 
   const handleGenerate = async () => {
     setGenerating(true);

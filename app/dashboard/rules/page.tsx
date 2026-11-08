@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { ApiError, rulesApi } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 const verificationStyles: Record<string, { label: string; color: string; background: string; border: string }> = {
   VERIFIED: { label: "Citation verified", color: "#166534", background: "#F0FDF4", border: "#BBF7D0" },
@@ -10,9 +10,7 @@ const verificationStyles: Record<string, { label: string; color: string; backgro
 };
 
 export default function RulesPage() {
-  const [role, setRole] = useState<string | null>(null);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
   const [rules, setRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(role === "SUPER_ADMIN");
   const [error, setError] = useState<string | null>(null);
@@ -21,10 +19,7 @@ export default function RulesPage() {
 
   useEffect(() => {
     if (!roleLoaded) return;
-    if (role !== "SUPER_ADMIN") {
-      setLoading(false);
-      return;
-    }
+    if (role !== "SUPER_ADMIN") return;
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -39,7 +34,7 @@ export default function RulesPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    void load();
+    void Promise.resolve().then(load);
     return () => { cancelled = true; };
   }, [roleLoaded, role, retry]);
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { commercialApi, companiesApi } from "@/lib/api"
-import { getUser } from "@/lib/auth"
+import { useCurrentUserRole } from "@/lib/use-current-user-role"
 
 const tierLabels: Record<string, string> = {
   COMPLIANCE_PACKAGE: "Compliance package",
@@ -19,7 +19,7 @@ const money = (value: number | string | null | undefined) =>
   }).format(Number(value || 0))
 
 export default function CommercialPage() {
-  const [user, setUser] = useState<any>(null)
+  const { role, loaded: roleLoaded } = useCurrentUserRole()
   const [pipeline, setPipeline] = useState<any>(null)
   const [funnel, setFunnel] = useState<any>(null)
   const [companies, setCompanies] = useState<any[]>([])
@@ -45,7 +45,7 @@ export default function CommercialPage() {
   const [taskDueDate, setTaskDueDate] = useState("")
   const [taskPriority, setTaskPriority] = useState("MEDIUM")
 
-  const authorised = ["ADMIN_STAFF", "SUPER_ADMIN"].includes(user?.role || "")
+  const authorised = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN"].includes(role || "")
 
   const refreshPipeline = useCallback(async () => {
     const [pipelineData, funnelData] = await Promise.all([
@@ -79,12 +79,7 @@ export default function CommercialPage() {
 
 
   useEffect(() => {
-    const currentUser = getUser()
-    setUser(currentUser)
-    if (!["ADMIN_STAFF", "SUPER_ADMIN"].includes(currentUser?.role || "")) {
-      setLoading(false)
-      return
-    }
+    if (!roleLoaded || !authorised) return
     let active = true
     Promise.all([commercialApi.pipeline(), commercialApi.funnel(), companiesApi.list()])
       .then(([pipelineData, funnelData, companyRows]) => {
@@ -102,23 +97,22 @@ export default function CommercialPage() {
         if (active) setLoading(false)
       })
     return () => { active = false }
-  }, [])
+  }, [roleLoaded, authorised])
 
   useEffect(() => {
-    if (!companyId || !authorised) {
-      setEngagements([])
-      setTasks([])
-      return
-    }
+    if (!companyId || !authorised) return
     let active = true
-    setLoadingCompany(true)
-    refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
-      .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
-      })
-      .finally(() => {
-        if (active) setLoadingCompany(false)
-      })
+    void Promise.resolve().then(() => {
+      if (!active) return
+      setLoadingCompany(true)
+      return refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
+        .catch((err) => {
+          if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
+        })
+        .finally(() => {
+          if (active) setLoadingCompany(false)
+        })
+    })
     return () => { active = false }
   }, [companyId, authorised, refreshCompanyWork])
 
@@ -209,13 +203,14 @@ export default function CommercialPage() {
     }
   }
 
-  if (!user || loading) {
+  if (!roleLoaded) {
     return <div style={{ padding: 32, color: "var(--white-3)" }}>Loading commercial intelligence…</div>
   }
 
   if (!authorised) {
     return <div style={{ padding: 48, textAlign: "center", color: "#FCA5A5" }}>Access denied — revenue and commercial operations are restricted to authorised finance staff.</div>
   }
+  if (loading) return <div role="status" style={{ padding: 32, color: "var(--white-3)" }}>Loading commercial intelligence…</div>
 
   const byTier = pipeline?.by_tier || {}
   const stages = funnel?.stages || {}
