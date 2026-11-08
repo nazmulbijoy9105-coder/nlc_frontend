@@ -57,7 +57,7 @@ test("finance workspace exposes manual billing only through role-gated backend c
   assert.doesNotMatch(page, /temporarily unavailable/);
   assert.equal((page.match(/const refreshFinance = async/g) || []).length, 1);
   assert.match(page, /const requestedCompanyId = companyId/);
-  assert.match(page, /companyIdRef\\.current !== requestedCompanyId/);
+  assert.match(page, /companyIdRef\.current !== requestedCompanyId/);
   assert.equal((page.match(/const requiresReference =/g) || []).length, 1);
   assert.doesNotMatch(page, /Only bank transfer, cash and cheque evidence is accepted/);
 
