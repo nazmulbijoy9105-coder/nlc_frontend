@@ -102,14 +102,17 @@ export default function CommercialPage() {
   useEffect(() => {
     if (!companyId || !authorised) return
     let active = true
-    setLoadingCompany(true)
-    refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
-      .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
-      })
-      .finally(() => {
-        if (active) setLoadingCompany(false)
-      })
+    void Promise.resolve().then(() => {
+      if (!active) return
+      setLoadingCompany(true)
+      return refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
+        .catch((err) => {
+          if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
+        })
+        .finally(() => {
+          if (active) setLoadingCompany(false)
+        })
+    })
     return () => { active = false }
   }, [companyId, authorised, refreshCompanyWork])
 
@@ -200,13 +203,14 @@ export default function CommercialPage() {
     }
   }
 
-  if (!roleLoaded || loading) {
+  if (!roleLoaded) {
     return <div style={{ padding: 32, color: "var(--white-3)" }}>Loading commercial intelligence…</div>
   }
 
   if (!authorised) {
     return <div style={{ padding: 48, textAlign: "center", color: "#FCA5A5" }}>Access denied — revenue and commercial operations are restricted to authorised finance staff.</div>
   }
+  if (loading) return <div role="status" style={{ padding: 32, color: "var(--white-3)" }}>Loading commercial intelligence…</div>
 
   const byTier = pipeline?.by_tier || {}
   const stages = funnel?.stages || {}
