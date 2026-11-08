@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { companiesApi } from '@/lib/api'
+import { getUser } from '@/lib/auth'
 
 export default function CompaniesPage() {
   const router = useRouter()
+  const [role] = useState(() => typeof window === 'undefined' ? null : getUser()?.role ?? null)
   const [companies, setCompanies] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -25,7 +27,7 @@ export default function CompaniesPage() {
     <div style={{padding:24}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
         <div className="font-garamond" style={{fontSize:22,color:'var(--nlc-white)'}}>Companies</div>
-        <button className="nlc-btn-gold" style={{width:'auto',padding:'8px 20px'}} onClick={()=>router.push('/dashboard/companies/new')}>+ New Company</button>
+        {['ADMIN_STAFF', 'SUPER_ADMIN'].includes(String(role)) && <button className="nlc-btn-gold" style={{width:'auto',padding:'8px 20px'}} onClick={()=>router.push('/dashboard/companies/new')}>+ New Company</button>}
       </div>
       <div className="nlc-card">
         <div className="sec-lbl gold">Portfolio — {companies.length} Companies</div>
