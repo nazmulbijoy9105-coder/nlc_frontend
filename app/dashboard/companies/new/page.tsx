@@ -213,7 +213,6 @@ export default function AddCompanyPage() {
                     <label style={labelStyle}>Trade License Obtained</label>
                     <select required value={booleanInputValue(form.trade_license_obtained)} onChange={e => setForm((f: any) => ({ ...f, trade_license_obtained: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.trade_license_obtained)}>
                       <option value="">Select confirmed status</option>
-                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Obtained</option>
                       <option value="true">✅ Obtained</option>
                     </select>
@@ -280,6 +279,7 @@ export default function AddCompanyPage() {
                   <div>
                     <label style={labelStyle}>VAT Annual Return</label>
                     <select required value={booleanInputValue(form.vat_annual_return_filed_for_fy)} onChange={e => setForm((f: any) => ({ ...f, vat_annual_return_filed_for_fy: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.vat_annual_return_filed_for_fy)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Filed</option>
                       <option value="true">✅ Filed</option>
                     </select>
@@ -302,6 +302,7 @@ export default function AddCompanyPage() {
                   <div>
                     <label style={labelStyle}>Tax Clearance Obtained</label>
                     <select required value={booleanInputValue(form.tax_clearance_obtained)} onChange={e => setForm((f: any) => ({ ...f, tax_clearance_obtained: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.tax_clearance_obtained)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Obtained</option>
                       <option value="true">✅ Obtained</option>
                     </select>
