@@ -1,5 +1,6 @@
 import { clearAuth, getRefreshToken, getValidAccessToken, refreshToken } from "@/lib/auth";
 import { ApiError } from "@/lib/api-errors";
+export { ApiError };
 import { API_BASE } from "@/lib/api-config";
 import { downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
 
