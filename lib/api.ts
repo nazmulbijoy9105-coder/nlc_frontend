@@ -1,4 +1,6 @@
 import { clearAuth, getRefreshToken, getValidAccessToken } from "@/lib/auth";
+import { API_BASE } from "@/lib/api-config";
+import { downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
 
 
 const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
@@ -73,7 +75,6 @@ async function readErrorMessage(res: Response): Promise<string> {
 
   return (await res.text().catch(() => "")) || fallback;
 }
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://nlc-platform.onrender.com").replace(/\/$/, "");
 
 class ApiClient {
   private baseUrl: string;
@@ -224,22 +225,7 @@ export const companiesApi = {
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
   update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
-  downloadPDF: async (id: string) => {
-    const token = await getValidAccessToken();
-    const res = await fetch(API_BASE + "/api/v1/companies/" + id + "/compliance-pdf", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    if (!res.ok) throw new Error("PDF download failed: " + res.status);
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "NLC_Compliance_Report_" + id + ".pdf";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  },
+  downloadPDF: (id: string) => downloadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(id) + "/compliance-pdf", "NLC_Compliance_Report_" + id + ".pdf"),
 };
 
 export const filingsApi = {
@@ -267,22 +253,7 @@ export const articlesApi = {
     api.post<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/revoke", { reason }),
   events: (companyId: string, verificationId: string) =>
     api.get<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/events"),
-  upload: async (companyId: string, file: File) => {
-    const token = await getValidAccessToken();
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch(
-      API_BASE + "/api/v1/companies/" + companyId + "/articles-document",
-      {
-        method: "POST",
-        headers: token ? { Authorization: "Bearer " + token } : {},
-        credentials: "include",
-        body: form,
-      },
-    );
-    if (!res.ok) throw new Error(await readErrorMessage(res));
-    return res.json();
-  },
+  upload: (companyId: string, file: File) => uploadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(companyId) + "/articles-document", file),
 };
 
 export const documentsApi = {
