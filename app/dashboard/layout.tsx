@@ -12,9 +12,8 @@ const adminNav = [
     { label: 'Rescue Cases', icon: '⚑', href: '/dashboard/rescue' },
   ]},
   { section: 'Intelligence', items: [
-    { label: 'Commercial Pipeline', icon: '◎', href: '/dashboard/commercial' },
-    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
+    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -30,8 +29,6 @@ const clientNav = [
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
     { label: 'Billing', icon: '৳', href: '/dashboard/finance' },
-    { label: 'Rescue Plan', icon: '⚑', href: '/dashboard/rescue' },
-    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
@@ -73,22 +70,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setSessionUnavailable(false)
         setUser(currentUser)
       } catch (error) {
-        if (!cancelled) {
-          const status = error instanceof Error && "status" in error
-            ? Number(error.status)
-            : 0
-          if (status === 429 || status >= 500) {
-            setSessionUnavailable(true)
-            return
-          }
-          clearAuth()
-          router.replace('/')
+        if (cancelled) return
+        const status = error instanceof Error && 'status' in error
+          ? Number(error.status)
+          : 0
+        if (status === 429 || status >= 500) {
+          setSessionUnavailable(true)
+          return
         }
+        clearAuth()
+        router.replace('/')
       }
     }
 
     void verifySession()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [router, retryNonce])
 
   if (!user) return (
@@ -103,14 +101,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   const isClient = user.role?.includes('CLIENT')
-  const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') && (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) && (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))) })).filter(g => g.items.length > 0)
-  const handleLogout = () => { clearAuth(); router.push('/') }
   const nav = isClient ? clientNav : adminNav.map(g => ({
     ...g,
     items: g.items.filter(i =>
       (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
       (i.href !== '/dashboard/admin' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
-      (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
+      (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
+      (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
     ),
   })).filter(g => g.items.length > 0)
   const handleLogout = async () => {
