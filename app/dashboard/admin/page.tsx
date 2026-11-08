@@ -1,13 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { getUser } from "@/lib/auth";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 import { ApiError, adminApi } from "@/lib/api";
 
 export default function AdminPage() {
-  const [user, setUser] = useState<any>(null);
-  const [roleLoaded, setRoleLoaded] = useState(false);
-  useEffect(() => { setUser(getUser()); setRoleLoaded(true); }, []);
-  const allowed = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(user?.role || ""));
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
+  const user = role ? { role } : null;
+  const allowed = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(role || ""));
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(allowed);
   const [error, setError] = useState<string | null>(null);
@@ -32,8 +31,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!roleLoaded) return;
-    if (!allowed) { setLoading(false); return; }
-    void load();
+    if (!allowed) return;
+    void Promise.resolve().then(load);
   }, [roleLoaded, allowed, load]);
 
   const createUser = async (event: FormEvent<HTMLFormElement>) => {
