@@ -66,19 +66,40 @@ export default function DashboardPage() {
 
     const results = await Promise.allSettled([companiesPromise, kpisPromise, deadlinesPromise, activityPromise]);
     const [companiesResult, kpisResult, deadlinesResult, activityResult] = results;
-    const accessibleCompanies = companiesResult.status === "fulfilled" ? companiesResult.value : null;
-    if (accessibleCompanies) setCompanyList(accessibleCompanies);
-    else setLoadError(companiesResult.reason instanceof Error ? companiesResult.reason.message : "Could not load company portfolio.");
+    const accessibleCompanies = companiesResult.status === "fulfilled"
+      ? companiesResult.value
+      : [];
+    if (companiesResult.status === "fulfilled") {
+      setCompanyList(accessibleCompanies);
+    } else {
+      setLoadError(
+        companiesResult.reason instanceof Error
+          ? companiesResult.reason.message
+          : "Could not load company portfolio.",
+      );
+    }
 
-    if (kpisResult.status === "fulfilled") {
-      setKpis(kpisResult.value);
+    if (
+      canViewPortfolioKpis
+      && kpisResult.status === "fulfilled"
+      && kpisResult.value !== null
+    ) {
       const value = kpisResult.value;
-      const scopeMatches = !!accessibleCompanies && value.total_companies === accessibleCompanies.length;
+      setKpis(value);
+      const scopeMatches = companiesResult.status === "fulfilled"
+        && value.total_companies === accessibleCompanies.length;
       setKpiScopeWarning(scopeMatches ? null : "The KPI endpoint scope does not match the accessible company list. Portfolio metrics are withheld rather than displaying inconsistent totals.");
       setScoreReleasePending(!scopeMatches || Number(value.not_evaluated_count || 0) > 0);
+    } else if (canViewPortfolioKpis && kpisResult.status === "rejected") {
+      setScoreReleasePending(true);
+      setLoadError((current) => current || (
+        kpisResult.reason instanceof Error
+          ? kpisResult.reason.message
+          : "Could not load portfolio KPIs."
+      ));
     } else if (canViewPortfolioKpis) {
       setScoreReleasePending(true);
-      setLoadError((current) => current || (kpisResult.reason instanceof Error ? kpisResult.reason.message : "Could not load portfolio KPIs."));
+      setLoadError((current) => current || "Could not load portfolio KPIs.");
     }
 
     if (deadlinesResult.status === "fulfilled") { setDeadlines(deadlinesResult.value); setCalendarReleasePending(false); }
