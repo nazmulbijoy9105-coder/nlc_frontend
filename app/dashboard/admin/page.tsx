@@ -4,8 +4,10 @@ import { getUser } from "@/lib/auth";
 import { ApiError, adminApi } from "@/lib/api";
 
 export default function AdminPage() {
-  const [user] = useState(() => typeof window === "undefined" ? null : getUser());
-  const allowed = ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(user?.role || ""));
+  const [user, setUser] = useState<any>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setUser(getUser()); setRoleLoaded(true); }, []);
+  const allowed = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN"].includes(String(user?.role || ""));
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(allowed);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,11 @@ export default function AdminPage() {
     }
   }, [allowed]);
 
-  useEffect(() => { if (allowed) void load(); }, [allowed, load]);
+  useEffect(() => {
+    if (!roleLoaded) return;
+    if (!allowed) { setLoading(false); return; }
+    void load();
+  }, [roleLoaded, allowed, load]);
 
   const createUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,6 +56,7 @@ export default function AdminPage() {
     }
   };
 
+  if (!roleLoaded) return <div role="status" style={{padding:40}}>Checking access…</div>;
   if (!allowed) return <div role="alert" style={{padding:60,textAlign:"center",color:"#B91C1C"}}>Access denied — user management is restricted to authorised administrators.</div>;
 
   return <div style={{padding:24}}>
