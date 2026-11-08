@@ -42,8 +42,8 @@ export default function CompaniesPage() {
           companies.map((company)=> {
             const band=company.band??"NOT_EVALUATED";
             const score=band==="NOT_EVALUATED"||company.compliance_score==null?"Not evaluated":company.compliance_score;
-            return <tr key={company.id} onClick={()=>router.push(`/dashboard/companies/${company.id}`)} style={{cursor:"pointer"}}>
-              <td style={{fontWeight:600,color:"var(--navy)"}}>{company.name||"Unknown"}</td>
+            return <tr key={company.id}>
+              <td><button type="button" onClick={()=>router.push(`/dashboard/companies/${company.id}`)} className="text-left font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2">{company.name||"Unknown"}</button></td>
               <td className="font-mono" style={{fontSize:11,color:"var(--text3)"}}>{company.registration_number||"—"}</td>
               <td className="font-mono" style={{fontWeight:700,color:bandColor(band)}}>{score}</td>
               <td><span className={`badge badge-${String(band).toLowerCase()}`}>{band}</span></td>

@@ -41,12 +41,13 @@ export default function EditCompanyPage() {
   const submit=async(event:React.FormEvent<HTMLFormElement>)=>{
     event.preventDefault();setSaving(true);setError("");
     try{
-      await companiesApi.update(id,{
-        company_name:form.company_name.trim(),
-        registered_address:form.registered_address.trim(),
-        financial_year_end:form.financial_year_end||null,
-        revenue_tier:form.revenue_tier||null,
-      });
+      const update: Record<string, string> = {
+        company_name: form.company_name.trim(),
+        registered_address: form.registered_address.trim(),
+      };
+      if (form.financial_year_end) update.financial_year_end = form.financial_year_end;
+      if (form.revenue_tier) update.revenue_tier = form.revenue_tier;
+      await companiesApi.update(id, update);
       router.push("/dashboard/companies");
     }catch(err){
       setError(err instanceof ApiError?err.message:err instanceof Error?err.message:"Could not update company.");
@@ -58,7 +59,7 @@ export default function EditCompanyPage() {
 
   return <div style={{maxWidth:680,margin:"0 auto",padding:32}}>
     <h1 className="font-garamond" style={{fontSize:24,marginBottom:8}}>Edit Company</h1>
-    <p style={{fontSize:12,color:"var(--text3)",marginBottom:20}}>Only fields supported by the current company-update API are editable here.</p>
+    <p style={{fontSize:12,color:"var(--text3)",marginBottom:20}}>Only fields supported by the current company-update API are editable here. Blank financial-year or service-tier values are omitted because this API does not currently support clearing those fields.</p>
     {error&&<div role="alert" style={{color:"#e07070",padding:12,marginBottom:16,borderRadius:4,background:"rgba(224,112,112,0.1)"}}>{error}</div>}
     <form onSubmit={submit} className="nlc-card" style={{display:"grid",gap:16}}>
       <label style={{display:"grid",gap:5,fontSize:12}}>Company name

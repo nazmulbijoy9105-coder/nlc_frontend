@@ -47,6 +47,7 @@ export default function AddCompanyPage() {
     const evidenceFields = ['trade_license_obtained','tax_return_filed_for_current_fy','advance_tax_q1_paid','advance_tax_q2_paid','advance_tax_q3_paid','advance_tax_q4_paid','tds_deposited_up_to_date','vat_annual_return_filed_for_fy','minimum_tax_paid','tax_clearance_obtained','tax_return_deadline_extended','any_director_disqualified']
     if (evidenceFields.some((field) => typeof form[field] !== 'boolean')) { setError('Select a confirmed Yes or No for every tax and enforcement fact. If a fact is unknown, do not guess; this backend contract must first support UNKNOWN.'); return }
     if (form.penalty_notices_received === null || form.penalty_notices_resolved === null) { setError('Enter confirmed counts for received and resolved penalty notices.'); return }
+    if (form.penalty_notices_resolved > form.penalty_notices_received) { setError('Resolved penalty notices cannot exceed the number of notices received.'); return }
     if (!evidenceReviewed) { setError('Confirm that the entered facts were checked against source records.'); return }
     setLoading(true)
     setError('')
