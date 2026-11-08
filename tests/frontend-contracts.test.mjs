@@ -32,6 +32,7 @@ test("staff-only screens check role before invoking protected list APIs", () => 
     ["app/dashboard/rules/page.tsx", 'role !== "SUPER_ADMIN"', "rulesApi.list()"],
     ["app/dashboard/rjsc/page.tsx", "!isSuperAdmin", "api.get<RJSCReferenceResponse>"],
     ["app/dashboard/admin/page.tsx", "!allowed", "adminApi.listUsers(1)"],
+    ["app/dashboard/rescue/page.tsx", "!authorised", "rescueApi.list("],
   ]) {
     const source = read(path);
     assert.ok(source.indexOf(guard) >= 0, `${path} must contain its role guard`);
@@ -91,6 +92,7 @@ test("privileged client pages resolve roles after hydration instead of locking i
     "app/dashboard/rules/page.tsx",
     "app/dashboard/rjsc/page.tsx",
     "app/dashboard/admin/page.tsx",
+    "app/dashboard/rescue/page.tsx",
     "app/dashboard/companies/[id]/edit/page.tsx",
     "app/dashboard/companies/[id]/forms/page.tsx",
     "app/dashboard/companies/[id]/page.tsx",
