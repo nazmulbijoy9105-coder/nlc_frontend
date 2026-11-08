@@ -1,6 +1,5 @@
 "use client"
 
-import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { commercialApi, companiesApi } from "@/lib/api"
 import { getUser } from "@/lib/auth"
@@ -57,7 +56,6 @@ export default function CommercialPage() {
     setFunnel(funnelData)
   }, [])
 
-  const refreshCompanyWork = useCallback(async (id: string) => {
   const refreshCompanyWork = useCallback(async (id: string, isCurrent: () => boolean = () => companyIdRef.current === id) => {
     if (!id) return
     const [engagementRows, taskRows] = await Promise.all([
@@ -79,7 +77,6 @@ export default function CommercialPage() {
 
   useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
-  useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const currentUser = getUser()
@@ -115,7 +112,6 @@ export default function CommercialPage() {
     }
     let active = true
     setLoadingCompany(true)
-    refreshCompanyWork(companyId)
     refreshCompanyWork(companyId, () => active && companyIdRef.current === companyId)
       .catch((err) => {
         if (active) setError(err instanceof Error ? err.message : "Company work could not be loaded.")
@@ -203,7 +199,7 @@ export default function CommercialPage() {
     setError("")
     setNotice("")
     try {
-      await commercialApi.completeTask(taskId, { completion_note: "Completed from commercial workspace" })
+      await commercialApi.completeTask(taskId, companyId, { completion_note: "Completed from commercial workspace" })
       await refreshCompanyWork(companyId)
       setNotice("Task marked complete.")
     } catch (err) {
@@ -211,16 +207,6 @@ export default function CommercialPage() {
     } finally {
       setBusy(false)
     }
-  }
-
-  if (!user || loading) {
-    return <div style={{ padding: 32, color: "var(--white-3)" }}>Loading commercial intelligence…</div>
-  }
-
-  if (!authorised) {
-    return <div style={{ padding: 48, textAlign: "center", color: "#FCA5A5" }}>Access denied — revenue and commercial operations are restricted to authorised finance staff.</div>
-  }
-
   }
 
   if (!user || loading) {
