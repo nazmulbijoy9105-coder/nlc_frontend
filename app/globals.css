@@ -266,3 +266,21 @@ html, body {
 @media (max-width: 480px) {
   .g4, .g3, .g2 { grid-template-columns: minmax(0, 1fr); }
 }
+
+@media (max-width: 767px) {
+  .nlc-company-profile-header { padding: 16px !important; }
+  .nlc-company-profile-header > div { flex-wrap: wrap; gap: 14px !important; }
+  .nlc-company-profile-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .nlc-company-profile-grid > div {
+    min-width: 0;
+    max-height: none !important;
+    overflow: visible !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--border);
+  }
+}

@@ -96,7 +96,7 @@ export default function CompanyProfilePage() {
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
       {/* Header */}
-      <div style={{background:'var(--surface2)',borderBottom:'1px solid var(--border)',padding:'20px 28px'}}>
+      <div className="nlc-company-profile-header" style={{background:'var(--surface2)',borderBottom:'1px solid var(--border)',padding:'20px 28px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
           <div>
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
@@ -129,7 +129,7 @@ export default function CompanyProfilePage() {
       )}
 
       {/* 3-column layout */}
-      <div style={{display:'grid',gridTemplateColumns:'280px 1fr 300px',flex:1,overflow:'hidden'}}>
+      <div className="nlc-company-profile-grid" style={{display:'grid',gridTemplateColumns:'280px 1fr 300px',flex:1,overflow:'hidden'}}>
 
         {/* ═══ LEFT: Score + Company Info ═══ */}
         <div style={{borderRight:'1px solid var(--border)',padding:20,background:'var(--surface)',overflowY:'auto'}}>
