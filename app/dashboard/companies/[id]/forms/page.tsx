@@ -19,8 +19,10 @@ interface RJSCForm {
 export default function CompanyFormsPage() {
   const params = useParams<{ id: string }>();
   const companyId = params.id;
-  const [role] = useState(() => typeof window === "undefined" ? null : getUser()?.role ?? null);
-  const canRecordFiling = ["ADMIN_STAFF","SUPER_ADMIN","LEGAL_STAFF"].includes(String(role));
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const canRecordFiling = roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN","LEGAL_STAFF"].includes(String(role));
   const activeCompanyId = useRef(companyId);
   const requestVersion = useRef(0);
   const [forms, setForms] = useState<RJSCForm[]>([]);
