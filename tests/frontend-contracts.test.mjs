@@ -93,7 +93,13 @@ test("JSON, multipart and binary requests share one transport implementation", (
   assert.match(api, /headers\.set\("Content-Type", "application\/json"\)/);
 });
 
-test("privileged client pages resolve roles after hydration instead of locking in the SSR role", () => {
+test("privileged client pages use the shared hydration-safe role store", () => {
+  const hook = read("lib/use-current-user-role.ts");
+  const auth = read("lib/auth.ts");
+  assert.match(hook, /useSyncExternalStore/);
+  assert.match(hook, /AUTH_STATE_CHANGE_EVENT/);
+  assert.match(hook, /addEventListener\("storage"/);
+  assert.match(auth, /dispatchEvent\(new Event\(AUTH_STATE_CHANGE_EVENT\)\)/);
   for (const path of [
     "app/dashboard/rules/page.tsx",
     "app/dashboard/rjsc/page.tsx",
@@ -108,7 +114,8 @@ test("privileged client pages resolve roles after hydration instead of locking i
   ]) {
     const source = read(path);
     assert.match(source, /roleLoaded/);
-    assert.match(source, /getUser\(\)/);
+    assert.match(source, /useCurrentUserRole/);
+    assert.doesNotMatch(source, /getUser\(\)/);
     assert.doesNotMatch(source, /useState\(\(\) => typeof window === "undefined"/);
     if (path === "app/dashboard/companies/[id]/page.tsx") {
       assert.match(source, /if \(!roleLoaded \|\| !id\) return;/);
