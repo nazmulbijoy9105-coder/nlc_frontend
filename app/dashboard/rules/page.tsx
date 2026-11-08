@@ -10,7 +10,9 @@ const verificationStyles: Record<string, { label: string; color: string; backgro
 };
 
 export default function RulesPage() {
-  const [role] = useState(() => typeof window === "undefined" ? null : getUser()?.role ?? null);
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
   const [rules, setRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(role === "SUPER_ADMIN");
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +20,7 @@ export default function RulesPage() {
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
+    if (!roleLoaded) return;
     if (role !== "SUPER_ADMIN") {
       setLoading(false);
       return;
@@ -38,8 +41,9 @@ export default function RulesPage() {
     }
     void load();
     return () => { cancelled = true; };
-  }, [role, retry]);
+  }, [roleLoaded, role, retry]);
 
+  if (!roleLoaded) return <div role="status" style={{padding:40}}>Checking access…</div>;
   if (role !== "SUPER_ADMIN") return (
     <div role="alert" style={{padding:60,textAlign:"center",color:"#B91C1C"}}>
       Access denied — Rules Engine is restricted to Super Administrators.
