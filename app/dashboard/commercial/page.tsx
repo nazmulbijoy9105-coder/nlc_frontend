@@ -77,7 +77,6 @@ export default function CommercialPage() {
 
   useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
-  useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
     const currentUser = getUser()
@@ -200,7 +199,7 @@ export default function CommercialPage() {
     setError("")
     setNotice("")
     try {
-      await commercialApi.completeTask(taskId, { completion_note: "Completed from commercial workspace" })
+      await commercialApi.completeTask(taskId, companyId, { completion_note: "Completed from commercial workspace" })
       await refreshCompanyWork(companyId)
       setNotice("Task marked complete.")
     } catch (err) {

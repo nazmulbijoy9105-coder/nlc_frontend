@@ -149,7 +149,8 @@ export const commercialApi = {
   advanceStatus: (id: string, data: any) => api.patch<any>("/api/v1/commercial/engagements/" + id + "/status", data),
   tasks: (companyId: string) => api.get<any>("/api/v1/commercial/tasks/" + companyId),
   createTask: (data: any) => api.post<any>("/api/v1/commercial/tasks", data),
-  completeTask: (id: string, data: any) => api.patch<any>("/api/v1/commercial/tasks/" + id + "/complete", data),
+  completeTask: (id: string, companyId: string, data: any) =>
+    api.patch<any>("/api/v1/commercial/tasks/" + id + "/complete?company_id=" + encodeURIComponent(companyId), data),
   createQuotation: (data: any) => api.post<any>("/api/v1/commercial/quotations", data),
   acceptQuotation: (id: string) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/accept"),
   rejectQuotation: (id: string, data: any) => api.patch<any>("/api/v1/commercial/quotations/" + id + "/reject", data),
@@ -172,10 +173,11 @@ export const financeApi = {
     api.get<any>("/api/v1/finance/invoices/" + invoiceId),
   submitOfflinePayment: (companyId: string, data: {
     invoice_id: string;
-    method: "BANK_TRANSFER" | "CASH" | "CHEQUE";
+    method: "BANK_TRANSFER" | "CASH" | "CHEQUE" | "BKASH_MANUAL" | "NAGAD_MANUAL";
     amount_bdt: string;
     payer_reference?: string | null;
     paid_at?: string | null;
+    evidence_document_id?: string | null;
   }) => api.post<any>("/api/v1/finance/companies/" + companyId + "/payments/offline", data),
   paymentSubmissions: (companyId: string) =>
     api.get<any>("/api/v1/finance/companies/" + companyId + "/payment-submissions"),
@@ -210,7 +212,7 @@ export const billingApi = {
     api.get<any>(`/api/v1/subscriptions/companies/${companyId}/current`),
   history: (companyId: string) =>
     api.get<any[]>(`/api/v1/subscriptions/companies/${companyId}/history`),
-  requestSubscription: (companyId: string, planCode: string, billingInterval: string) =>
+  requestSubscription: (companyId: string, planCode: string, billingInterval: "MONTHLY" | "QUARTERLY" | "ANNUAL" | "ONE_TIME") =>
     api.post<any>(`/api/v1/subscriptions/companies/${companyId}`, {
       plan_code: planCode, billing_interval: billingInterval,
     }),
@@ -225,8 +227,8 @@ export const billingApi = {
   payments: (companyId: string) =>
     api.get<any[]>(`/api/v1/finance/companies/${companyId}/payments`),
   submitOfflinePayment: (companyId: string, body: {
-    invoice_id: string; method: "BANK_TRANSFER" | "CASH" | "CHEQUE";
-    amount_bdt: string; payer_reference?: string;
+    invoice_id: string; method: "BANK_TRANSFER" | "CASH" | "CHEQUE" | "BKASH_MANUAL" | "NAGAD_MANUAL";
+    amount_bdt: string; payer_reference?: string; paid_at?: string | null; evidence_document_id?: string | null;
   }) => api.post<any>(`/api/v1/finance/companies/${companyId}/payments/offline`, body),
   financeQueue: (status = "PENDING") =>
     api.get<any[]>(`/api/v1/subscriptions/admin?status=${encodeURIComponent(status)}`),
