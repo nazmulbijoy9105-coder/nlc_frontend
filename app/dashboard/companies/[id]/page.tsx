@@ -2,15 +2,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { ApiError, companiesApi, rescueApi } from '@/lib/api'
-import { getUser } from '@/lib/auth'
+import { useCurrentUserRole } from '@/lib/use-current-user-role'
 
 export default function CompanyProfilePage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
-  const [role, setRole] = useState<string | null>(null)
-  const [roleLoaded, setRoleLoaded] = useState(false)
-  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, [])
+  const { role, loaded: roleLoaded } = useCurrentUserRole()
   const isClient = role === 'CLIENT_DIRECTOR' || role === 'CLIENT_VIEW_ONLY'
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -60,7 +58,7 @@ export default function CompanyProfilePage() {
   }, [id, roleLoaded])
 
   useEffect(() => {
-    void load();
+    void Promise.resolve().then(load);
     return () => { loadRequest.current += 1; };
   }, [load])
 
