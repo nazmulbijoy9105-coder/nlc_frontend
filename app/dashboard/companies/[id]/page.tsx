@@ -8,7 +8,9 @@ export default function CompanyProfilePage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
-  const [role] = useState(() => typeof window === 'undefined' ? null : getUser()?.role ?? null)
+  const [role, setRole] = useState<string | null>(null)
+  const [roleLoaded, setRoleLoaded] = useState(false)
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, [])
   const isClient = role === 'CLIENT_DIRECTOR' || role === 'CLIENT_VIEW_ONLY'
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -62,7 +64,7 @@ export default function CompanyProfilePage() {
     return () => { loadRequest.current += 1; };
   }, [load])
 
-  if (loading) return <div role="status" style={{padding:40,color:'var(--white-3)'}}>Loading company…</div>
+  if (loading || !roleLoaded) return <div role="status" style={{padding:40,color:'var(--white-3)'}}>Loading company…</div>
   if (!company) {
     return (
       <div
