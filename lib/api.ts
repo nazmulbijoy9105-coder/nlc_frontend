@@ -1,149 +1,38 @@
-import { clearAuth, getRefreshToken, getValidAccessToken, refreshToken } from "@/lib/auth";
+import { getRefreshToken } from "@/lib/auth";
 import { ApiError } from "@/lib/api-errors";
 export { ApiError };
 import { API_BASE } from "@/lib/api-config";
-import { downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
+import { requestApiResponse, downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
 
+type RequestOptions = { auth?: boolean };
 
-const AUTH_ERROR_MESSAGE = "Your session has expired. Please sign in again.";
-
-type RequestOptions = {
-  auth?: boolean;
-};
-
-function isAuthEndpoint(path: string): boolean {
-  return (
-    path.startsWith("/api/v1/auth/login") ||
-    path.startsWith("/api/v1/auth/signup") ||
-    path.startsWith("/api/v1/auth/verify-2fa")
-  );
-}
-
-function handleAuthFailure(path: string): void {
-  if (typeof window === "undefined" || isAuthEndpoint(path)) return;
-
-  clearAuth();
-  if (window.location.pathname !== "/") {
-    window.location.assign("/");
-  }
-}
-
-function isAuthenticationFailure(status: number, message: string): boolean {
-  const normalized = message.toLowerCase();
-
-  if (status === 401) return true;
-  if (status !== 403) return false;
-
-  return (
-    normalized.includes("not authenticated") ||
-    normalized.includes("invalid") ||
-    normalized.includes("expired") ||
-    normalized.includes("deactivated") ||
-    normalized.includes("role mismatch")
-  );
-}
-
-async function readErrorMessage(res: Response): Promise<string> {
-  const fallback = "HTTP " + res.status;
-  const contentType = res.headers.get("content-type") || "";
-
-  if (contentType.includes("application/json")) {
-    const err = await res.json().catch(() => null);
-    const detail = err?.detail || err?.message || err?.error || err?.errors;
-
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) {
-      return detail
-        .map((item) => {
-          if (typeof item === "string") return item;
-          const field = Array.isArray(item?.loc)
-            ? item.loc.join(".")
-            : item?.field;
-          return [field, item?.msg || item?.message].filter(Boolean).join(": ");
-        })
-        .filter(Boolean)
-        .join("; ") || fallback;
-    }
-
-    return fallback;
-  }
-
-  return (await res.text().catch(() => "")) || fallback;
+async function decodeResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T;
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) return await response.json() as T;
+  const text = await response.text();
+  if (!text) return undefined as T;
+  try { return JSON.parse(text) as T; } catch { return text as T; }
 }
 
 class ApiClient {
   private baseUrl: string;
   constructor(baseUrl: string) { this.baseUrl = baseUrl; }
 
-  private async getHeaders(auth = true, path = ""): Promise<Headers> {
-    const headers = new Headers({ "Content-Type": "application/json" });
-    if (auth && typeof window !== "undefined") {
-      const token = await getValidAccessToken();
-      if (!token) {
-        handleAuthFailure(path);
-        throw new ApiError(AUTH_ERROR_MESSAGE, 401);
-      }
-      headers.set("Authorization", "Bearer " + token);
-    }
-    return headers;
-  }
-
   private async request<T>(method: string, path: string, body?: unknown, options: RequestOptions = {}): Promise<T> {
-    const auth = options.auth !== false;
-    const headers = await this.getHeaders(auth, path);
-    const requestBody = body === undefined ? undefined : JSON.stringify(body);
-    let transientRetries = 0;
-    let authRetried = false;
-
-    while (true) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30_000);
-      try {
-        const response = await fetch(this.baseUrl + path, {
-          method, headers, credentials: "include", cache: "no-store",
-          signal: controller.signal, body: requestBody,
-        });
-        if (!response.ok) {
-          const message = await readErrorMessage(response);
-          if (auth && response.status === 401 && !authRetried && !isAuthEndpoint(path)) {
-            authRetried = true;
-            const refreshed = await refreshToken();
-            if (refreshed) {
-              headers.set("Authorization", "Bearer " + refreshed);
-              continue;
-            }
-          }
-          const authFailure = !isAuthEndpoint(path) && isAuthenticationFailure(response.status, message);
-          if (authFailure) {
-            handleAuthFailure(path);
-            throw new ApiError(AUTH_ERROR_MESSAGE, response.status);
-          }
-          if (method === "GET" && transientRetries < 1 && [502, 503, 504].includes(response.status)) {
-            transientRetries += 1;
-            continue;
-          }
-          throw new ApiError(message, response.status);
-        }
-        if (response.status === 204) return undefined as T;
-        const contentType = response.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) return await response.json() as T;
-        const text = await response.text();
-        if (!text) return undefined as T;
-        try { return JSON.parse(text) as T; } catch { return text as T; }
-      } catch (error) {
-        if (error instanceof ApiError) throw error;
-        if (error instanceof Error && error.name === "AbortError") {
-          throw new ApiError("The request timed out. Please try again.", 408);
-        }
-        if (method === "GET" && transientRetries < 1) {
-          transientRetries += 1;
-          continue;
-        }
-        throw new ApiError("The service is temporarily unavailable. Check your connection and try again.", 0);
-      } finally {
-        clearTimeout(timeout);
-      }
+    const headers = new Headers();
+    let requestBody: BodyInit | undefined;
+    if (body !== undefined) {
+      headers.set("Content-Type", "application/json");
+      requestBody = JSON.stringify(body);
     }
+    const response = await requestApiResponse(
+      this.baseUrl,
+      path,
+      { method, headers, body: requestBody },
+      { auth: options.auth !== false, retryRead: method.toUpperCase() === "GET" },
+    );
+    return decodeResponse<T>(response);
   }
 
   get<T>(path: string): Promise<T> { return this.request<T>("GET", path); }
@@ -154,6 +43,7 @@ class ApiClient {
   put<T>(path: string, body?: unknown): Promise<T> { return this.request<T>("PUT", path, body); }
   delete<T>(path: string): Promise<T> { return this.request<T>("DELETE", path); }
 }
+
 export const api = new ApiClient(API_BASE);
 
 export const authApi = {
