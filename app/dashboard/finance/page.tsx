@@ -97,11 +97,13 @@ export default function FinancePage() {
   const companyIdRef = useRef(companyId)
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [engagements, setEngagements] = useState<Engagement[]>([])
+  const [engagementsCompanyId, setEngagementsCompanyId] = useState<string | null>(null)
   const [engagementId, setEngagementId] = useState("")
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [financeDataCompanyId, setFinanceDataCompanyId] = useState<string | null>(null)
+  const [financeLoadErrorCompanyId, setFinanceLoadErrorCompanyId] = useState<string | null>(null)
   const [loadingCompanies, setLoadingCompanies] = useState(true)
-  const [loadingFinance, setLoadingFinance] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
@@ -123,88 +125,101 @@ export default function FinancePage() {
   const isFinanceStaff = role === "ADMIN_STAFF" || role === "SUPER_ADMIN"
   const isClient = role === "CLIENT_DIRECTOR" || role === "CLIENT_VIEW_ONLY"
   const canSubmitPayment = role === "CLIENT_DIRECTOR"
+  const currentInvoices = financeDataCompanyId === companyId ? invoices : []
+  const currentSubmissions = financeDataCompanyId === companyId ? submissions : []
+  const currentPayments = financeDataCompanyId === companyId ? payments : []
+  const currentEngagements = engagementsCompanyId === companyId ? engagements : []
+  const currentPaymentInvoiceId = currentInvoices.some((invoice) => invoice.invoice_id === paymentInvoiceId)
+    ? paymentInvoiceId
+    : ""
+  const currentEngagementId = currentEngagements.some((engagement) => engagement.engagement_id === engagementId)
+    ? engagementId
+    : ""
+  const loadingFinance = Boolean(companyId)
+    && financeDataCompanyId !== companyId
+    && financeLoadErrorCompanyId !== companyId
 
   useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
   useEffect(() => {
-    const currentUser = getUser()
-    setUser(currentUser)
-    if (!["ADMIN_STAFF", "SUPER_ADMIN", "CLIENT_DIRECTOR", "CLIENT_VIEW_ONLY"].includes(currentUser?.role || "")) {
-      setLoadingCompanies(false)
-      return
-    }
-    const loadCompanies = async () => {
+    let active = true
+    void Promise.resolve().then(async () => {
+      if (!active) return
+      const currentUser = getUser()
+      setUser(currentUser)
+      if (!["ADMIN_STAFF", "SUPER_ADMIN", "CLIENT_DIRECTOR", "CLIENT_VIEW_ONLY"].includes(currentUser?.role || "")) {
+        setLoadingCompanies(false)
+        return
+      }
       try {
         const data = await companiesApi.list()
+        if (!active) return
         const rows = Array.isArray(data) ? data : []
         setCompanies(rows)
         if (rows.length) setCompanyId(String(rows[0].id))
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to load companies.")
+        if (active) setError(err instanceof Error ? err.message : "Unable to load companies.")
       } finally {
-        setLoadingCompanies(false)
+        if (active) setLoadingCompanies(false)
       }
-    }
-    void loadCompanies()
+    })
+    return () => { active = false }
   }, [])
 
   useEffect(() => {
-    if (!companyId) {
-      setInvoices([])
-      setSubmissions([])
-      setPayments([])
-      setLoadingFinance(false)
-      return
-    }
+    if (!companyId) return
     let active = true
-    setLoadingFinance(true)
-    setError("")
-    // Never leave the previous company's financial records visible during a tenant switch.
-    setInvoices([])
-    setSubmissions([])
-    setPayments([])
-    Promise.all([
-      financeApi.invoices(companyId),
-      financeApi.paymentSubmissions(companyId),
-      financeApi.payments(companyId),
-    ])
-      .then(([invoiceRows, submissionRows, paymentRows]) => {
+    void Promise.resolve().then(async () => {
+      if (!active) return
+      setError("")
+      setFinanceLoadErrorCompanyId(null)
+      try {
+        const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
+          financeApi.invoices(companyId),
+          financeApi.paymentSubmissions(companyId),
+          financeApi.payments(companyId),
+        ])
         if (!active) return
         setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
         setSubmissions(Array.isArray(submissionRows) ? submissionRows : [])
         setPayments(Array.isArray(paymentRows) ? paymentRows : [])
-      })
-      .catch((err) => {
-        if (active) setError(err instanceof Error ? err.message : "Unable to load billing records.")
-      })
-      .finally(() => {
-        if (active) setLoadingFinance(false)
-      })
+        setFinanceDataCompanyId(companyId)
+      } catch (err) {
+        if (!active) return
+        setFinanceLoadErrorCompanyId(companyId)
+        setError(err instanceof Error ? err.message : "Unable to load billing records.")
+      }
+    })
     return () => { active = false }
   }, [companyId])
 
   useEffect(() => {
-    setPaymentInvoiceId("")
-    setEngagementId("")
-    if (!companyId || !isFinanceStaff) {
-      setEngagements([])
-      return
-    }
     let active = true
-    commercialApi.engagements(companyId)
-      .then((rows) => {
-        if (active) setEngagements(Array.isArray(rows) ? rows : [])
-      })
-      .catch((err) => {
+    void Promise.resolve().then(async () => {
+      if (!active) return
+      setPaymentInvoiceId("")
+      setEngagementId("")
+      if (!companyId || !isFinanceStaff) {
+        setEngagements([])
+        setEngagementsCompanyId(companyId)
+        return
+      }
+      try {
+        const rows = await commercialApi.engagements(companyId)
+        if (!active) return
+        setEngagements(Array.isArray(rows) ? rows : [])
+        setEngagementsCompanyId(companyId)
+      } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Engagements could not be loaded.")
-      })
+      }
+    })
     return () => { active = false }
   }, [companyId, isFinanceStaff])
 
   const selectedCompany = companies.find((company) => String(company.id) === companyId)
   const openInvoices = useMemo(
-    () => invoices.filter((invoice) => ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)),
-    [invoices],
+    () => currentInvoices.filter((invoice) => ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(invoice.status)),
+    [currentInvoices],
   )
   const outstanding = useMemo(
     () => invoices
@@ -216,22 +231,30 @@ export default function FinancePage() {
     () => payments
       .filter((payment) => payment.status === "SETTLED")
       .reduce((sum, payment) => sum + Number(payment.amount_bdt || 0), 0),
-    [payments],
+    [currentPayments],
   )
-  const pendingCount = submissions.filter((item) => item.status === "PENDING_REVIEW").length
+  const pendingCount = currentSubmissions.filter((item) => item.status === "PENDING_REVIEW").length
 
   const refreshFinance = async () => {
     const requestedCompanyId = companyId
     if (!requestedCompanyId) return
-    const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
-      financeApi.invoices(requestedCompanyId),
-      financeApi.paymentSubmissions(requestedCompanyId),
-      financeApi.payments(requestedCompanyId),
-    ])
-    if (companyIdRef.current !== requestedCompanyId) return
-    setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
-    setSubmissions(Array.isArray(submissionRows) ? submissionRows : [])
-    setPayments(Array.isArray(paymentRows) ? paymentRows : [])
+    setFinanceDataCompanyId(null)
+    setFinanceLoadErrorCompanyId(null)
+    try {
+      const [invoiceRows, submissionRows, paymentRows] = await Promise.all([
+        financeApi.invoices(requestedCompanyId),
+        financeApi.paymentSubmissions(requestedCompanyId),
+        financeApi.payments(requestedCompanyId),
+      ])
+      if (companyIdRef.current !== requestedCompanyId) return
+      setInvoices(Array.isArray(invoiceRows) ? invoiceRows : [])
+      setSubmissions(Array.isArray(submissionRows) ? submissionRows : [])
+      setPayments(Array.isArray(paymentRows) ? paymentRows : [])
+      setFinanceDataCompanyId(requestedCompanyId)
+    } catch (err) {
+      if (companyIdRef.current === requestedCompanyId) setFinanceLoadErrorCompanyId(requestedCompanyId)
+      throw err
+    }
   }
 
   const createInvoice = async (event: FormEvent<HTMLFormElement>) => {
@@ -243,7 +266,7 @@ export default function FinancePage() {
     try {
       await financeApi.createInvoice({
         company_id: companyId,
-        engagement_id: engagementId || null,
+        engagement_id: currentEngagementId || null,
         lines: [{ description: invoiceDescription.trim(), quantity: "1.00", unit_price_bdt: invoiceAmount }],
         tax_bdt: invoiceTax || "0.00",
         due_at: invoiceDueDate || null,
@@ -278,13 +301,13 @@ export default function FinancePage() {
 
   const submitPayment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!companyId || !paymentInvoiceId) return
+    if (!companyId || !currentPaymentInvoiceId) return
     setBusy(true)
     setError("")
     setNotice("")
     try {
       await financeApi.submitOfflinePayment(companyId, {
-        invoice_id: paymentInvoiceId,
+        invoice_id: currentPaymentInvoiceId,
         method: paymentMethod,
         amount_bdt: paymentAmount,
         payer_reference: payerReference.trim() || null,
@@ -406,9 +429,9 @@ export default function FinancePage() {
               <form onSubmit={createInvoice} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 12, alignItems: "end" }}>
                 <label style={{ display: "grid", gap: 6, fontSize: 11, color: "var(--text3)" }}>
                   Link to engagement (recommended)
-                  <select className="nlc-input" value={engagementId} onChange={(event) => setEngagementId(event.target.value)}>
+                  <select className="nlc-input" value={currentEngagementId} onChange={(event) => setEngagementId(event.target.value)}>
                     <option value="">Unlinked invoice</option>
-                    {engagements.map((engagement) => (
+                    {currentEngagements.map((engagement) => (
                       <option key={engagement.engagement_id} value={engagement.engagement_id}>
                         {engagement.description || engagement.engagement_id} · {engagement.status || "—"}
                       </option>
@@ -456,7 +479,7 @@ export default function FinancePage() {
               <form onSubmit={submitPayment} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(165px,1fr))", gap: 12, alignItems: "end" }}>
                 <label style={{ display: "grid", gap: 6, fontSize: 11, color: "var(--text3)" }}>
                   Invoice
-                  <select className="nlc-input" value={paymentInvoiceId} onChange={(event) => setPaymentInvoiceId(event.target.value)} required>
+                  <select className="nlc-input" value={currentPaymentInvoiceId} onChange={(event) => setPaymentInvoiceId(event.target.value)} required>
                     <option value="">Select an invoice</option>
                     {openInvoices.map((invoice) => (
                       <option key={invoice.invoice_id} value={invoice.invoice_id}>
@@ -500,8 +523,8 @@ export default function FinancePage() {
                 <table className="nlc-table">
                   <thead><tr><th>Invoice</th><th>Service</th><th>Total</th><th>Paid</th><th>Balance</th><th>Due</th><th>Status</th>{isFinanceStaff && <th>Action</th>}</tr></thead>
                   <tbody>
-                    {invoices.length === 0 ? <tr><td colSpan={isFinanceStaff ? 8 : 7} style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>No invoices recorded for this company.</td></tr> :
-                      invoices.map((invoice) => (
+                    {currentInvoices.length === 0 ? <tr><td colSpan={isFinanceStaff ? 8 : 7} style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>No invoices recorded for this company.</td></tr> :
+                      currentInvoices.map((invoice) => (
                         <tr key={invoice.invoice_id}>
                           <td className="font-mono">{invoice.invoice_number}</td>
                           <td>{invoice.lines?.[0]?.description || "Service invoice"}</td>
@@ -527,10 +550,10 @@ export default function FinancePage() {
                 <table className="nlc-table">
                   <thead><tr><th>Invoice</th><th>Method</th><th>Amount</th><th>Reference</th><th>Paid at</th><th>Status</th><th>Review</th></tr></thead>
                   <tbody>
-                    {submissions.length === 0 ? <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>No payment claims for this company.</td></tr> :
-                      submissions.map((submission) => (
+                    {currentSubmissions.length === 0 ? <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>No payment claims for this company.</td></tr> :
+                      currentSubmissions.map((submission) => (
                         <tr key={submission.submission_id}>
-                          <td className="font-mono">{invoices.find((invoice) => invoice.invoice_id === submission.invoice_id)?.invoice_number || submission.invoice_id.slice(0, 8)}</td>
+                          <td className="font-mono">{currentInvoices.find((invoice) => invoice.invoice_id === submission.invoice_id)?.invoice_number || submission.invoice_id.slice(0, 8)}</td>
                           <td>{submission.method}</td>
                           <td>{money(submission.amount_bdt)}</td>
                           <td>{submission.payer_reference || "—"}</td>
@@ -576,8 +599,8 @@ export default function FinancePage() {
               <table className="nlc-table">
                 <thead><tr><th>Payment</th><th>Method</th><th>Channel</th><th>Amount</th><th>Received</th><th>Verified</th><th>Status</th></tr></thead>
                 <tbody>
-                  {payments.length === 0 ? <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>No verified payments recorded.</td></tr> :
-                    payments.map((payment) => (
+                  {currentPayments.length === 0 ? <tr><td colSpan={7} style={{ textAlign: "center", padding: 24, color: "var(--text3)" }}>No verified payments recorded.</td></tr> :
+                    currentPayments.map((payment) => (
                       <tr key={payment.payment_id}>
                         <td className="font-mono">{payment.payment_number}</td>
                         <td>{payment.method}</td>
