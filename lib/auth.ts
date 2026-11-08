@@ -90,8 +90,6 @@ export const refreshToken = async (): Promise<string> => {
         cache: 'no-store',
         signal: controller.signal,
         body: JSON.stringify({ refresh_token: token }),
-      })
-
       }).finally(() => clearTimeout(timeout))
       if (!res.ok) {
         if (res.status === 429 || res.status >= 500) {
