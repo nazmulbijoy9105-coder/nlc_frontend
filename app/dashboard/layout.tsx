@@ -15,8 +15,6 @@ const adminNav = [
     { label: 'Commercial Pipeline', icon: '◎', href: '/dashboard/commercial' },
     { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
     { label: 'Revenue Intel', icon: '◎', href: '/dashboard/commercial' },
-    { label: 'Billing & Collections', icon: '৳', href: '/dashboard/finance' },
-    { label: 'Billing', icon: '৳', href: '/dashboard/billing' },
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
   ]},
   { section: 'System', items: [
@@ -45,6 +43,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
+  const [sessionUnavailable, setSessionUnavailable] = useState(false)
+  const [retryNonce, setRetryNonce] = useState(0)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -69,9 +70,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
         storeUser(currentUser)
+        setSessionUnavailable(false)
         setUser(currentUser)
-      } catch {
+      } catch (error) {
         if (!cancelled) {
+          const status = error instanceof Error && "status" in error
+            ? Number(error.status)
+            : 0
+          if (status === 429 || status >= 500) {
+            setSessionUnavailable(true)
+            return
+          }
           clearAuth()
           router.replace('/')
         }
@@ -80,9 +89,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     void verifySession()
     return () => { cancelled = true }
-  }, [router])
+  }, [router, retryNonce])
 
-  if (!user) return <div style={{padding:40,color:'#9CA3AF'}}>Loading...</div>
+  if (!user) return (
+    <div style={{padding:40,color:'#9CA3AF'}}>
+      {sessionUnavailable ? (
+        <div role="alert">
+          <p>We cannot verify your session because the authentication service is temporarily unavailable. Your saved sign-in credentials have been retained.</p>
+          <button type="button" onClick={() => setRetryNonce(value => value + 1)}>Retry session verification</button>
+        </div>
+      ) : 'Loading...'}
+    </div>
+  )
 
   const isClient = user.role?.includes('CLIENT')
   const nav = isClient ? clientNav : adminNav.map(g => ({ ...g, items: g.items.filter(i => (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') && (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) && (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))) })).filter(g => g.items.length > 0)
@@ -91,7 +109,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ...g,
     items: g.items.filter(i =>
       (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
-      (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
+      (i.href !== '/dashboard/admin' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
+      (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
     ),
   })).filter(g => g.items.length > 0)
   const handleLogout = async () => {
@@ -108,7 +127,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{display:'flex',minHeight:'100vh',overflow:'hidden'}}>
-      <aside style={{width:232,minHeight:'100vh',background:'#07172B',display:'flex',flexDirection:'column',flexShrink:0,borderRight:'1px solid rgba(255,255,255,.04)'}}>
+      {mobileNavOpen && <button type="button" aria-label="Close navigation" className="nlc-dashboard-backdrop" onClick={() => setMobileNavOpen(false)} />}
+      <aside className="nlc-dashboard-sidebar" data-open={mobileNavOpen} style={{width:232,minHeight:'100vh',background:'#07172B',display:'flex',flexDirection:'column',flexShrink:0,borderRight:'1px solid rgba(255,255,255,.04)'}}>
         <div style={{padding:'24px 20px 20px',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
           <div className="font-garamond" style={{fontSize:18,color:'#C9A84C',letterSpacing:'.02em',lineHeight:1.15}}>
             Neum Lex
@@ -125,7 +145,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {group.items.map(item => {
                 const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
                 return (
-                  <button key={item.href} onClick={() => router.push(item.href)} style={{width:'100%',padding:'9px 12px',display:'flex',alignItems:'center',gap:10,background:active?'rgba(201,168,76,.12)':'transparent',border:'none',borderRadius:7,color:active?'#E2C46A':'rgba(255,255,255,.45)',cursor:'pointer',textAlign:'left',fontSize:12.5,fontFamily:"'DM Sans',sans-serif",fontWeight:active?600:500,marginBottom:1,transition:'all .15s'}}>
+                  <button key={item.href} onClick={() => { router.push(item.href); setMobileNavOpen(false); }} style={{width:'100%',padding:'9px 12px',display:'flex',alignItems:'center',gap:10,background:active?'rgba(201,168,76,.12)':'transparent',border:'none',borderRadius:7,color:active?'#E2C46A':'rgba(255,255,255,.45)',cursor:'pointer',textAlign:'left',fontSize:12.5,fontFamily:"'DM Sans',sans-serif",fontWeight:active?600:500,marginBottom:1,transition:'all .15s'}}>
                     <span style={{fontSize:13,width:16,textAlign:'center',opacity:active?1:.8}}>{item.icon}</span>{item.label}
                   </button>
                 )
@@ -140,8 +160,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button onClick={handleLogout} style={{width:'100%',padding:'8px 12px',marginTop:10,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',borderRadius:6,color:'rgba(255,255,255,.4)',fontSize:11,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",transition:'all .15s'}}>← Sign Out</button>
         </div>
       </aside>
-      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div className="nlc-dashboard-content" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <header style={{height:58,background:'#0E2340',borderBottom:'1px solid #2a3f6b',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 28px',flexShrink:0}}>
+          <button type="button" className="nlc-dashboard-menu" aria-label="Open navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(true)}>☰</button>
           <div className="font-garamond" style={{fontSize:15,fontWeight:600,color:'#f4f1ea',letterSpacing:'.02em'}}>
             {nav.flatMap(g=>g.items).find(i=>pathname===i.href||(i.href!=='/dashboard'&&pathname.startsWith(i.href)))?.label||'Dashboard'}
           </div>

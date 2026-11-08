@@ -220,3 +220,67 @@ html, body {
   color: var(--gold); margin-bottom: 8px;
   font-family: 'JetBrains Mono', monospace;
 }
+
+
+/* Responsive dashboard layout and data tables */
+.nlc-dashboard-menu {
+  display: none;
+  border: 1px solid rgba(201,168,76,.35);
+  background: transparent;
+  color: #E2C46A;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  line-height: 1;
+}
+.nlc-dashboard-backdrop { display: none; }
+@media (max-width: 767px) {
+  .nlc-dashboard-sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    width: min(84vw, 290px) !important;
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+    box-shadow: 12px 0 32px rgba(0,0,0,.35);
+  }
+  .nlc-dashboard-sidebar[data-open="true"] { transform: translateX(0); }
+  .nlc-dashboard-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(0,0,0,.55);
+  }
+  .nlc-dashboard-menu { display: inline-flex; align-items: center; justify-content: center; }
+  .nlc-dashboard-content > header { gap: 12px; padding: 0 14px !important; }
+  .nlc-dashboard-content > header > div:first-of-type { flex: 1; min-width: 0; }
+  .nlc-dashboard-content > footer { padding: 8px 12px !important; }
+  .nlc-dashboard-content > footer span:last-child { display: none; }
+  .g4, .g3, .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nlc-table { min-width: 600px; }
+}
+@media (max-width: 480px) {
+  .g4, .g3, .g2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 767px) {
+  .nlc-company-profile-header { padding: 16px !important; }
+  .nlc-company-profile-header > div { flex-wrap: wrap; gap: 14px !important; }
+  .nlc-company-profile-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .nlc-company-profile-grid > div {
+    min-width: 0;
+    max-height: none !important;
+    overflow: visible !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--border);
+  }
+}

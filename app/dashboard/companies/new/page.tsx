@@ -1,17 +1,22 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { companiesApi } from '@/lib/api'
+import { getUser } from '@/lib/auth'
 import Topbar from '@/components/Topbar'
 import { Building2, FileText, Shield, AlertCircle } from 'lucide-react'
 
 export default function AddCompanyPage() {
   const router = useRouter()
+  const [role, setRole] = useState<string | null>(null)
+  const [roleLoaded, setRoleLoaded] = useState(false)
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, [])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [activeSection, setActiveSection] = useState<'basic' | 'tax' | 'enforcement'>('basic')
   
-  const [form, setForm] = useState({
+  const [evidenceReviewed, setEvidenceReviewed] = useState(false)
+  const [form, setForm] = useState<Record<string, any>>({
     company_name: '',
     registration_number: '',
     company_type: 'PRIVATE_LIMITED',
@@ -19,28 +24,43 @@ export default function AddCompanyPage() {
     financial_year_end: '',
     registered_address: '',
     // Tax fields
-    trade_license_obtained: false,
+    trade_license_obtained: null,
     trade_license_expiry: '',
-    tax_return_filed_for_current_fy: false,
-    advance_tax_q1_paid: false,
-    advance_tax_q2_paid: false,
-    advance_tax_q3_paid: false,
-    advance_tax_q4_paid: false,
-    tds_deposited_up_to_date: true,
+    tax_return_filed_for_current_fy: null,
+    advance_tax_q1_paid: null,
+    advance_tax_q2_paid: null,
+    advance_tax_q3_paid: null,
+    advance_tax_q4_paid: null,
+    tds_deposited_up_to_date: null,
     last_tds_deposit_date: '',
     last_vat_return_filed: '',
-    vat_annual_return_filed_for_fy: false,
-    minimum_tax_paid: true,
-    tax_clearance_obtained: false,
-    tax_return_deadline_extended: false,
+    vat_annual_return_filed_for_fy: null,
+    minimum_tax_paid: null,
+    tax_clearance_obtained: null,
+    tax_return_deadline_extended: null,
     // Enforcement
-    any_director_disqualified: false,
-    penalty_notices_received: 0,
-    penalty_notices_resolved: 0,
+    any_director_disqualified: null,
+    penalty_notices_received: null,
+    penalty_notices_resolved: null,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const taxEvidenceFields = ['trade_license_obtained','tax_return_filed_for_current_fy','advance_tax_q1_paid','advance_tax_q2_paid','advance_tax_q3_paid','advance_tax_q4_paid','tds_deposited_up_to_date','vat_annual_return_filed_for_fy','minimum_tax_paid','tax_clearance_obtained','tax_return_deadline_extended']
+    const enforcementEvidenceFields = ['any_director_disqualified']
+    if (taxEvidenceFields.some((field) => typeof form[field] !== 'boolean')) {
+      setActiveSection('tax')
+      setError('Complete the tax evidence section using confirmed source-backed Yes/No answers. If a fact is unknown, do not guess; this backend contract must first support UNKNOWN.')
+      return
+    }
+    if (enforcementEvidenceFields.some((field) => typeof form[field] !== 'boolean')) {
+      setActiveSection('enforcement')
+      setError('Complete the enforcement evidence section using confirmed source-backed Yes/No answers.')
+      return
+    }
+    if (form.penalty_notices_received === null || form.penalty_notices_resolved === null) { setActiveSection('enforcement'); setError('Enter confirmed counts for received and resolved penalty notices.'); return }
+    if (form.penalty_notices_resolved > form.penalty_notices_received) { setError('Resolved penalty notices cannot exceed the number of notices received.'); return }
+    if (!evidenceReviewed) { setError('Confirm that the entered facts were checked against source records.'); return }
     setLoading(true)
     setError('')
     try {
@@ -106,15 +126,21 @@ export default function AddCompanyPage() {
     </button>
   )
 
-  const toggleStyle = (value: boolean) => ({
+  const booleanInputValue = (value: boolean | null) => value === null ? '' : value ? 'true' : 'false'
+  const parseBooleanInput = (value: string): boolean | null => value === '' ? null : value === 'true'
+
+  const toggleStyle = (value: boolean | null) => ({
     ...inputStyle,
     cursor: 'pointer',
-    background: value ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.1)',
-    border: value ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.2)',
-    color: value ? '#10b981' : '#ef4444',
+    background: value === true ? 'rgba(16, 185, 129, 0.2)' : value === false ? 'rgba(239, 68, 68, 0.1)' : 'rgba(148, 163, 184, 0.08)',
+    border: value === true ? '1px solid rgba(16, 185, 129, 0.3)' : value === false ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(148, 163, 184, 0.25)',
+    color: value === true ? '#10b981' : value === false ? '#ef4444' : '#94a3b8',
     textAlign: 'center' as const,
     fontWeight: 600
   })
+
+  if (!roleLoaded) return <div role="status" style={{ padding: 48, color: '#9CA3AF' }}>Checking access…</div>
+  if (!['ADMIN_STAFF', 'SUPER_ADMIN'].includes(String(role))) return <div role="alert" style={{ padding: 48, color: '#B91C1C' }}>Access denied — company creation is restricted to authorised staff.</div>
 
   return (
     <>
@@ -145,6 +171,8 @@ export default function AddCompanyPage() {
               {error}
             </div>
           )}
+
+          <div role="note" style={{padding:12,marginBottom:18,border:'1px solid rgba(201,168,76,.25)',borderRadius:10,color:'#cbd5e1',fontSize:11,lineHeight:1.6}}>Tax and enforcement facts must be entered from source records. The current backend requires explicit Yes/No values and cannot persist UNKNOWN for these fields. If you cannot substantiate a value, stop and obtain the missing evidence rather than guessing.</div>
 
           {/* Section Tabs */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
@@ -197,7 +225,8 @@ export default function AddCompanyPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={labelStyle}>Trade License Obtained</label>
-                    <select value={form.trade_license_obtained ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, trade_license_obtained: e.target.value === 'true' }))} style={toggleStyle(form.trade_license_obtained)}>
+                    <select required value={booleanInputValue(form.trade_license_obtained)} onChange={e => setForm((f: any) => ({ ...f, trade_license_obtained: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.trade_license_obtained)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Obtained</option>
                       <option value="true">✅ Obtained</option>
                     </select>
@@ -211,14 +240,17 @@ export default function AddCompanyPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
                   <div>
                     <label style={labelStyle}>Tax Return Filed (Current FY)</label>
-                    <select value={form.tax_return_filed_for_current_fy ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, tax_return_filed_for_current_fy: e.target.value === 'true' }))} style={toggleStyle(form.tax_return_filed_for_current_fy)}>
+                    <select required value={booleanInputValue(form.tax_return_filed_for_current_fy)} onChange={e => setForm((f: any) => ({ ...f, tax_return_filed_for_current_fy: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.tax_return_filed_for_current_fy)}>
+                      <option value="">Select confirmed status</option>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Filed</option>
                       <option value="true">✅ Filed</option>
                     </select>
                   </div>
                   <div>
                     <label style={labelStyle}>Tax Deadline Extended</label>
-                    <select value={form.tax_return_deadline_extended ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, tax_return_deadline_extended: e.target.value === 'true' }))} style={toggleStyle(form.tax_return_deadline_extended)}>
+                    <select required value={booleanInputValue(form.tax_return_deadline_extended)} onChange={e => setForm((f: any) => ({ ...f, tax_return_deadline_extended: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.tax_return_deadline_extended)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">No</option>
                       <option value="true">Yes</option>
                     </select>
@@ -232,10 +264,11 @@ export default function AddCompanyPage() {
                       <div key={q}>
                         <label style={labelStyle}>Q{i + 1} Paid</label>
                         <select 
-                          value={form[`advance_tax_${q}_paid` as keyof typeof form] ? 'true' : 'false'} 
-                          onChange={e => setForm(f => ({ ...f, [`advance_tax_${q}_paid`]: e.target.value === 'true' }))} 
-                          style={toggleStyle(form[`advance_tax_${q}_paid` as keyof typeof form] as boolean)}
+                          required value={booleanInputValue(form[`advance_tax_${q}_paid`])} 
+                          onChange={e => setForm((f: any) => ({ ...f, [`advance_tax_${q}_paid`]: parseBooleanInput(e.target.value) }))} 
+                          style={toggleStyle(form[`advance_tax_${q}_paid`])}
                         >
+                          <option value="">Select</option>
                           <option value="false">❌</option>
                           <option value="true">✅</option>
                         </select>
@@ -247,7 +280,8 @@ export default function AddCompanyPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, marginTop: 20 }}>
                   <div>
                     <label style={labelStyle}>TDS Deposited</label>
-                    <select value={form.tds_deposited_up_to_date ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, tds_deposited_up_to_date: e.target.value === 'true' }))} style={toggleStyle(form.tds_deposited_up_to_date)}>
+                    <select required value={booleanInputValue(form.tds_deposited_up_to_date)} onChange={e => setForm((f: any) => ({ ...f, tds_deposited_up_to_date: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.tds_deposited_up_to_date)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Deposited</option>
                       <option value="true">✅ Deposited</option>
                     </select>
@@ -258,7 +292,8 @@ export default function AddCompanyPage() {
                   </div>
                   <div>
                     <label style={labelStyle}>VAT Annual Return</label>
-                    <select value={form.vat_annual_return_filed_for_fy ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, vat_annual_return_filed_for_fy: e.target.value === 'true' }))} style={toggleStyle(form.vat_annual_return_filed_for_fy)}>
+                    <select required value={booleanInputValue(form.vat_annual_return_filed_for_fy)} onChange={e => setForm((f: any) => ({ ...f, vat_annual_return_filed_for_fy: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.vat_annual_return_filed_for_fy)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Filed</option>
                       <option value="true">✅ Filed</option>
                     </select>
@@ -272,14 +307,16 @@ export default function AddCompanyPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div>
                     <label style={labelStyle}>Director Disqualified</label>
-                    <select value={form.any_director_disqualified ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, any_director_disqualified: e.target.value === 'true' }))} style={toggleStyle(form.any_director_disqualified)}>
+                    <select required value={booleanInputValue(form.any_director_disqualified)} onChange={e => setForm((f: any) => ({ ...f, any_director_disqualified: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.any_director_disqualified)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">✅ No</option>
                       <option value="true">❌ Yes</option>
                     </select>
                   </div>
                   <div>
                     <label style={labelStyle}>Tax Clearance Obtained</label>
-                    <select value={form.tax_clearance_obtained ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, tax_clearance_obtained: e.target.value === 'true' }))} style={toggleStyle(form.tax_clearance_obtained)}>
+                    <select required value={booleanInputValue(form.tax_clearance_obtained)} onChange={e => setForm((f: any) => ({ ...f, tax_clearance_obtained: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.tax_clearance_obtained)}>
+                      <option value="">Select confirmed status</option>
                       <option value="false">❌ Not Obtained</option>
                       <option value="true">✅ Obtained</option>
                     </select>
@@ -288,17 +325,31 @@ export default function AddCompanyPage() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
                   <div>
+                    <label style={labelStyle}>Minimum Tax Paid</label>
+                    <select required value={booleanInputValue(form.minimum_tax_paid)} onChange={e => setForm((f: any) => ({ ...f, minimum_tax_paid: parseBooleanInput(e.target.value) }))} style={toggleStyle(form.minimum_tax_paid)}>
+                      <option value="">Select confirmed status</option>
+                      <option value="false">❌ Not Paid</option>
+                      <option value="true">✅ Paid</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 20 }}>
+                  <div>
                     <label style={labelStyle}>Penalty Notices Received</label>
-                    <input type="number" min="0" value={form.penalty_notices_received} onChange={e => setForm(f => ({ ...f, penalty_notices_received: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                    <input required type="number" min="0" value={form.penalty_notices_received ?? ""} onChange={e => setForm((f: any) => ({ ...f, penalty_notices_received: e.target.value === "" ? null : Number.parseInt(e.target.value, 10) }))} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Penalty Notices Resolved</label>
-                    <input type="number" min="0" value={form.penalty_notices_resolved} onChange={e => setForm(f => ({ ...f, penalty_notices_resolved: parseInt(e.target.value) || 0 }))} style={inputStyle} />
+                    <input required type="number" min="0" value={form.penalty_notices_resolved ?? ""} onChange={e => setForm((f: any) => ({ ...f, penalty_notices_resolved: e.target.value === "" ? null : Number.parseInt(e.target.value, 10) }))} style={inputStyle} />
                   </div>
                 </div>
               </div>
             )}
 
+            <label style={{display:'flex',alignItems:'flex-start',gap:10,fontSize:12,lineHeight:1.6,color:'#9ca3af'}}>
+              <input type="checkbox" required checked={evidenceReviewed} onChange={event=>setEvidenceReviewed(event.target.checked)} />
+              I checked the tax and enforcement answers against source records available to me. These are user-supplied facts and have not been independently verified by NLC.
+            </label>
             <div style={{ display: 'flex', gap: 16, marginTop: 32, paddingTop: 24, borderTop: '1px solid rgba(200, 168, 75, 0.1)' }}>
               <button 
                 type="submit" 

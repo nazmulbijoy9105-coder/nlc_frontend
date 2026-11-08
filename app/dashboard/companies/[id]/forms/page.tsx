@@ -1,7 +1,8 @@
 "use client";
-
-import { useState, useEffect } from 'react';
-import { getValidAccessToken } from '@/lib/auth';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import { ApiError, api } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 
 interface RJSCForm {
   id: string;
@@ -15,128 +16,100 @@ interface RJSCForm {
   rjsc_receipt_number: string | null;
 }
 
-export default function CompanyFormsPage({ params }: { params: { id: string } }) {
+export default function CompanyFormsPage() {
+  const params = useParams<{ id: string }>();
+  const companyId = params.id;
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const canRecordFiling = roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN","LEGAL_STAFF"].includes(String(role));
+  const activeCompanyId = useRef(companyId);
+  const requestVersion = useRef(0);
   const [forms, setForms] = useState<RJSCForm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const companyId = params.id;
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_PATH || "https://nlc-platform.onrender.com";
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [filedDates, setFiledDates] = useState<Record<string,string>>({});
+  const [receipts, setReceipts] = useState<Record<string,string>>({});
 
-  const fetchForms = async () => {
+  useEffect(() => { activeCompanyId.current = companyId; }, [companyId]);
+
+  const fetchForms = useCallback(async () => {
+    if (!companyId) return;
+    const version = ++requestVersion.current;
     setLoading(true);
+    setError(null);
     try {
-      const token = await getValidAccessToken();
-      if (!token) throw new Error("Not authenticated");
-      
-      // Fetch pending forms to show what needs to be done
-      const res = await fetch(`${API_URL}/api/v1/rjsc-forms/${companyId}/pending`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error("Failed to fetch forms");
-      const data = await res.json();
-      setForms(data || []);
+      const data = await api.get<RJSCForm[]>(`/api/v1/rjsc-forms/${encodeURIComponent(companyId)}/pending`);
+      if (!Array.isArray(data)) throw new Error("RJSC filing service returned an unexpected response.");
+      if (version !== requestVersion.current || activeCompanyId.current !== companyId) return;
+      setForms(data);
     } catch (err) {
-      setError("Could not load RJSC forms.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (companyId) fetchForms();
+      if (version === requestVersion.current && activeCompanyId.current === companyId) setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load RJSC forms.");
+    } finally { if (version === requestVersion.current && activeCompanyId.current === companyId) setLoading(false); }
   }, [companyId]);
 
-  const handleMarkFiled = async (formId: string) => {
-    // In a real app, you might open a modal here to input the receipt number.
-    // For this sprint, we'll just mark it filed with today's date.
-    try {
-      const token = await getValidAccessToken();
-      if (!token) throw new Error("Not authenticated");
-      
-      const res = await fetch(`${API_URL}/api/v1/rjsc-forms/${formId}/filed`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          filed_date: new Date().toISOString().split('T')[0], // today's date YYYY-MM-DD
-          notes: "Marked as filed via dashboard"
-        })
-      });
-      
-      if (!res.ok) throw new Error("Failed to mark as filed");
-      
-      // Remove the filed form from the list
-      setForms(forms.filter(f => f.id !== formId));
-    } catch (err) {
-      alert("Error marking form as filed. Make sure you have admin privileges.");
-    }
-  };
+  useEffect(() => { void fetchForms(); }, [fetchForms]);
 
-  if (loading) return <div className="p-6 text-gray-500">Loading RJSC forms...</div>;
+  const handleMarkFiled = async (formId: string) => {
+    const filedDate = filedDates[formId];
+    const receipt = receipts[formId]?.trim();
+    if (!filedDate || !receipt) {
+      setError("Enter the actual filing date and RJSC receipt/reference number before recording filing evidence.");
+      return;
+    }
+    setBusyId(formId);
+    setError(null);
+    try {
+      await api.patch(`/api/v1/rjsc-forms/${encodeURIComponent(formId)}/filed`, {
+        filed_date: filedDate,
+        rjsc_receipt_number: receipt,
+        notes: "Receipt reference recorded by authorised NLC staff; receipt verification remains a separate step.",
+      });
+      await fetchForms();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not record filing evidence.");
+    } finally { setBusyId(null); }
+  };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">RJSC Statutory Forms</h1>
-      
-      {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4">{error}</div>}
-
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {forms.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                  No pending forms. All RJSC filings are up to date!
-                </td>
-              </tr>
-            ) : (
-              forms.map((form) => (
-                <tr key={form.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Form {form.form_number}</div>
-                    <div className="text-sm text-gray-500">{form.form_name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {form.section_reference}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {form.due_date ? new Date(form.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      form.filing_status === 'OVERDUE' ? 'bg-red-100 text-red-800' : 
-                      form.filing_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {form.filing_status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button 
-                      onClick={() => handleMarkFiled(form.id)}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Mark as Filed
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <h1 className="mb-2 text-2xl font-bold text-gray-800">RJSC Statutory Forms</h1>
+      <p className="mb-6 text-sm text-gray-600">Recording a receipt reference is not independent verification that RJSC accepted or registered a filing.</p>
+      {error && <div role="alert" className="mb-4 rounded bg-red-50 p-3 text-red-700">{error}</div>}
+      {loading ? <p role="status" className="text-gray-500">Loading RJSC forms…</p> : (
+        <div className="overflow-x-auto rounded-lg bg-white shadow">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50"><tr>
+              {["Form","Section","Due Date","Status",...(canRecordFiling?["Filing evidence"]:[])].map((heading)=><th key={heading} className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">{heading}</th>)}
+            </tr></thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {forms.length === 0 ? <tr><td colSpan={canRecordFiling?5:4} className="px-6 py-5 text-center text-gray-500">No pending RJSC forms were returned for this company.</td></tr> :
+                forms.map((form)=>(
+                  <tr key={form.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4"><div className="text-sm font-medium text-gray-900">Form {form.form_number}</div><div className="text-sm text-gray-500">{form.form_name}</div></td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{form.section_reference}</td>
+                    <td className="px-6 py-4 text-sm text-gray-500">{form.due_date ? new Date(form.due_date).toLocaleDateString("en-GB") : "Not recorded"}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{form.filing_status}</td>
+                    {canRecordFiling && <td className="min-w-64 px-6 py-4">
+                      <div className="grid gap-2">
+                        <label className="text-xs text-gray-600">Actual filed date
+                          <input type="date" value={filedDates[form.id] || ""} onChange={(event)=>setFiledDates((old)=>({...old,[form.id]:event.target.value}))} className="mt-1 block w-full rounded border p-2 text-sm"/>
+                        </label>
+                        <label className="text-xs text-gray-600">RJSC receipt/reference number
+                          <input value={receipts[form.id] || ""} onChange={(event)=>setReceipts((old)=>({...old,[form.id]:event.target.value}))} maxLength={100} className="mt-1 block w-full rounded border p-2 text-sm"/>
+                        </label>
+                        <button type="button" disabled={busyId===form.id} onClick={()=>void handleMarkFiled(form.id)} className="rounded bg-indigo-600 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
+                          {busyId===form.id?"Saving…":"Record filing evidence"}
+                        </button>
+                      </div>
+                    </td>}
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

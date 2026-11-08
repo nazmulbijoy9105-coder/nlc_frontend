@@ -1,120 +1,96 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { companiesApi } from "@/lib/api";
+import { ApiError, companiesApi } from "@/lib/api";
+import { getUser } from "@/lib/auth";
+
+const tiers = ["COMPLIANCE_PACKAGE","STRUCTURED_REGULARIZATION","CORPORATE_RESCUE"];
 
 export default function EditCompanyPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState<any>({});
+  const [role, setRole] = useState<string | null>(null);
+  const [roleLoaded, setRoleLoaded] = useState(false);
+  useEffect(() => { setRole(getUser()?.role ?? null); setRoleLoaded(true); }, []);
+  const authorised = roleLoaded && ["ADMIN_STAFF","SUPER_ADMIN"].includes(String(role));
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [error,setError]=useState("");
+  const [form,setForm]=useState({company_name:"",registered_address:"",financial_year_end:"",revenue_tier:""});
+  const [registrationNumber,setRegistrationNumber]=useState("");
+  const [companyType,setCompanyType]=useState("");
 
-  useEffect(() => {
-    if (!id) return;
-    companiesApi.get(id as string)
-      .then((c: any) => {
-        setForm({
-          company_name: c.company_name || "",
-          registration_number: c.registration_number || "",
-          registered_address: c.registered_address || "",
-          company_type: c.company_type || "",
-          financial_year_end: c.financial_year_end || "",
-          industry_sector: c.industry_sector || "",
-          tin_number: c.tin_number || "",
-          authorized_capital_bdt: c.authorized_capital_bdt || "",
-          paid_up_capital_bdt: c.paid_up_capital_bdt || "",
-        });
-        setLoading(false);
-      })
-      .catch((err: any) => {
-        setError(err.message || "Failed to load company");
-        setLoading(false);
+  useEffect(()=>{
+    if(!roleLoaded)return;
+    if(!authorised){setLoading(false);return;}
+    if(!id)return;
+    let active=true;
+    companiesApi.get(id).then((company:any)=>{
+      if(!active)return;
+      setForm({
+        company_name:company.name||"",
+        registered_address:company.registered_address||"",
+        financial_year_end:company.financial_year_end||"",
+        revenue_tier:company.revenue_tier||"",
       });
-  }, [id]);
+      setRegistrationNumber(company.registration_number||"");
+      setCompanyType(company.company_type||"");
+    }).catch((err)=>{
+      if(active)setError(err instanceof ApiError?err.message:err instanceof Error?err.message:"Could not load company.");
+    }).finally(()=>{if(active)setLoading(false);});
+    return ()=>{active=false;};
+  },[roleLoaded,authorised,id]);
 
-  const handleChange = (field: string, value: string) => {
-    setForm((prev: any) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      await companiesApi.update(id as string, form);
+  const submit=async(event:React.FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();setSaving(true);setError("");
+    try{
+      const update: Record<string, string> = {
+        company_name: form.company_name.trim(),
+        registered_address: form.registered_address.trim(),
+      };
+      if (form.financial_year_end) update.financial_year_end = form.financial_year_end;
+      if (form.revenue_tier) update.revenue_tier = form.revenue_tier;
+      await companiesApi.update(id, update);
       router.push("/dashboard/companies");
-    } catch (err: any) {
-      setError(err.message || "Failed to update company");
-      setSaving(false);
-    }
+    }catch(err){
+      setError(err instanceof ApiError?err.message:err instanceof Error?err.message:"Could not update company.");
+    }finally{setSaving(false);}
   };
 
-  if (loading) return <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>;
+  if(!roleLoaded)return <div role="status" style={{padding:40}}>Checking access…</div>;
+  if(!authorised)return <div role="alert" style={{padding:48,color:"#B91C1C"}}>Access denied — company editing is restricted to authorised staff.</div>;
+  if(loading)return <div role="status" style={{padding:40,textAlign:"center"}}>Loading company…</div>;
 
-  return (
-    <div style={{ maxWidth: 600, margin: "0 auto", padding: 40 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>Edit Company</h1>
-      {error && <div style={{ color: "#e07070", padding: 12, marginBottom: 16, borderRadius: 4, background: "rgba(224,112,112,0.1)" }}>{error}</div>}
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Company Name</label>
-          <input value={form.company_name || ""} onChange={(e) => handleChange("company_name", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Registration Number</label>
-          <input value={form.registration_number || ""} onChange={(e) => handleChange("registration_number", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} disabled />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Registered Address</label>
-          <input value={form.registered_address || ""} onChange={(e) => handleChange("registered_address", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Company Type</label>
-          <input value={form.company_type || ""} onChange={(e) => handleChange("company_type", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Financial Year End</label>
-          <input type="date" value={form.financial_year_end || ""} onChange={(e) => handleChange("financial_year_end", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Industry Sector</label>
-          <input value={form.industry_sector || ""} onChange={(e) => handleChange("industry_sector", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>TIN Number</label>
-          <input value={form.tin_number || ""} onChange={(e) => handleChange("tin_number", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Authorized Capital (BDT)</label>
-          <input type="number" value={form.authorized_capital_bdt || ""} onChange={(e) => handleChange("authorized_capital_bdt", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div>
-          <label style={{ fontSize: 12, fontWeight: 500, color: "#374151" }}>Paid-up Capital (BDT)</label>
-          <input type="number" value={form.paid_up_capital_bdt || ""} onChange={(e) => handleChange("paid_up_capital_bdt", e.target.value)}
-            style={{ width: "100%", padding: 8, marginTop: 4, borderRadius: 4, border: "1px solid #d1d5db", fontSize: 13 }} />
-        </div>
-        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-          <button type="submit" disabled={saving}
-            style={{ padding: "10px 24px", borderRadius: 4, border: "none", background: saving ? "#9ca3af" : "#1e3a5f", color: "#fff", fontSize: 13, cursor: saving ? "not-allowed" : "pointer" }}>
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-          <button type="button" onClick={() => router.push("/dashboard/companies")}
-            style={{ padding: "10px 24px", borderRadius: 4, border: "1px solid #d1d5db", background: "#fff", color: "#374151", fontSize: 13, cursor: "pointer" }}>
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+  return <div style={{maxWidth:680,margin:"0 auto",padding:32}}>
+    <h1 className="font-garamond" style={{fontSize:24,marginBottom:8}}>Edit Company</h1>
+    <p style={{fontSize:12,color:"var(--text3)",marginBottom:20}}>Only fields supported by the current company-update API are editable here. Blank financial-year or service-tier values are omitted because this API does not currently support clearing those fields.</p>
+    {error&&<div role="alert" style={{color:"#e07070",padding:12,marginBottom:16,borderRadius:4,background:"rgba(224,112,112,0.1)"}}>{error}</div>}
+    <form onSubmit={submit} className="nlc-card" style={{display:"grid",gap:16}}>
+      <label style={{display:"grid",gap:5,fontSize:12}}>Company name
+        <input className="nlc-input" value={form.company_name} onChange={e=>setForm({...form,company_name:e.target.value})} required minLength={2} maxLength={255}/>
+      </label>
+      <label style={{display:"grid",gap:5,fontSize:12}}>Registration number
+        <input className="nlc-input" value={registrationNumber} disabled/>
+      </label>
+      <label style={{display:"grid",gap:5,fontSize:12}}>Company type
+        <input className="nlc-input" value={companyType} disabled/>
+      </label>
+      <label style={{display:"grid",gap:5,fontSize:12}}>Registered address
+        <textarea className="nlc-input" value={form.registered_address} onChange={e=>setForm({...form,registered_address:e.target.value})} rows={3}/>
+      </label>
+      <label style={{display:"grid",gap:5,fontSize:12}}>Financial year end
+        <input className="nlc-input" type="date" value={form.financial_year_end} onChange={e=>setForm({...form,financial_year_end:e.target.value})}/>
+      </label>
+      <label style={{display:"grid",gap:5,fontSize:12}}>Service tier
+        <select className="nlc-input" value={form.revenue_tier} onChange={e=>setForm({...form,revenue_tier:e.target.value})}>
+          <option value="">Not assigned</option>
+          {tiers.map(tier=><option key={tier} value={tier}>{tier.replaceAll("_"," ")}</option>)}
+        </select>
+      </label>
+      <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+        <button type="submit" className="nlc-btn-gold" disabled={saving}>{saving?"Saving…":"Save changes"}</button>
+        <button type="button" className="nlc-btn-ghost" onClick={()=>router.push("/dashboard/companies")} disabled={saving}>Cancel</button>
+      </div>
+    </form>
+  </div>;
 }
