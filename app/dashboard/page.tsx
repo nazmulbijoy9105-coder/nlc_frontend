@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { dashboardApi, companiesApi } from "@/lib/api";
+import { ApiError, dashboardApi, companiesApi } from "@/lib/api";
 import { useCurrentUserRole } from "@/lib/use-current-user-role";
 import LegalDisclaimer from "@/components/LegalDisclaimer";
 
@@ -94,11 +94,18 @@ export default function DashboardPage() {
       setScoreReleasePending(!scopeMatches || Number(value.not_evaluated_count || 0) > 0);
     } else if (canViewPortfolioKpis && kpisResult.status === "rejected") {
       setScoreReleasePending(true);
-      setLoadError((current) => current || (
-        kpisResult.reason instanceof Error
-          ? kpisResult.reason.message
-          : "Could not load portfolio KPIs."
-      ));
+      const expectedLegalGate = kpisResult.reason instanceof ApiError
+        && kpisResult.reason.status === 503
+        && kpisResult.reason.message.startsWith(
+          "Compliance risk aggregates are unavailable while statutory score release is disabled",
+        );
+      if (!expectedLegalGate) {
+        setLoadError((current) => current || (
+          kpisResult.reason instanceof Error
+            ? kpisResult.reason.message
+            : "Could not load portfolio KPIs."
+        ));
+      }
     } else if (canViewPortfolioKpis) {
       setScoreReleasePending(true);
       setLoadError((current) => current || "Could not load portfolio KPIs.");
@@ -107,7 +114,18 @@ export default function DashboardPage() {
     if (deadlinesResult.status === "fulfilled") { setDeadlines(deadlinesResult.value); setCalendarReleasePending(false); }
     else {
       setCalendarReleasePending(true);
-      setLoadError((current) => current || (deadlinesResult.reason instanceof Error ? deadlinesResult.reason.message : "Could not load statutory deadlines."));
+      const expectedLegalGate = deadlinesResult.reason instanceof ApiError
+        && deadlinesResult.reason.status === 503
+        && deadlinesResult.reason.message.startsWith(
+          "Statutory deadlines are unavailable pending rule-level legal validation",
+        );
+      if (!expectedLegalGate) {
+        setLoadError((current) => current || (
+          deadlinesResult.reason instanceof Error
+            ? deadlinesResult.reason.message
+            : "Could not load statutory deadlines."
+        ));
+      }
     }
     if (activityResult.status === "fulfilled") setActivity(activityResult.value);
     else if (canViewActivity) setLoadError((current) => current || "Could not load recent activity.");
@@ -166,7 +184,7 @@ export default function DashboardPage() {
           <div className="nlc-card">
             <div className="sec-lbl">Upcoming Deadlines</div>
             <div className="font-garamond" style={{fontSize:34,color:"var(--navy-3)"}}>{calendarReleasePending ? "—" : deadlines.length}</div>
-            <div style={{fontSize:11,color:"var(--text2)"}}>Accessible deadline records</div>
+            <div style={{fontSize:11,color:"var(--text2)"}}>{calendarReleasePending ? (isClient ? "Unavailable for this account role" : "Statutory dates withheld pending legal validation; no absence of obligations is implied") : "Accessible deadline records"}</div>
           </div>
         </>}
       </div>
