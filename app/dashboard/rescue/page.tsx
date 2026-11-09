@@ -25,7 +25,10 @@ export default function RescuePage() {
       if (!Array.isArray(data)) throw new Error("The rescue service returned an unexpected response.");
       setPlans(data);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 503) setLegalReviewPending(true);
+      const expectedLegalGate = err instanceof ApiError
+        && err.status === 503
+        && err.message.startsWith("Rescue plans are withheld until the underlying legal rules");
+      if (expectedLegalGate) setLegalReviewPending(true);
       else setError(err instanceof Error ? err.message : "Could not load rescue plans.");
     } finally {
       setLoading(false);

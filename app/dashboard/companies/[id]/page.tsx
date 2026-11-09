@@ -51,7 +51,15 @@ export default function CompanyProfilePage() {
     if (complianceResult.status === "fulfilled") setCompliance(complianceResult.value);
     else setLoadError((current) => current || "Compliance summary is temporarily unavailable.");
     if (rescueResult.status === "fulfilled") setRescuePlan(rescueResult.value);
-    else if (!(rescueResult.reason instanceof ApiError && rescueResult.reason.status === 404)) setLoadError((current) => current || "Rescue plan status could not be verified.");
+    else {
+      const expectedLegalGate = rescueResult.reason instanceof ApiError
+        && rescueResult.reason.status === 503
+        && rescueResult.reason.message.startsWith("Rescue plans are withheld until the underlying legal rules");
+      const notFound = rescueResult.reason instanceof ApiError && rescueResult.reason.status === 404;
+      if (!expectedLegalGate && !notFound) {
+        setLoadError((current) => current || "Rescue plan status could not be verified.");
+      }
+    }
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) setScoreHistory(historyResult.value);
     else setLoadError((current) => current || "Score history could not be retrieved.");
     setLoading(false);

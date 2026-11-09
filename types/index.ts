@@ -48,7 +48,7 @@ export interface ComplianceFlag {
     | 'NOT_APPLICABLE'
     | 'REQUIRES_LAWYER_JUDGMENT'
     | 'LEGACY_UNCLASSIFIED'
-  status: 'ACTIVE' | 'RESOLVED'
+  status: 'ACTIVE' | 'RESOLVED' | 'ACKNOWLEDGED' | 'ESCALATED' | 'DUPLICATE'
   is_black_override: boolean
   triggered_at: string
   resolved_at: string | null
