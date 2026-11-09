@@ -7,11 +7,15 @@ import LegalDisclaimer from "@/components/LegalDisclaimer";
 
 type Kpis = {
   total_companies?: number;
-  green_count?: number;
-  yellow_count?: number;
-  red_black_count?: number;
+  green_count?: number | null;
+  yellow_count?: number | null;
+  red_black_count?: number | null;
   not_evaluated_count?: number;
-  upcoming_deadlines?: number;
+  upcoming_deadlines?: number | null;
+  dashboard_mode?: "EVIDENCE_REVIEW" | "STATUTORY_RISK";
+  statutory_risk_aggregates_available?: boolean;
+  companies_with_review_items?: number;
+  active_review_items?: number;
 };
 
 function asArray(value: any): any[] {
@@ -143,11 +147,22 @@ export default function DashboardPage() {
             <div className="font-garamond" style={{fontSize:34,color:"var(--yellow)"}}>{notEvaluated ?? "—"}</div>
             <div style={{fontSize:11,color:"var(--text2)"}}>Not a finding of compliance or breach</div>
           </div>
-          <div className="nlc-card">
+          {kpis?.dashboard_mode === "EVIDENCE_REVIEW" ? <>
+            <div className="nlc-card">
+              <div className="sec-lbl">Open Review Signals</div>
+              <div className="font-garamond" style={{fontSize:34,color:"var(--navy-3)"}}>{kpiScopeWarning ? "—" : kpis.active_review_items ?? "—"}</div>
+              <div style={{fontSize:11,color:"var(--text2)"}}>Evidence and rule-state items requiring review; not legal findings</div>
+            </div>
+            <div className="nlc-card">
+              <div className="sec-lbl">Companies with Review Signals</div>
+              <div className="font-garamond" style={{fontSize:34,color:"var(--navy-3)"}}>{kpiScopeWarning ? "—" : kpis.companies_with_review_items ?? "—"}</div>
+              <div style={{fontSize:11,color:"var(--text2)"}}>Distinct companies with active review items</div>
+            </div>
+          </> : <div className="nlc-card">
             <div className="sec-lbl">RED / BLACK</div>
             <div className="font-garamond" style={{fontSize:34,color:"var(--red)"}}>{scoreReleasePending ? "—" : redBlack ?? "—"}</div>
             <div style={{fontSize:11,color:"var(--text2)"}}>Combined count only where scoring is released</div>
-          </div>
+          </div>}
           <div className="nlc-card">
             <div className="sec-lbl">Upcoming Deadlines</div>
             <div className="font-garamond" style={{fontSize:34,color:"var(--navy-3)"}}>{calendarReleasePending ? "—" : deadlines.length}</div>
@@ -161,7 +176,7 @@ export default function DashboardPage() {
           <div className="sec-lbl">Risk Distribution</div>
           {scoreReleasePending ? (
             <p style={{fontSize:12,lineHeight:1.7,color:"var(--text2)",padding:"16px 4px"}}>
-              Statutory scoring is not released or all relevant companies remain not evaluated. This dashboard makes no company default, breach or liability determination.
+              Statutory risk bands are withheld pending legal release. Operational review signals are shown separately and do not determine default, breach or liability.
             </p>
           ) : <>
             {[["GREEN","Green",green],["YELLOW","Yellow",yellow],["RED / BLACK","RED / BLACK",redBlack]].map(([key,label,count])=>(
