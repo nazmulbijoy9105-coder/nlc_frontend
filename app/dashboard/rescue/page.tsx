@@ -7,13 +7,13 @@ import { useCurrentUserRole } from "@/lib/use-current-user-role";
 export default function RescuePage() {
   const { role, loaded: roleLoaded } = useCurrentUserRole();
   const authorised = roleLoaded && ["ADMIN_STAFF", "SUPER_ADMIN", "LEGAL_STAFF"].includes(String(role));
-  const legalStaffNeedsCompanyScope = roleLoaded && role === "LEGAL_STAFF" && !companyId;
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [legalReviewPending, setLegalReviewPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const companyId = searchParams.get("company_id");
+  const legalStaffNeedsCompanyScope = roleLoaded && role === "LEGAL_STAFF" && !companyId;
 
   const load = useCallback(async () => {
     if (!roleLoaded) return;
