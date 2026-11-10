@@ -156,3 +156,26 @@ test("finance workspace refreshes are scoped to the currently selected company",
   assert.equal((page.match(/const requiresReference =/g) || []).length, 1);
   assert.doesNotMatch(page, /Only bank transfer, cash and cheque evidence is accepted/);
 });
+
+
+test("calendar UI reflects the backend legal-release gate and exact event response contract", () => {
+  const page = read("app/dashboard/companies/[id]/calendar/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(api, /export const calendarApi =/);
+  assert.match(api, /calendarApi/);
+  assert.match(page, /calendarApi\.list\(companyId, 365\)/);
+  assert.match(page, /calendarApi\.generate\(companyId, 3\)/);
+  assert.match(page, /err\.status === 503/);
+  assert.match(page, /Statutory calendar is unavailable pending rule-level legal validation/);
+  assert.match(page, /Statutory calendar is withheld pending legal approval/);
+  assert.match(page, /This does not mean the company has no filing obligations/);
+  assert.match(page, /legal_rule_id/);
+  assert.match(page, /legal_source_version/);
+});
+
+test("legal staff rescue list requires a company scope", () => {
+  const page = read("app/dashboard/rescue/page.tsx");
+  assert.match(page, /role === "LEGAL_STAFF" && !companyId/);
+  assert.match(page, /Legal staff cannot access the portfolio-wide rescue list/);
+  assert.match(page, /if \(!authorised \|\| legalStaffNeedsCompanyScope\)/);
+});
