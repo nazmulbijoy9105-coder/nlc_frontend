@@ -102,6 +102,7 @@ export default function CompanyCalendarPage() {
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">{event.status || "Scheduled"}</span>
               </div>
               <p className="mt-2 text-xs text-gray-600">{event.description}</p><p className="mt-3 text-xs text-gray-500"><strong>Statutory basis:</strong> {event.statutory_basis || "Not recorded"}</p>
+              {(event.legal_rule_id || event.legal_source_version) && <p className="mt-2 text-xs text-gray-500">Rule: {event.legal_rule_id || "Not recorded"} · Source version: {event.legal_source_version || "Not recorded"}</p>}
             </article>
           ))}
         </div>
