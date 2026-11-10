@@ -153,6 +153,7 @@ export interface DashboardStats {
   green_count: number
   yellow_count: number
   red_black_count: number
+  not_evaluated_count: number
   upcoming_deadlines: number
 }
 
