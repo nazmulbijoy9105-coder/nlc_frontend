@@ -74,6 +74,7 @@ export const companiesApi = {
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
+  activity: (id: string) => api.get<Array<{ event_id: string; event_type: string; title: string; occurred_at: string; status: "pending" | "dispatched" | "attention_required" }>>("/api/v1/companies/" + encodeURIComponent(id) + "/activity"),
   update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
   downloadPDF: (id: string) => downloadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(id) + "/compliance-pdf", "NLC_Compliance_Report_" + id + ".pdf"),
