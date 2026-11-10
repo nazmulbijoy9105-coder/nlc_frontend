@@ -13,10 +13,11 @@ export default function RescuePage() {
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const companyId = searchParams.get("company_id");
+  const legalStaffNeedsCompanyScope = roleLoaded && role === "LEGAL_STAFF" && !companyId;
 
   const load = useCallback(async () => {
     if (!roleLoaded) return;
-    if (!authorised) { setLoading(false); return; }
+    if (!authorised || legalStaffNeedsCompanyScope) { setLoading(false); return; }
     setLoading(true);
     setError(null);
     setLegalReviewPending(false);
@@ -33,12 +34,13 @@ export default function RescuePage() {
     } finally {
       setLoading(false);
     }
-  }, [authorised, companyId, roleLoaded]);
+  }, [authorised, companyId, legalStaffNeedsCompanyScope, roleLoaded]);
 
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
   if (!roleLoaded) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Checking rescue access…</div>;
   if (!authorised) return <div role="alert" style={{padding:48,color:"var(--red)"}}>Access denied — rescue planning is restricted to authorised legal and administrative staff.</div>;
+  if (legalStaffNeedsCompanyScope) return <div role="status" style={{padding:48,color:"var(--text2)"}}>Select an assigned company to view its rescue records. Legal staff cannot access the portfolio-wide rescue list.</div>;
 
   if (loading) return <div role="status" style={{padding:40,color:"var(--white-3)"}}>Loading rescue cases…</div>;
 
