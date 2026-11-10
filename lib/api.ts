@@ -135,8 +135,23 @@ export const documentsApi = {
   },
 };
 
+export const calendarApi = {
+  list: (companyId: string, daysAhead = 90) =>
+    api.get<{ company_id: string; events: Array<{
+      id: string; company_id: string; event_type: string; title: string;
+      description: string | null; due_date: string; period_label: string;
+      status: string; is_statutory: boolean; statutory_basis: string | null;
+      legal_rule_id: string | null; legal_source_version: string | null;
+      legal_manifest_sha256: string | null;
+    }> }>(`/api/v1/calendar/companies/${encodeURIComponent(companyId)}?days_ahead=${daysAhead}`),
+  generate: (companyId: string, yearsAhead = 3) =>
+    api.post<{ message: string; count: number; events: unknown[] }>(
+      `/api/v1/calendar/companies/${encodeURIComponent(companyId)}/generate?years_ahead=${yearsAhead}`
+    ),
+};
+
 export const rescueApi = {
-  list: (companyId?: string) => api.get<any>("/api/v1/rescue/plans" + (companyId ? "?company_id=" + companyId : "")),
+  list: (companyId?: string) => api.get<any>("/api/v1/rescue/plans" + (companyId ? "?company_id=" + encodeURIComponent(companyId) : "")),
   pipeline: () => api.get<any>("/api/v1/rescue/plans"),
   getActive: (companyId: string) => api.get<any>("/api/v1/rescue/plans/" + companyId + "/active"),
 };
