@@ -194,3 +194,10 @@ test("dashboard does not withhold released risk metrics because some companies r
   assert.match(page, /setScoreReleasePending\(!scopeMatches\)/);
   assert.doesNotMatch(page, /setScoreReleasePending\(!scopeMatches \|\| Number\(value\.not_evaluated_count/);
 });
+
+test("rule manager does not equate product-owner attestation with independent legal verification", () => {
+  const page = read("app/dashboard/rules/page.tsx");
+  assert.match(page, /Product-owner attestation authorizes product release but does not constitute independent legal verification/);
+  assert.match(page, /Independent Legal Review/);
+  assert.doesNotMatch(page, /All catalogue entries are marked VERIFIED under the product-owner attestation/);
+});
