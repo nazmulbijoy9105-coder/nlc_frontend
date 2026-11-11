@@ -201,3 +201,21 @@ test("rule manager does not equate product-owner attestation with independent le
   assert.match(page, /Independent Legal Review/);
   assert.doesNotMatch(page, /All catalogue entries are marked VERIFIED under the product-owner attestation/);
 });
+
+
+test("billing workspace uses registered subscription APIs and does not claim gateway checkout", () => {
+  const page = read("app/dashboard/billing/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(page, /billingApi\.plans\(\)/);
+  assert.match(page, /billingApi\.current\(companyId\)/);
+  assert.match(page, /billingApi\.history\(companyId\)/);
+  assert.match(page, /billingApi\.requestSubscription\(/);
+  assert.match(page, /billingApi\.cancelAtPeriodEnd\(/);
+  assert.match(page, /Only a company director can request or cancel a subscription/);
+  assert.match(page, /activation only after the payment is verified and allocated/);
+  assert.match(page, /Open finance workspace/);
+  assert.match(page, /Online bKash, Nagad and SSLCommerz checkout is not enabled/);
+  assert.doesNotMatch(page, /temporarily unavailable|backend currently does not register/);
+  assert.match(api, /export const billingApi =/);
+  assert.match(api, /\/api\/v1\/subscriptions\/companies/);
+});
