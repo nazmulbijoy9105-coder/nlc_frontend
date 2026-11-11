@@ -38,6 +38,8 @@ export default function LegalProvenanceAdminPage() {
     rule_id: "", source_id: "", mapping_kind: "RULE_BASIS",
     provision_citation: "", rationale: "",
   });
+  const [bulkMappingJson, setBulkMappingJson] = useState("");
+
   const [deadlineForm, setDeadlineForm] = useState({
     mapping_id: "", event_type: "FIRST_AGM", title: "", trigger_fact_key: "",
     period_label: "", offset: "30", unit: "DAYS", adjustment: "NONE",
@@ -137,6 +139,33 @@ export default function LegalProvenanceAdminPage() {
       const result = await legalProvenanceApi.createMapping(mappingForm);
       setNotice(`Rule/source mapping registered for ${result.rule_id}. Event ${result.event_id}.`);
       setMappingForm((old) => ({ ...old, provision_citation: "", rationale: "" }));
+      await load();
+    } catch (err) { setError(messageOf(err)); }
+    finally { setSaving(""); }
+  };
+
+  const submitBulkMappings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); setSaving("bulk-mapping"); setError(null); setNotice(null);
+    try {
+      const parsed: unknown = JSON.parse(bulkMappingJson);
+      if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 100) {
+        throw new Error("Provide a JSON array containing between 1 and 100 mapping rows.");
+      }
+      const mappings = parsed.map((item: any) => ({
+        rule_id: String(item?.rule_id ?? "").trim(),
+        source_id: String(item?.source_id ?? "").trim(),
+        mapping_kind: item?.mapping_kind,
+        provision_citation: String(item?.provision_citation ?? "").trim(),
+        rationale: String(item?.rationale ?? "").trim(),
+      }));
+      const invalid = mappings.find((item: any) =>
+        !item.rule_id || !item.source_id ||
+        !["RULE_BASIS", "DEADLINE_BASIS", "PENALTY_BASIS"].includes(item.mapping_kind) ||
+        item.provision_citation.length < 3 || item.rationale.length < 10
+      );
+      if (invalid) throw new Error("Every row needs rule_id, a registered source_id, a valid mapping_kind, an exact provision_citation and a rationale of at least 10 characters.");
+      const result = await legalProvenanceApi.bulkCreateMappings(mappings);
+      setNotice(`Bulk mapping completed: ${result.created} new mappings; ${result.already_present_or_duplicate} already present or duplicated in the request. No owner approvals or legal verification were created.`);
       await load();
     } catch (err) { setError(messageOf(err)); }
     finally { setSaving(""); }
@@ -273,6 +302,28 @@ export default function LegalProvenanceAdminPage() {
           <label style={fieldStyle}>Exact provision / paragraph / condition<textarea className="nlc-input" rows={3} value={mappingForm.provision_citation} onChange={(e)=>setMappingForm({...mappingForm,provision_citation:e.target.value})} required minLength={3} /></label>
           <label style={fieldStyle}>Mapping rationale / proposition<textarea className="nlc-input" rows={4} value={mappingForm.rationale} onChange={(e)=>setMappingForm({...mappingForm,rationale:e.target.value})} required minLength={10} /></label>
           <button className="nlc-btn-gold" type="submit" disabled={saving !== "" || sources.length === 0 || rules.length === 0}>{saving === "mapping" ? "Mapping…" : "Register rule/source mapping"}</button>
+        </form>
+
+        <form className="nlc-card" onSubmit={submitBulkMappings} style={{ display: "grid", gap: 10 }}>
+          <div className="sec-lbl gold">2A · Bulk import reviewed rule/source mappings</div>
+          <p style={{ fontSize: 11, color: "var(--text2)" }}>
+            Paste a JSON array of reviewed mapping rows. Use the source_id shown in the registered-source inventory below.
+            Each row must name an existing rule and source version. Maximum 100 rows per request.
+          </p>
+          <textarea
+            className="nlc-input"
+            rows={10}
+            value={bulkMappingJson}
+            onChange={(event) => setBulkMappingJson(event.target.value)}
+            placeholder={'[\n  {\n    "rule_id": "AGM-001",\n    "source_id": "registered-source-uuid",\n    "mapping_kind": "RULE_BASIS",\n    "provision_citation": "Companies Act 1994, section 81",\n    "rationale": "Maps the first AGM obligation to the precise statutory provision."\n  }\n]'}
+            required
+          />
+          <p style={{ fontSize: 10, color: "var(--text3)" }}>
+            Imports only the exact rows supplied. It does not infer or correct citations, create deadline definitions, approve rules, or mark legal verification as complete. The append-only audit ledger records the signed SUPER_ADMIN actor for each new mapping.
+          </p>
+          <button className="nlc-btn-gold" type="submit" disabled={saving !== "" || sources.length === 0 || rules.length === 0}>
+            {saving === "bulk-mapping" ? "Importing mappings…" : "Import reviewed mapping rows"}
+          </button>
         </form>
 
         <form className="nlc-card" onSubmit={submitDeadline} style={{ display: "grid", gap: 10 }}>
