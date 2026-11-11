@@ -219,3 +219,13 @@ test("billing workspace uses registered subscription APIs and does not claim gat
   assert.match(api, /export const billingApi =/);
   assert.match(api, /\/api\/v1\/subscriptions\/companies/);
 });
+
+
+test("billing workspace waits for authenticated role before protected API calls", () => {
+  const page = read("app/dashboard/billing/page.tsx");
+  const guard = page.indexOf("if (!roleLoaded || !role) return");
+  const companyFetch = page.indexOf("companiesApi.list()");
+  const planFetch = page.indexOf("billingApi.plans()");
+  assert.ok(guard >= 0 && guard < companyFetch && guard < planFetch);
+  assert.ok(page.indexOf("if (!role)") < page.indexOf("if (loading)"));
+});
