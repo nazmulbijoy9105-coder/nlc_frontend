@@ -179,3 +179,25 @@ test("legal staff rescue list requires a company scope", () => {
   assert.match(page, /Legal staff cannot access the portfolio-wide rescue list/);
   assert.match(page, /if \(!authorised \|\| legalStaffNeedsCompanyScope\)/);
 });
+
+
+test("rule manager displays the active 85-rule catalogue separately from scoring eligibility", () => {
+  const page = read("app/dashboard/rules/page.tsx");
+  assert.match(page, /rule\.is_active/);
+  assert.match(page, /rule\.product_scoring_enabled/);
+  assert.match(page, /82 score-bearing rules enabled/);
+  assert.match(page, /UNKNOWN facts do not reduce scores/);
+});
+
+test("dashboard does not withhold released risk metrics because some companies remain not evaluated", () => {
+  const page = read("app/dashboard/page.tsx");
+  assert.match(page, /setScoreReleasePending\(!scopeMatches\)/);
+  assert.doesNotMatch(page, /setScoreReleasePending\(!scopeMatches \|\| Number\(value\.not_evaluated_count/);
+});
+
+test("rule manager does not equate product-owner attestation with independent legal verification", () => {
+  const page = read("app/dashboard/rules/page.tsx");
+  assert.match(page, /Product-owner attestation authorizes product release but does not constitute independent legal verification/);
+  assert.match(page, /Independent Legal Review/);
+  assert.doesNotMatch(page, /All catalogue entries are marked VERIFIED under the product-owner attestation/);
+});
