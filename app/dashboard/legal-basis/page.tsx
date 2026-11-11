@@ -63,10 +63,7 @@ export default function LegalBasisPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedRuleId) {
-      setProvenance(null);
-      return;
-    }
+    if (!selectedRuleId) return;
     let cancelled = false;
     setLoadingSource(true);
     setSourceError(null);
@@ -94,7 +91,8 @@ export default function LegalBasisPage() {
   }, [rules, query]);
 
   const selected = rules.find((rule) => rule.rule_id === selectedRuleId);
-  const mappings = provenance?.product_owner_source_mappings || [];
+  const activeProvenance = provenance?.rule_id === selectedRuleId ? provenance : null;
+  const mappings = activeProvenance?.product_owner_source_mappings || [];
 
   if (loadingRules) return <div role="status" style={{ padding: 32, color: "var(--text3)" }}>Loading legal basis register…</div>;
 
@@ -108,7 +106,7 @@ export default function LegalBasisPage() {
       </header>
 
       <div role="note" style={{ padding: 14, marginBottom: 18, border: "1px solid #D6B66A55", borderLeft: "3px solid #C9A84C", borderRadius: 8, background: "#C9A84C10", color: "var(--text2)", fontSize: 12, lineHeight: 1.6 }}>
-        **Important:** NLC's compliance score is a product risk indicator, not legal advice or a legal certification. Product-owner release and independent legal verification are separate records. A PENDING legal-verification status does not erase a product-owner scoring decision.
+        **Important:** NLC&apos;s compliance score is a product risk indicator, not legal advice or a legal certification. Product-owner release and independent legal verification are separate records. A PENDING legal-verification status does not erase a product-owner scoring decision.
       </div>
 
       {error && <div role="alert" className="nlc-card" style={{ marginBottom: 16, color: "var(--red)" }}>{error}</div>}
@@ -161,7 +159,7 @@ export default function LegalBasisPage() {
                   <h2 className="font-garamond" style={{ fontSize: 20, color: "var(--nlc-white)", marginTop: 4 }}>{selected.rule_name}</h2>
                 </div>
                 <div style={{ display: "grid", gap: 5, alignContent: "start" }}>
-                  <span className="badge badge-yellow">Legal status: {provenance?.legal_verification_status || "PENDING"}</span>
+                  <span className="badge badge-yellow">Legal status: {activeProvenance?.legal_verification_status || "PENDING"}</span>
                   <span className={selected.product_scoring_enabled ? "badge badge-green" : "badge badge-neutral"}>
                     {selected.product_scoring_enabled ? "Product scoring enabled" : "Informational / non-scoring"}
                   </span>
@@ -175,7 +173,7 @@ export default function LegalBasisPage() {
                 <div role="status" style={{ padding: 18, border: "1px dashed var(--border2)", borderRadius: 8, color: "var(--text2)", fontSize: 13, lineHeight: 1.7 }}>
                   **No source/provision mapping is registered for this rule yet.**
                   <p style={{ marginTop: 6, color: "var(--text3)", fontSize: 12 }}>
-                    The rule's legacy catalogue text is not treated as independently verified legal authority. NLC will show the instrument and section here after the source version and exact provision mapping are registered.
+                    The rule&apos;s legacy catalogue text is not treated as independently verified legal authority. NLC will show the instrument and section here after the source version and exact provision mapping are registered.
                   </p>
                 </div>
               )}
