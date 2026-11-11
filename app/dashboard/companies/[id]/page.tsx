@@ -17,6 +17,8 @@ export default function CompanyProfilePage() {
   const [compliance, setCompliance] = useState<any>(null)
   const [rescuePlan, setRescuePlan] = useState<any>(null)
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
+  const [activity, setActivity] = useState<any[]>([])
+  const [activityError, setActivityError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const loadRequest = useRef(0)
 
@@ -31,12 +33,14 @@ export default function CompanyProfilePage() {
     setCompliance(null);
     setRescuePlan(null);
     setScoreHistory([]);
+    setActivity([]);
+    setActivityError(null);
     const results = await Promise.allSettled([
       companiesApi.get(id), companiesApi.violations(id), companiesApi.modules(id),
-      rescueApi.getActive(id), companiesApi.scoreHistory(id),
+      rescueApi.getActive(id), companiesApi.scoreHistory(id), companiesApi.activity(id),
     ]);
     if (requestId !== loadRequest.current) return;
-    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult] = results;
+    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult] = results;
     if (companyResult.status === "rejected") {
       const error = companyResult.reason;
       setLoadError(error instanceof ApiError && error.status === 403
@@ -62,6 +66,8 @@ export default function CompanyProfilePage() {
     }
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) setScoreHistory(historyResult.value);
     else setLoadError((current) => current || "Score history could not be retrieved.");
+    if (activityResult.status === "fulfilled" && Array.isArray(activityResult.value)) setActivity(activityResult.value);
+    else setActivityError("Company activity is temporarily unavailable.");
     setLoading(false);
   }, [id, roleLoaded])
 
@@ -293,8 +299,35 @@ export default function CompanyProfilePage() {
           )}
         </div>
 
-        {/* ═══ RIGHT: Tax + Governance + Services ═══ */}
+        {/* ═══ RIGHT: Activity + Tax + Governance + Services ═══ */}
         <div style={{borderLeft:'1px solid var(--border)',padding:20,background:'var(--surface)',overflowY:'auto'}}>
+
+          {/* Event-driven company activity */}
+          <div className="nlc-card" style={{marginBottom:12}}>
+            <div className="sec-lbl">Company Activity</div>
+            {activityError ? (
+              <div role="status" style={{fontSize:11,color:'var(--text3)',lineHeight:1.6}}>{activityError}</div>
+            ) : activity.length === 0 ? (
+              <div style={{fontSize:11,color:'var(--text3)',padding:'8px 0'}}>No recent lifecycle activity.</div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {activity.map((item:any) => {
+                  const needsAttention = item.status === 'attention_required'
+                  const statusLabel = needsAttention ? 'Needs attention' : item.status === 'dispatched' ? 'Dispatched' : 'Pending'
+                  const statusColor = needsAttention ? '#B91C1C' : item.status === 'dispatched' ? 'var(--teal)' : '#D97706'
+                  return (
+                    <div key={item.event_id} style={{paddingBottom:9,borderBottom:'1px solid var(--border)'}}>
+                      <div style={{fontSize:11,fontWeight:600,color:'var(--navy)',lineHeight:1.45}}>{item.title}</div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginTop:4}}>
+                        <span style={{fontSize:9,color:'var(--text3)'}}>{_d(item.occurred_at)}</span>
+                        <span style={{fontSize:9,fontWeight:700,color:statusColor}}>{statusLabel}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Tax & Regulatory */}
           <div className="nlc-card" style={{marginBottom:12}}>
