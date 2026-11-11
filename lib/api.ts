@@ -215,6 +215,20 @@ export const adminApi = {
   reactivateUser: (id: string) => api.patch<any>(`/api/v1/admin/users/${id}/reactivate`, {}),
 }
 
+
+export const legalProvenanceApi = {
+  listSources: () => api.get<any[]>("/api/v1/legal-provenance/sources"),
+  registerSource: (body: any) => api.post<any>("/api/v1/legal-provenance/sources", body),
+  listMappings: (ruleId?: string) =>
+    api.get<any[]>(`/api/v1/legal-provenance/mappings${ruleId ? `?rule_id=${encodeURIComponent(ruleId)}` : ""}`),
+  createMapping: (body: any) => api.post<any>("/api/v1/legal-provenance/mappings", body),
+  listDeadlineDefinitions: () => api.get<any[]>("/api/v1/legal-provenance/deadlines/definitions"),
+  createDeadlineDefinition: (body: any) => api.post<any>("/api/v1/legal-provenance/deadlines/definitions", body),
+  recordDecision: (body: any) => api.post<any>("/api/v1/legal-provenance/decisions", body),
+  listEvents: (ruleId?: string) =>
+    api.get<any[]>(`/api/v1/legal-provenance/events${ruleId ? `?rule_id=${encodeURIComponent(ruleId)}` : ""}`),
+};
+
 export const rulesApi = {
   list: () => api.get<any>('/api/v1/rules'),
   summary: () => api.get<any>('/api/v1/rules/summary'),
