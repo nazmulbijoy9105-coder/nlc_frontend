@@ -52,7 +52,7 @@ export interface ScoreBreakdown {
   raw_total?: number | null
   override_applied?: boolean
   override_reason?: string | null
-  exposure_band?: Band | null
+  exposure_band?: string | null
   revenue_tier?: string | null
   active_flag_count?: number
   black_flag_count?: number
