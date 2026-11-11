@@ -10,28 +10,38 @@ export interface User {
 }
 
 export interface ScoreBreakdown {
-  agm_score: number
-  audit_score: number
-  annual_return_score: number
-  director_score: number
-  shareholding_score: number
-  capital_score: number
-  office_score: number
-  register_score: number
-  tax_score: number
-  raw_total: number
+  /** Headline score 0-100 when product scoring is released; null when withheld. */
   final_score: number | null
-  override_applied: boolean
-  override_reason: string | null
   risk_band: string
-  exposure_band: string | null
-  revenue_tier: string | null
-  active_flag_count: number
-  black_flag_count: number
-  red_flag_count: number
-  yellow_flag_count: number
-  green_flag_count: number
-  score_hash: string
+  /** Additive path used for the headline score (category name → points deducted). */
+  category_deductions?: Record<string, number> | null
+  total_applied_category_deduction?: number | null
+  /** Always false in current policy — module scores are diagnostics only. */
+  diagnostic_module_scores_are_additive?: boolean
+  diagnostic_module_score_semantics?: string
+  // Legacy/diagnostic module fields (non-additive; do not sum to final_score)
+  agm_score?: number | null
+  audit_score?: number | null
+  annual_return_score?: number | null
+  director_score?: number | null
+  shareholding_score?: number | null
+  capital_score?: number | null
+  office_score?: number | null
+  register_score?: number | null
+  tax_score?: number | null
+  raw_total?: number | null
+  override_applied?: boolean
+  override_reason?: string | null
+  exposure_band?: string | null
+  revenue_tier?: string | null
+  active_flag_count?: number
+  black_flag_count?: number
+  red_flag_count?: number
+  yellow_flag_count?: number
+  green_flag_count?: number
+  /** Input completeness indicator — not fraction of rules verified. */
+  input_coverage?: number | null
+  score_hash?: string
 }
 
 export interface ComplianceFlag {

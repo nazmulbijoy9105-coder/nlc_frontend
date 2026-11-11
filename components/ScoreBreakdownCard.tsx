@@ -1,161 +1,189 @@
 "use client";
 
 import { ScoreBreakdown } from "@/types";
-import { TrendingUp, AlertTriangle, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 
 interface ScoreBreakdownCardProps {
   breakdown: ScoreBreakdown | null;
 }
 
+function bandColor(band: string | undefined): string {
+  switch ((band || "").toUpperCase()) {
+    case "GREEN":
+      return "#10b981";
+    case "YELLOW":
+      return "#f59e0b";
+    case "RED":
+      return "#ef4444";
+    case "BLACK":
+      return "#111827";
+    default:
+      return "#6b7280";
+  }
+}
+
 export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProps) {
-  if (!breakdown || (breakdown as any).risk_band === "NOT_EVALUATED" || breakdown.final_score == null) {
+  const withheld =
+    !breakdown ||
+    breakdown.risk_band === "NOT_EVALUATED" ||
+    breakdown.final_score == null;
+
+  if (withheld) {
     return (
-      <div style={{
-        padding: "24px",
-        borderRadius: "16px",
-        background: "linear-gradient(135deg, rgba(30, 58, 95, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)",
-        backdropFilter: "blur(20px)",
-        border: "1px solid rgba(200, 168, 75, 0.1)",
-        textAlign: "center",
-        color: "#6b7280",
-        fontSize: "14px"
-      }}>
+      <div
+        style={{
+          padding: "24px",
+          borderRadius: "16px",
+          background:
+            "linear-gradient(135deg, rgba(30, 58, 95, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid rgba(200, 168, 75, 0.1)",
+          textAlign: "center",
+          color: "#9ca3af",
+          fontSize: "14px",
+        }}
+      >
         <Shield size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-        Not evaluated — statutory scoring is withheld pending independent legal approval.
+        Score not published for this company. Missing evidence stays UNKNOWN and
+        does not count as a violation. High scores with low input coverage mean
+        incomplete data, not full compliance.
       </div>
     );
   }
 
-  const scores = [
-    { label: "AGM", value: breakdown.agm_score, max: 20, icon: "📋" },
-    { label: "Audit", value: breakdown.audit_score, max: 20, icon: "🔍" },
-    { label: "Annual Return", value: breakdown.annual_return_score, max: 20, icon: "📄" },
-    { label: "Director", value: breakdown.director_score, max: 10, icon: "👤" },
-    { label: "Shareholding", value: breakdown.shareholding_score, max: 10, icon: "📊" },
-    { label: "Capital", value: breakdown.capital_score, max: 5, icon: "💰" },
-    { label: "Office", value: breakdown.office_score, max: 5, icon: "🏢" },
-    { label: "Registers", value: breakdown.register_score, max: 5, icon: "📚" },
-    { label: "Tax", value: breakdown.tax_score, max: 5, icon: "🧾" },
-  ];
-
-  const getScoreColor = (value: number, max: number) => {
-    const ratio = value / max;
-    if (ratio >= 0.8) return "#10b981";
-    if (ratio >= 0.5) return "#f59e0b";
-    return "#ef4444";
-  };
-
-  const getScoreGradient = (value: number, max: number) => {
-    const ratio = value / max;
-    if (ratio >= 0.8) return "linear-gradient(90deg, #10b981, #34d399)";
-    if (ratio >= 0.5) return "linear-gradient(90deg, #f59e0b, #fbbf24)";
-    return "linear-gradient(90deg, #ef4444, #f87171)";
-  };
+  const deductions = breakdown.category_deductions || {};
+  const deductionEntries = Object.entries(deductions).sort((a, b) => b[1] - a[1]);
+  const totalDeduction =
+    breakdown.total_applied_category_deduction ??
+    deductionEntries.reduce((sum, [, v]) => sum + (Number(v) || 0), 0);
+  const coverage =
+    typeof breakdown.input_coverage === "number"
+      ? Math.round(breakdown.input_coverage * 100)
+      : null;
 
   return (
-    <div style={{
-      padding: "24px",
-      borderRadius: "16px",
-      background: "linear-gradient(135deg, rgba(30, 58, 95, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)",
-      backdropFilter: "blur(20px)",
-      border: "1px solid rgba(200, 168, 75, 0.15)",
-      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)"
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <TrendingUp size={18} color="#c8a84b" />
-          <span style={{ fontSize: "14px", fontWeight: 600, color: "#e5e7eb" }}>Score Breakdown</span>
-        </div>
-        <div style={{
-          padding: "4px 12px",
-          borderRadius: "20px",
-          background: (breakdown.final_score ?? 0) >= 85 ? "rgba(16, 185, 129, 0.2)" : 
-                      (breakdown.final_score ?? 0) >= 50 ? "rgba(245, 158, 11, 0.2)" : "rgba(239, 68, 68, 0.2)",
-          color: (breakdown.final_score ?? 0) >= 85 ? "#10b981" : 
-                 (breakdown.final_score ?? 0) >= 50 ? "#f59e0b" : "#ef4444",
-          fontSize: "12px",
-          fontWeight: 700
-        }}>
-          {breakdown.final_score}/100
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-        {scores.map((s) => (
-          <div key={s.label} style={{
-            padding: "12px",
-            borderRadius: "12px",
-            background: "rgba(255, 255, 255, 0.03)",
-            border: "1px solid rgba(255, 255, 255, 0.05)"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <span style={{ fontSize: "11px", color: "#9ca3af", display: "flex", alignItems: "center", gap: "4px" }}>
-                {s.icon} {s.label}
-              </span>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: getScoreColor(s.value, s.max) }}>
-                {s.value}/{s.max}
-              </span>
-            </div>
-            <div style={{
-              width: "100%",
-              height: "4px",
-              borderRadius: "2px",
-              background: "rgba(255, 255, 255, 0.1)",
-              overflow: "hidden"
-            }}>
-              <div style={{
-                width: `${(s.value / s.max) * 100}%`,
-                height: "100%",
-                borderRadius: "2px",
-                background: getScoreGradient(s.value, s.max),
-                transition: "width 0.6s ease-out"
-              }} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {breakdown.override_applied && (
-        <div style={{
-          marginTop: "16px",
-          padding: "12px 16px",
-          borderRadius: "12px",
-          background: "rgba(239, 68, 68, 0.1)",
-          border: "1px solid rgba(239, 68, 68, 0.2)",
+    <div
+      style={{
+        padding: "24px",
+        borderRadius: "16px",
+        background:
+          "linear-gradient(135deg, rgba(30, 58, 95, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(200, 168, 75, 0.15)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+      }}
+    >
+      <div
+        style={{
           display: "flex",
-          alignItems: "center",
-          gap: "8px"
-        }}>
-          <AlertTriangle size={16} color="#ef4444" />
-          <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 500 }}>
-            BLACK Override: {breakdown.override_reason}
-          </span>
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 20,
+          gap: 16,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 12,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#9ca3af",
+              marginBottom: 6,
+            }}
+          >
+            Compliance score
+          </div>
+          <div
+            className="font-garamond"
+            style={{ fontSize: 42, lineHeight: 1, color: "#f9fafb" }}
+          >
+            {breakdown.final_score}
+            <span style={{ fontSize: 16, color: "#9ca3af" }}> / 100</span>
+          </div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div
+            style={{
+              display: "inline-block",
+              padding: "6px 12px",
+              borderRadius: 999,
+              background: bandColor(breakdown.risk_band),
+              color: "#fff",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {breakdown.risk_band}
+          </div>
+          {coverage != null && (
+            <div style={{ marginTop: 8, fontSize: 12, color: "#9ca3af" }}>
+              Input coverage {coverage}%
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 12, color: "#d1d5db", marginBottom: 12 }}>
+        Headline score uses <strong>category deductions</strong> only (capped).
+        Module rows below are diagnostics and are not added together.
+      </div>
+
+      {deductionEntries.length > 0 ? (
+        <div style={{ display: "grid", gap: 10, marginBottom: 16 }}>
+          {deductionEntries.map(([name, points]) => (
+            <div
+              key={name}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "8px 10px",
+                borderRadius: 8,
+                background: "rgba(15, 23, 42, 0.45)",
+                border: "1px solid rgba(148, 163, 184, 0.15)",
+              }}
+            >
+              <span style={{ color: "#e5e7eb", fontSize: 13 }}>{name}</span>
+              <span style={{ color: "#fca5a5", fontFamily: "monospace", fontSize: 13 }}>
+                −{points}
+              </span>
+            </div>
+          ))}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              paddingTop: 4,
+              color: "#9ca3af",
+              fontSize: 12,
+            }}
+          >
+            <span>Total applied category deduction</span>
+            <span style={{ fontFamily: "monospace" }}>−{totalDeduction}</span>
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 12 }}>
+          No category deductions on the current evaluation.
         </div>
       )}
 
-      <div style={{
-        marginTop: "16px",
-        display: "flex",
-        gap: "8px",
-        justifyContent: "center"
-      }}>
-        {[
-          { count: breakdown.green_flag_count, color: "#10b981", label: "Green" },
-          { count: breakdown.yellow_flag_count, color: "#f59e0b", label: "Yellow" },
-          { count: breakdown.red_flag_count, color: "#ef4444", label: "Red" },
-          { count: breakdown.black_flag_count, color: "#111827", label: "Black" },
-        ].map((f) => (
-          <div key={f.label} style={{
-            padding: "6px 12px",
-            borderRadius: "8px",
-            background: "rgba(255, 255, 255, 0.03)",
-            textAlign: "center"
-          }}>
-            <div style={{ fontSize: "14px", fontWeight: 700, color: f.color }}>{f.count}</div>
-            <div style={{ fontSize: "9px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.5px" }}>{f.label}</div>
-          </div>
-        ))}
-      </div>
+      {breakdown.override_applied && (
+        <div
+          style={{
+            marginTop: 8,
+            padding: 10,
+            borderRadius: 8,
+            background: "rgba(127, 29, 29, 0.35)",
+            color: "#fecaca",
+            fontSize: 12,
+          }}
+        >
+          BLACK override applied
+          {breakdown.override_reason ? `: ${breakdown.override_reason}` : ""}
+        </div>
+      )}
     </div>
   );
 }
