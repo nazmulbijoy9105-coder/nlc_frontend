@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { billingApi, companiesApi } from "@/lib/api"
 import { useCurrentUserRole } from "@/lib/use-current-user-role"
 
@@ -107,14 +107,7 @@ export default function BillingPage() {
     }
     void load()
     return () => { active = false }
-  }, [roleLoaded])
-
-  useEffect(() => {
-    if (!selectedPlan) return
-    if (!availablePrices.some((price) => price.billing_interval === billingInterval)) {
-      setBillingInterval(availablePrices[0]?.billing_interval ?? "MONTHLY")
-    }
-  }, [selectedPlan, billingInterval, availablePrices])
+  }, [role, roleLoaded])
 
   useEffect(() => {
     if (!companyId || !roleLoaded) return
@@ -150,7 +143,7 @@ export default function BillingPage() {
     setHistory(Array.isArray(previous) ? previous : [])
   }
 
-  const requestPlan = async (event: React.FormEvent<HTMLFormElement>) => {
+  const requestPlan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!companyId || !selectedPlan || !selectedPrice || !isDirector) return
     setBusy(true)
@@ -167,7 +160,7 @@ export default function BillingPage() {
     }
   }
 
-  const requestCancellation = async (event: React.FormEvent<HTMLFormElement>) => {
+  const requestCancellation = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!companyId || !subscription || !cancelReason.trim() || !isDirector) return
     setBusy(true)
