@@ -48,6 +48,8 @@ export default function RulesPage() {
 
   const filtered = filter === "ALL" ? rules : rules.filter((rule) => String(rule.rule_id || "").startsWith(filter));
   const blackCount = rules.filter((rule) => rule.is_black_override).length;
+  const activeCount = rules.filter((rule) => rule.is_active === true).length;
+  const scoringCount = rules.filter((rule) => rule.product_scoring_enabled === true).length;
   const pendingCount = rules.filter((rule) => (rule.verification_status || "PENDING").toUpperCase() !== "VERIFIED").length;
   const modules = [...new Set(rules.map((rule) => String(rule.rule_id || "").split("-")[0]).filter(Boolean))].sort();
 
@@ -65,7 +67,7 @@ export default function RulesPage() {
         <button type="button" className="nlc-btn-ghost" onClick={() => setRetry((value) => value + 1)}>Retry</button>
       </div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:14,marginBottom:18}}>
-        {[["Total Rules",rules.length,"var(--navy-3)"],["Black Overrides",blackCount,"#0A0A0A"],["Modules",modules.length,"var(--teal)"],["Catalogue Score Impact",rules.reduce((sum,rule)=>sum+(Number(rule.score_impact)||0),0),"var(--red)"]].map(([label,value,color])=>(
+        {[["Total Rules",rules.length,"var(--navy-3)"],["Active Rules",activeCount,"var(--teal)"],["Scoring Rules",scoringCount,"var(--red)"],["Black Overrides",blackCount,"#0A0A0A"],["Modules",modules.length,"var(--teal)"]].map(([label,value,color])=>(
           <div key={String(label)} className="nlc-card" style={{borderTop:`3px solid ${String(color)}`,textAlign:"center"}}>
             <div className="font-garamond" style={{fontSize:26,color:String(color),lineHeight:1}}>{value}</div>
             <div className="font-mono" style={{fontSize:9,color:"var(--text3)",marginTop:4,letterSpacing:".1em",textTransform:"uppercase"}}>{label}</div>
@@ -73,7 +75,7 @@ export default function RulesPage() {
         ))}
       </div>
       <div role="note" style={{padding:"12px 14px",marginBottom:16,border:"1px solid #FDE68A",borderLeft:"3px solid #D97706",borderRadius:8,background:"#FFFBEB",color:"#78350F",fontSize:12,lineHeight:1.55}}>
-        <strong>Citation and legal release gate:</strong> {pendingCount} rule(s) are pending or disputed. Catalogue presence and citation verification do not establish legal approval, statutory scoring release or company-specific applicability.
+        <strong>ILRMF release status:</strong> {activeCount}/85 catalogue entries active; {scoringCount}/82 score-bearing rules enabled. The three informational entries are excluded from deductions. Runtime deductions require a confirmed, applicable violation; UNKNOWN facts do not reduce scores. {pendingCount > 0 ? `${pendingCount} rule(s) still have a pending API status.` : "All catalogue entries are marked VERIFIED under the product-owner attestation."}
       </div>
       <div className="nlc-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -85,11 +87,12 @@ export default function RulesPage() {
         </div>
         <div style={{overflowX:"auto"}}>
           <table className="nlc-table" style={{minWidth:1050}}>
-            <thead><tr><th>Rule ID</th><th>Name</th><th>Statutory Basis</th><th>Effective Date</th><th>Citation Verification</th><th>Score Impact</th><th>Severity</th><th>BLACK</th></tr></thead>
+            <thead><tr><th>Rule ID</th><th>Name</th><th>Catalogue</th><th>Statutory Basis</th><th>Effective Date</th><th>Legal Verification</th><th>Product Scoring</th><th>Default Impact</th><th>Default Severity</th><th>BLACK</th></tr></thead>
             <tbody>{filtered.map((rule)=>(
               <tr key={rule.rule_id}>
                 <td className="font-mono" style={{fontWeight:700,color:"var(--teal)",fontSize:11}}>{rule.rule_id}</td>
                 <td style={{fontWeight:600,color:"var(--navy)"}}>{rule.rule_name}</td>
+                <td><span className={`badge ${rule.is_active ? "badge-green" : "badge-yellow"}`}>{rule.is_active ? "ACTIVE" : "INACTIVE"}</span></td>
                 <td style={{fontSize:10,color:"var(--text3)",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{rule.statutory_basis}</td>
                 <td className="font-mono" style={{fontSize:10,color:"var(--text3)",whiteSpace:"nowrap"}}>{rule.statutory_effective_date || "Not recorded"}</td>
                 <td>{(() => {
@@ -97,6 +100,7 @@ export default function RulesPage() {
                   const meta = verificationStyles[status] || verificationStyles.PENDING;
                   return <span title={rule.verified_at ? `Citation review recorded on ${rule.verified_at}` : "No completed citation review recorded"} style={{display:"inline-flex",padding:"4px 8px",borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{meta.label}</span>;
                 })()}</td>
+                <td><span className={`badge ${rule.product_scoring_enabled ? "badge-green" : "badge-yellow"}`}>{rule.product_scoring_enabled ? "ENABLED" : "INFORMATIONAL"}</span></td>
                 <td className="font-mono" style={{fontWeight:700,color:"var(--navy)",textAlign:"center"}}>{Number(rule.score_impact)||0}</td>
                 <td><span className={`badge badge-${String(rule.default_severity||"YELLOW").toLowerCase()}`}>{rule.default_severity}</span></td>
                 <td style={{textAlign:"center"}}>{rule.is_black_override ? "⚫" : "—"}</td>
