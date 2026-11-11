@@ -85,7 +85,9 @@ export default function LegalProvenanceAdminPage() {
   }, [role]);
 
   useEffect(() => {
-    if (loaded && role === "SUPER_ADMIN") void load();
+    if (loaded && role === "SUPER_ADMIN") {
+      void Promise.resolve().then(load);
+    }
   }, [loaded, role, load]);
 
   const submitSource = async (event: FormEvent<HTMLFormElement>) => {
