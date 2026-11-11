@@ -4,8 +4,8 @@ import { ApiError, rulesApi } from "@/lib/api";
 import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 const verificationStyles: Record<string, { label: string; color: string; background: string; border: string }> = {
-  VERIFIED: { label: "Citation verified", color: "#166534", background: "#F0FDF4", border: "#BBF7D0" },
-  PENDING: { label: "Pending review", color: "#92400E", background: "#FFFBEB", border: "#FDE68A" },
+  VERIFIED: { label: "Independently verified", color: "#166534", background: "#F0FDF4", border: "#BBF7D0" },
+  PENDING: { label: "Independent review pending", color: "#92400E", background: "#FFFBEB", border: "#FDE68A" },
   DISPUTED: { label: "Disputed", color: "#991B1B", background: "#FEF2F2", border: "#FECACA" },
 };
 
@@ -75,7 +75,7 @@ export default function RulesPage() {
         ))}
       </div>
       <div role="note" style={{padding:"12px 14px",marginBottom:16,border:"1px solid #FDE68A",borderLeft:"3px solid #D97706",borderRadius:8,background:"#FFFBEB",color:"#78350F",fontSize:12,lineHeight:1.55}}>
-        <strong>ILRMF release status:</strong> {activeCount}/85 catalogue entries active; {scoringCount}/82 score-bearing rules enabled. The three informational entries are excluded from deductions. Runtime deductions require a confirmed, applicable violation; UNKNOWN facts do not reduce scores. {pendingCount > 0 ? `${pendingCount} rule(s) still have a pending API status.` : "All catalogue entries are marked VERIFIED under the product-owner attestation."}
+        <strong>ILRMF release status:</strong> {activeCount}/85 catalogue entries active; {scoringCount}/82 score-bearing rules enabled. The three informational entries are excluded from deductions. Runtime deductions require a confirmed, applicable violation; UNKNOWN facts do not reduce scores. Product-owner attestation authorizes product release but does not constitute independent legal verification. {pendingCount} rule(s) remain pending independent legal/source review.
       </div>
       <div className="nlc-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -87,7 +87,7 @@ export default function RulesPage() {
         </div>
         <div style={{overflowX:"auto"}}>
           <table className="nlc-table" style={{minWidth:1050}}>
-            <thead><tr><th>Rule ID</th><th>Name</th><th>Catalogue</th><th>Statutory Basis</th><th>Effective Date</th><th>Legal Verification</th><th>Product Scoring</th><th>Default Impact</th><th>Default Severity</th><th>BLACK</th></tr></thead>
+            <thead><tr><th>Rule ID</th><th>Name</th><th>Catalogue</th><th>Statutory Basis</th><th>Effective Date</th><th>Independent Legal Review</th><th>Product Scoring</th><th>Default Impact</th><th>Default Severity</th><th>BLACK</th></tr></thead>
             <tbody>{filtered.map((rule)=>(
               <tr key={rule.rule_id}>
                 <td className="font-mono" style={{fontWeight:700,color:"var(--teal)",fontSize:11}}>{rule.rule_id}</td>
@@ -98,7 +98,7 @@ export default function RulesPage() {
                 <td>{(() => {
                   const status = (rule.verification_status || "PENDING").toUpperCase();
                   const meta = verificationStyles[status] || verificationStyles.PENDING;
-                  return <span title={rule.verified_at ? `Citation review recorded on ${rule.verified_at}` : "No completed citation review recorded"} style={{display:"inline-flex",padding:"4px 8px",borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{meta.label}</span>;
+                  return <span title={rule.verified_at ? `Independent legal/source review recorded on ${rule.verified_at}` : "No independent legal/source verification recorded"} style={{display:"inline-flex",padding:"4px 8px",borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{meta.label}</span>;
                 })()}</td>
                 <td><span className={`badge ${rule.product_scoring_enabled ? "badge-green" : "badge-yellow"}`}>{rule.product_scoring_enabled ? "ENABLED" : "INFORMATIONAL"}</span></td>
                 <td className="font-mono" style={{fontWeight:700,color:"var(--navy)",textAlign:"center"}}>{Number(rule.score_impact)||0}</td>
