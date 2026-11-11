@@ -1,5 +1,21 @@
 export type Band = 'GREEN' | 'YELLOW' | 'RED' | 'BLACK' | 'NOT_EVALUATED'
 
+export type EvaluationStatus =
+  | 'EVALUATED'
+  | 'NOT_EVALUATED'
+  | 'PENDING'
+  | 'STALE'
+  | 'FAILED'
+
+export interface ScoreDiagnostic {
+  category: string
+  raw_deduction?: number
+  applied_deduction?: number
+  finding_count?: number
+  capped?: boolean
+  [key: string]: unknown
+}
+
 export interface User {
   id: string
   email: string
@@ -12,14 +28,18 @@ export interface User {
 export interface ScoreBreakdown {
   /** Headline score 0-100 when product scoring is released; null when withheld. */
   final_score: number | null
-  risk_band: string
-  /** Additive path used for the headline score (category name → points deducted). */
+  risk_band: Band
+  /** Authoritative additive path used for the headline score. */
   category_deductions?: Record<string, number> | null
   total_applied_category_deduction?: number | null
-  /** Always false in current policy — module scores are diagnostics only. */
-  diagnostic_module_scores_are_additive?: boolean
+  /** Module scores are descriptive diagnostics and are never additive. */
+  diagnostic_module_scores_are_additive?: false
   diagnostic_module_score_semantics?: string
-  // Legacy/diagnostic module fields (non-additive; do not sum to final_score)
+  /** Evaluation/data status; NOT_EVALUATED is never a risk band substitute. */
+  evaluation_status?: EvaluationStatus | null
+  /** Explanatory diagnostics only; never add these to category_deductions. */
+  diagnostics?: ScoreDiagnostic[] | null
+  // Legacy/diagnostic module fields (non-additive; do not sum to final_score).
   agm_score?: number | null
   audit_score?: number | null
   annual_return_score?: number | null
@@ -32,7 +52,7 @@ export interface ScoreBreakdown {
   raw_total?: number | null
   override_applied?: boolean
   override_reason?: string | null
-  exposure_band?: string | null
+  exposure_band?: Band | null
   revenue_tier?: string | null
   active_flag_count?: number
   black_flag_count?: number
@@ -41,14 +61,14 @@ export interface ScoreBreakdown {
   green_flag_count?: number
   /** Input completeness indicator — not fraction of rules verified. */
   input_coverage?: number | null
-  score_hash?: string
+  score_hash?: string | null
 }
 
 export interface ComplianceFlag {
   flag_id: string
   rule_id: string
   rule_name: string
-  severity: 'GREEN' | 'YELLOW' | 'RED' | 'BLACK' | 'NOT_EVALUATED'
+  severity: Band
   score_impact: number
   evaluation_state:
     | 'COMPLIANT'
@@ -74,9 +94,10 @@ export interface Company {
   company_type: string
   company_status: string
   current_compliance_score?: number | null
-  current_risk_band?: string | null
+  current_risk_band?: Band | null
   compliance_score?: number | null
   band?: string | null
+  evaluation_status?: EvaluationStatus | null
   last_evaluated_at: string | null
   registered_address: string | null
   financial_year_end: string | null
@@ -107,6 +128,7 @@ export interface Company {
   penalty_notices_resolved?: number | null
 }
 
+/** Display-only diagnostic groupings; not additive scoring inputs. */
 export interface ModuleScore {
   module_name: string
   score: number
