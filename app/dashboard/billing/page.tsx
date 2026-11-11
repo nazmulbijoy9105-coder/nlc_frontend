@@ -82,7 +82,7 @@ export default function BillingPage() {
     ?? "Selected company"
 
   useEffect(() => {
-    if (!roleLoaded) return
+    if (!roleLoaded || !role) return
     let active = true
     const load = async () => {
       setLoading(true)
@@ -178,12 +178,16 @@ export default function BillingPage() {
     }
   }
 
-  if (!roleLoaded || loading) {
+  if (!roleLoaded) {
     return <main className="mx-auto max-w-5xl p-6 sm:p-10"><section className="nlc-card" role="status">Loading billing workspace…</section></main>
   }
 
   if (!role) {
     return <main className="mx-auto max-w-5xl p-6 sm:p-10"><section className="nlc-card" role="status">Sign in to view company billing.</section></main>
+  }
+
+  if (loading) {
+    return <main className="mx-auto max-w-5xl p-6 sm:p-10"><section className="nlc-card" role="status">Loading billing workspace…</section></main>
   }
 
   return (
@@ -192,7 +196,7 @@ export default function BillingPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--text2)" }}>Customer workspace</p>
         <h1 className="mt-2 font-garamond text-3xl">Billing & subscriptions</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6" style={{ color: "var(--text2)" }}>
-          Review the subscription attached to your company, request a plan, and track its invoice and payment status.
+          Review the subscription attached to your company and request a plan. Use the finance workspace to review invoices and payment status.
         </p>
       </header>
 
