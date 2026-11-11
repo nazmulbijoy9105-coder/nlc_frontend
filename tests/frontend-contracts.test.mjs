@@ -212,7 +212,7 @@ test("billing workspace uses registered subscription APIs and does not claim gat
   assert.match(page, /billingApi\.requestSubscription\(/);
   assert.match(page, /billingApi\.cancelAtPeriodEnd\(/);
   assert.match(page, /Only a company director can request or cancel a subscription/);
-  assert.match(page, /activation only after the payment is verified and allocated/);
+  assert.match(page, /activated only after the payment is verified and allocated/);
   assert.match(page, /Open finance workspace/);
   assert.match(page, /Online bKash, Nagad and SSLCommerz checkout is not enabled/);
   assert.doesNotMatch(page, /temporarily unavailable|backend currently does not register/);
