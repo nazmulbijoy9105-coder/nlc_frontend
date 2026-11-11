@@ -91,7 +91,7 @@ export default function DashboardPage() {
       const scopeMatches = companiesResult.status === "fulfilled"
         && value.total_companies === accessibleCompanies.length;
       setKpiScopeWarning(scopeMatches ? null : "The KPI endpoint scope does not match the accessible company list. Portfolio metrics are withheld rather than displaying inconsistent totals.");
-      setScoreReleasePending(!scopeMatches || Number(value.not_evaluated_count || 0) > 0);
+      setScoreReleasePending(!scopeMatches);
     } else if (canViewPortfolioKpis && kpisResult.status === "rejected") {
       setScoreReleasePending(true);
       const expectedLegalGate = kpisResult.reason instanceof ApiError
