@@ -179,3 +179,18 @@ test("legal staff rescue list requires a company scope", () => {
   assert.match(page, /Legal staff cannot access the portfolio-wide rescue list/);
   assert.match(page, /if \(!authorised \|\| legalStaffNeedsCompanyScope\)/);
 });
+
+
+test("rule manager displays the complete active catalogue separately from scoring eligibility", () => {
+  const page = read("app/dashboard/rules/page.tsx");
+  assert.match(page, /rule\.is_active/);
+  assert.match(page, /rule\.product_scoring_enabled/);
+  assert.match(page, /82 score-bearing rules enabled/);
+  assert.match(page, /UNKNOWN facts do not reduce scores/);
+});
+
+test("dashboard does not withhold released portfolio risk metrics because some companies are not evaluated", () => {
+  const page = read("app/dashboard/page.tsx");
+  assert.match(page, /setScoreReleasePending\(!scopeMatches\)/);
+  assert.doesNotMatch(page, /setScoreReleasePending\(!scopeMatches \|\| Number\(value\.not_evaluated_count/);
+});
