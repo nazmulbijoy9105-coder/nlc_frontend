@@ -217,6 +217,9 @@ export const adminApi = {
 
 
 export const legalProvenanceApi = {
+  listStarterSources: () => api.get<any[]>("/api/v1/legal-provenance/starter-sources"),
+  registerStarterSources: (source_keys: string[], reason: string) =>
+    api.post<any>("/api/v1/legal-provenance/starter-sources/register", { source_keys, reason }),
   listSources: () => api.get<any[]>("/api/v1/legal-provenance/sources"),
   registerSource: (body: any) => api.post<any>("/api/v1/legal-provenance/sources", body),
   listMappings: (ruleId?: string) =>
