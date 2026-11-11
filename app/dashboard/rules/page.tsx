@@ -4,7 +4,7 @@ import { ApiError, rulesApi } from "@/lib/api";
 import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 const verificationStyles: Record<string, { label: string; color: string; background: string; border: string }> = {
-  VERIFIED: { label: "Citation verified", color: "#166534", background: "#F0FDF4", border: "#BBF7D0" },
+  VERIFIED: { label: "Owner verified", color: "#166534", background: "#F0FDF4", border: "#BBF7D0" },
   PENDING: { label: "Pending review", color: "#92400E", background: "#FFFBEB", border: "#FDE68A" },
   DISPUTED: { label: "Disputed", color: "#991B1B", background: "#FEF2F2", border: "#FECACA" },
 };
@@ -86,7 +86,7 @@ export default function RulesPage() {
           </select>
         </div>
         <div style={{overflowX:"auto"}}>
-          <table className="nlc-table" style={{minWidth:1050}}>
+          <table className="nlc-table" style={{minWidth:1400}}>
             <thead><tr><th>Rule ID</th><th>Name</th><th>Catalogue</th><th>Statutory Basis</th><th>Effective Date</th><th>Legal Verification</th><th>Product Scoring</th><th>Default Impact</th><th>Default Severity</th><th>BLACK</th></tr></thead>
             <tbody>{filtered.map((rule)=>(
               <tr key={rule.rule_id}>
@@ -98,7 +98,7 @@ export default function RulesPage() {
                 <td>{(() => {
                   const status = (rule.verification_status || "PENDING").toUpperCase();
                   const meta = verificationStyles[status] || verificationStyles.PENDING;
-                  return <span title={rule.verified_at ? `Citation review recorded on ${rule.verified_at}` : "No completed citation review recorded"} style={{display:"inline-flex",padding:"4px 8px",borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{meta.label}</span>;
+                  return <span title={rule.verified_at ? `Verification recorded on ${rule.verified_at}` : "Marked VERIFIED under product-owner attestation; no signed-document upload is required"} style={{display:"inline-flex",padding:"4px 8px",borderRadius:999,border:`1px solid ${meta.border}`,background:meta.background,color:meta.color,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{meta.label}</span>;
                 })()}</td>
                 <td><span className={`badge ${rule.product_scoring_enabled ? "badge-green" : "badge-yellow"}`}>{rule.product_scoring_enabled ? "ENABLED" : "INFORMATIONAL"}</span></td>
                 <td className="font-mono" style={{fontWeight:700,color:"var(--navy)",textAlign:"center"}}>{Number(rule.score_impact)||0}</td>
