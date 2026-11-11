@@ -21,6 +21,9 @@ export default function LegalProvenanceAdminPage() {
   const [mappings, setMappings] = useState<any[]>([]);
   const [definitions, setDefinitions] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [starterSources, setStarterSources] = useState<any[]>([]);
+  const [selectedStarterKeys, setSelectedStarterKeys] = useState<string[]>([]);
+  const [starterReason, setStarterReason] = useState("Register official Bangladesh legal-source references into the NLC source register; this decision creates references only, not legal verification or rule approvals.");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -51,18 +54,20 @@ export default function LegalProvenanceAdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const [sourceRows, ruleRows, mappingRows, deadlineRows, eventRows] = await Promise.all([
+      const [sourceRows, ruleRows, mappingRows, deadlineRows, eventRows, starterRows] = await Promise.all([
         legalProvenanceApi.listSources(),
         rulesApi.list(),
         legalProvenanceApi.listMappings(),
         legalProvenanceApi.listDeadlineDefinitions(),
         legalProvenanceApi.listEvents(),
+        legalProvenanceApi.listStarterSources(),
       ]);
       setSources(Array.isArray(sourceRows) ? sourceRows : []);
       setRules(Array.isArray(ruleRows) ? ruleRows : []);
       setMappings(Array.isArray(mappingRows) ? mappingRows : []);
       setDefinitions(Array.isArray(deadlineRows) ? deadlineRows : []);
       setEvents(Array.isArray(eventRows) ? eventRows : []);
+      setStarterSources(Array.isArray(starterRows) ? starterRows : []);
       setMappingForm((old) => ({
         ...old,
         rule_id: old.rule_id || ruleRows?.[0]?.rule_id || "",
@@ -89,6 +94,21 @@ export default function LegalProvenanceAdminPage() {
       void Promise.resolve().then(load);
     }
   }, [loaded, role, load]);
+
+  const submitStarterSources = async () => {
+    if (selectedStarterKeys.length === 0) return;
+    setSaving("starter"); setError(null); setNotice(null);
+    try {
+      const result = await legalProvenanceApi.registerStarterSources(
+        selectedStarterKeys,
+        starterReason,
+      );
+      setNotice(`Starter source registration complete: ${result.registered} new references, ${result.already_registered} already present. No mappings, owner approvals or legal verification were created.`);
+      setSelectedStarterKeys([]);
+      await load();
+    } catch (err) { setError(messageOf(err)); }
+    finally { setSaving(""); }
+  };
 
   const submitSource = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setSaving("source"); setError(null); setNotice(null);
@@ -182,6 +202,46 @@ export default function LegalProvenanceAdminPage() {
       </div>
       {error && <div role="alert" className="nlc-card" style={{ marginBottom: 12, color: "var(--red)" }}>{error}</div>}
       {notice && <div role="status" className="nlc-card" style={{ marginBottom: 12, color: "var(--teal)" }}>{notice}</div>}
+
+      <section className="nlc-card" style={{ marginBottom: 16, display: "grid", gap: 10 }}>
+        <div className="sec-lbl gold">Starter catalogue · official Bangladesh source references</div>
+        <p style={{ color: "var(--text3)", fontSize: 11, lineHeight: 1.6 }}>
+          Select the official source references you wish to register. These entries are dated where the official register provides a date; they do not claim that all amendments are consolidated, that source bytes are archived, or that any rule has been mapped or approved.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 7 }}>
+          {starterSources.map((source) => (
+            <label key={source.source_key} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: 9, border: "1px solid var(--border)", borderRadius: 7, opacity: source.registration_state === "REGISTERED" ? 0.65 : 1 }}>
+              <input
+                type="checkbox"
+                disabled={source.registration_state === "REGISTERED" || saving !== ""}
+                checked={selectedStarterKeys.includes(source.source_key)}
+                onChange={(event) => setSelectedStarterKeys((old) =>
+                  event.target.checked ? [...old, source.source_key] : old.filter((key) => key !== source.source_key)
+                )}
+              />
+              <span style={{ display: "grid", gap: 3 }}>
+                <strong style={{ fontSize: 11, color: "var(--text)" }}>{source.instrument_title}</strong>
+                <span className="font-mono" style={{ fontSize: 9, color: "var(--text3)" }}>{source.source_key}</span>
+                <span style={{ fontSize: 10, color: "var(--text3)" }}>{source.version_label}</span>
+                <span style={{ fontSize: 10, color: source.registration_state === "REGISTERED" ? "var(--teal)" : "var(--text3)" }}>
+                  {source.registration_state === "REGISTERED" ? "Already registered" : "Reference only · not yet registered"}
+                  {source.publication_date ? ` · Published ${source.publication_date}` : ""}
+                </span>
+                <a href={source.official_url} target="_blank" rel="noreferrer" style={{ color: "var(--teal)", fontSize: 10, textDecoration: "underline" }}>Official source / index ↗</a>
+              </span>
+            </label>
+          ))}
+        </div>
+        <label style={fieldStyle}>Reason recorded with each source-registration event
+          <textarea className="nlc-input" rows={2} value={starterReason} onChange={(event) => setStarterReason(event.target.value)} minLength={10} />
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button type="button" className="nlc-btn-gold" disabled={saving !== "" || selectedStarterKeys.length === 0 || starterReason.trim().length < 10} onClick={() => void submitStarterSources()}>
+            {saving === "starter" ? "Registering selected references…" : `Register selected references (${selectedStarterKeys.length})`}
+          </button>
+          <span style={{ color: "var(--text3)", fontSize: 10 }}>Creates SOURCE_REGISTERED events only. No rule mappings or approvals.</span>
+        </div>
+      </section>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 14 }}>
         <form className="nlc-card" onSubmit={submitSource} style={{ display: "grid", gap: 10 }}>
