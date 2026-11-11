@@ -375,6 +375,37 @@ export default function LegalProvenanceAdminPage() {
             </div>
           ))}
         </div>
+        <div style={{ overflowX: "auto", marginBottom: 18 }}>
+          <div className="sec-lbl gold">Registered legal source IDs — use these UUIDs in the bulk mapping JSON</div>
+          <table className="nlc-table" style={{ minWidth: 1050 }}>
+            <thead><tr><th>Source</th><th>Version</th><th>Source ID (UUID)</th><th>Artifact state</th><th>Official reference</th></tr></thead>
+            <tbody>{sources.map((source) => (
+              <tr key={source.source_id}>
+                <td>{source.instrument_title}</td>
+                <td>{source.version_label}</td>
+                <td className="font-mono" style={{ userSelect: "all" }}>{source.source_id}</td>
+                <td>{source.artifact_state}</td>
+                <td><a href={source.official_url} target="_blank" rel="noreferrer" style={{ color: "var(--teal)", textDecoration: "underline" }}>Open source</a></td>
+              </tr>
+            ))}</tbody>
+          </table>
+          {sources.length === 0 && <p style={{ padding: 12, color: "var(--text3)", fontSize: 11 }}>No source references have been registered. Register selected starter sources above first.</p>}
+        </div>
+        <div style={{ overflowX: "auto", marginBottom: 18 }}>
+          <div className="sec-lbl gold">Registered mapping IDs — deadline definitions reference these</div>
+          <table className="nlc-table" style={{ minWidth: 1000 }}>
+            <thead><tr><th>Rule</th><th>Kind</th><th>Provision</th><th>Mapping ID (UUID)</th></tr></thead>
+            <tbody>{mappings.map((mapping) => (
+              <tr key={mapping.mapping_id}>
+                <td className="font-mono">{mapping.rule_id}</td>
+                <td>{mapping.mapping_kind}</td>
+                <td>{mapping.provision_citation}</td>
+                <td className="font-mono" style={{ userSelect: "all" }}>{mapping.mapping_id}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+          {mappings.length === 0 && <p style={{ padding: 12, color: "var(--text3)", fontSize: 11 }}>No rule/source mappings recorded yet.</p>}
+        </div>
         <div style={{ overflowX: "auto" }}>
           <table className="nlc-table" style={{ minWidth: 1000 }}>
             <thead><tr><th>Sequence</th><th>Event</th><th>Rule</th><th>Scope / Decision</th><th>Actor</th><th>Recorded</th><th>Hash</th></tr></thead>
