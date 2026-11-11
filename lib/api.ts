@@ -218,6 +218,8 @@ export const adminApi = {
 export const rulesApi = {
   list: () => api.get<any>('/api/v1/rules'),
   summary: () => api.get<any>('/api/v1/rules/summary'),
+  provenance: (ruleId: string) =>
+    api.get<any>(`/api/v1/legal-provenance/rules/${encodeURIComponent(ruleId)}`),
 }
 
 
