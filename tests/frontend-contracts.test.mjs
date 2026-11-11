@@ -194,3 +194,11 @@ test("dashboard does not withhold released portfolio risk metrics because some c
   assert.match(page, /setScoreReleasePending\(!scopeMatches\)/);
   assert.doesNotMatch(page, /setScoreReleasePending\(!scopeMatches \|\| Number\(value\.not_evaluated_count/);
 });
+
+
+test("rule verification label reflects the owner-attested policy without implying a signed citation review", () => {
+  const page = read("app/dashboard/rules/page.tsx");
+  assert.match(page, /Owner verified/);
+  assert.match(page, /no signed-document upload is required/);
+  assert.doesNotMatch(page, /Citation verified/);
+});
