@@ -19,6 +19,8 @@ const adminNav = [
   { section: 'System', items: [
     { label: 'Admin', icon: '⚙', href: '/dashboard/admin' },
     { label: 'Rules Engine', icon: '⚖', href: '/dashboard/rules' },
+    { label: 'Legal Basis', icon: '§', href: '/dashboard/legal-basis' },
+    { label: 'Source Governance', icon: '▤', href: '/dashboard/admin/legal-provenance' },
     { label: 'My Profile', icon: '◆', href: '/dashboard/profile' },
   ]},
 ]
@@ -29,6 +31,7 @@ const clientNav = [
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
     { label: 'Billing', icon: '৳', href: '/dashboard/finance' },
+    { label: 'Legal Basis', icon: '§', href: '/dashboard/legal-basis' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
@@ -105,6 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ...g,
     items: g.items.filter(i =>
       (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
+      (i.href !== '/dashboard/admin/legal-provenance' || user.role === 'SUPER_ADMIN') &&
       (i.href !== '/dashboard/admin' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
       (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
       (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
