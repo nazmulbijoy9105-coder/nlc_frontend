@@ -19,6 +19,7 @@ const adminNav = [
   { section: 'System', items: [
     { label: 'Admin', icon: '⚙', href: '/dashboard/admin' },
     { label: 'Rules Engine', icon: '⚖', href: '/dashboard/rules' },
+    { label: 'Legal Basis', icon: '§', href: '/dashboard/legal-basis' },
     { label: 'My Profile', icon: '◆', href: '/dashboard/profile' },
   ]},
 ]
@@ -29,6 +30,7 @@ const clientNav = [
     { label: 'My Company', icon: '⊞', href: '/dashboard/companies' },
     { label: 'Filings', icon: '📋', href: '/dashboard/filings' },
     { label: 'Billing', icon: '৳', href: '/dashboard/finance' },
+    { label: 'Legal Basis', icon: '§', href: '/dashboard/legal-basis' },
   ]},
   { section: 'Documents', items: [
     { label: 'Documents', icon: '◻', href: '/dashboard/documents' },
