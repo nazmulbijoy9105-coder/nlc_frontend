@@ -20,6 +20,7 @@ const adminNav = [
     { label: 'Admin', icon: '⚙', href: '/dashboard/admin' },
     { label: 'Rules Engine', icon: '⚖', href: '/dashboard/rules' },
     { label: 'Legal Basis', icon: '§', href: '/dashboard/legal-basis' },
+    { label: 'Source Governance', icon: '▤', href: '/dashboard/admin/legal-provenance' },
     { label: 'My Profile', icon: '◆', href: '/dashboard/profile' },
   ]},
 ]
@@ -107,6 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ...g,
     items: g.items.filter(i =>
       (i.href !== '/dashboard/rules' || user.role === 'SUPER_ADMIN') &&
+      (i.href !== '/dashboard/admin/legal-provenance' || user.role === 'SUPER_ADMIN') &&
       (i.href !== '/dashboard/admin' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
       (i.href !== '/dashboard/commercial' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role)) &&
       (i.href !== '/dashboard/finance' || ['ADMIN_STAFF', 'SUPER_ADMIN'].includes(user.role))
