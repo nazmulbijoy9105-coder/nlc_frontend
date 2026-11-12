@@ -225,6 +225,8 @@ export const legalProvenanceApi = {
   listMappings: (ruleId?: string) =>
     api.get<any[]>(`/api/v1/legal-provenance/mappings${ruleId ? `?rule_id=${encodeURIComponent(ruleId)}` : ""}`),
   createMapping: (body: any) => api.post<any>("/api/v1/legal-provenance/mappings", body),
+  bulkCreateMappings: (mappings: Array<{ rule_id: string; source_id: string; mapping_kind: "RULE_BASIS" | "DEADLINE_BASIS" | "PENALTY_BASIS"; provision_citation: string; rationale: string }>) =>
+    api.post<any>("/api/v1/legal-provenance/mappings/bulk", { mappings }),
   listDeadlineDefinitions: () => api.get<any[]>("/api/v1/legal-provenance/deadlines/definitions"),
   createDeadlineDefinition: (body: any) => api.post<any>("/api/v1/legal-provenance/deadlines/definitions", body),
   recordDecision: (body: any) => api.post<any>("/api/v1/legal-provenance/decisions", body),
