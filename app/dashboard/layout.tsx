@@ -18,6 +18,7 @@ const adminNav = [
   ]},
   { section: 'System', items: [
     { label: 'Admin', icon: '⚙', href: '/dashboard/admin' },
+    { label: 'Portfolio Evaluation', icon: '▣', href: '/dashboard/admin/portfolio-compliance' },
     { label: 'Rules Engine', icon: '⚖', href: '/dashboard/rules' },
     { label: 'Legal Basis', icon: '§', href: '/dashboard/legal-basis' },
     { label: 'Source Governance', icon: '▤', href: '/dashboard/admin/legal-provenance' },
