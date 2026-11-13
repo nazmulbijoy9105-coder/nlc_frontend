@@ -4,7 +4,7 @@ export default function LegalDisclaimer({ compact = false }: { compact?: boolean
   if (compact) {
     return (
       <p style={{ fontSize: 10, color: "var(--text3)", lineHeight: 1.45, margin: "8px 0 0" }}>
-        Decision-support tool only. Not a substitute for qualified legal advice or official RJSC determinations.
+        Product risk indicator only. Product release is not independent legal verification, legal advice or an official RJSC determination.
       </p>
     )
   }
