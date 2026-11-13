@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run test:contracts && next build",
     "start": "next start",
     "lint": "eslint .",
     "test:contracts": "node --test tests/frontend-contracts.test.mjs"
