@@ -263,3 +263,26 @@ test("dashboard treats the backend product-scoring-disabled KPI response as an e
   assert.match(page, /Compliance risk aggregates are unavailable while product scoring is disabled\./);
   assert.match(page, /setScoreReleasePending\(true\)/);
 });
+
+
+test("compliance dashboard uses live scoped services and the responsive overview layout", () => {
+  const page = read("app/dashboard/page.tsx");
+  const styles = read("app/globals.css");
+  assert.match(page, /dashboardApi\.getStats\(\)/);
+  assert.match(page, /dashboardApi\.upcomingDeadlines\(\)/);
+  assert.match(page, /dashboardApi\.recentActivity\(\)/);
+  assert.match(page, /companiesApi\.list\(\)/);
+  assert.match(page, /Priority action queue/);
+  assert.match(page, /Recent activity/);
+  assert.match(styles, /\.nlc-dashboard-metrics/);
+  assert.match(styles, /@media \(max-width: 700px\)/);
+  assert.doesNotMatch(page, /Padma Textiles Ltd|82 \/ 100|13 days overdue/);
+});
+
+test("dashboard never renders statutory risk distribution from evidence-review-only KPIs", () => {
+  const page = read("app/dashboard/page.tsx");
+  assert.match(page, /kpis\?\.dashboard_mode === "STATUTORY_RISK"/);
+  assert.match(page, /kpis\.statutory_risk_aggregates_available === true/);
+  assert.match(page, /Statutory risk distribution is not released/);
+  assert.match(page, /Evidence review signals do not establish default, breach or liability/);
+});

@@ -284,3 +284,79 @@ html, body {
     border-bottom: 1px solid var(--border);
   }
 }
+
+
+/* NLC compliance overview — responsive light workspace */
+.nlc-dashboard-content > main:has(.nlc-compliance-dashboard) { background: #F7F8FA !important; }
+.nlc-compliance-dashboard { max-width: 1500px; margin: 0 auto; padding: 30px clamp(16px, 3vw, 42px) 36px; color: #17243A; }
+.nlc-dashboard-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:25px; }
+.nlc-dashboard-eyebrow { color:#7B8798; font:700 9px 'JetBrains Mono',monospace; letter-spacing:.16em; margin-bottom:9px; }
+.nlc-dashboard-heading h1 { color:#17243A; font:600 clamp(25px,3vw,32px) 'EB Garamond',Georgia,serif; line-height:1.1; }
+.nlc-dashboard-heading p { color:#778295; font-size:12px; margin-top:7px; }
+.nlc-dashboard-primary { display:inline-flex; align-items:center; gap:12px; border:1px solid #D8DEE8; border-radius:7px; background:#fff; color:#24344D; padding:10px 14px; font:600 11px 'DM Sans',sans-serif; cursor:pointer; }
+.nlc-dashboard-primary:hover,.nlc-dashboard-text-button:hover { border-color:#C8A84B; color:#8A6A16; }
+.nlc-dashboard-notice,.nlc-dashboard-error { border:1px solid #E5D7A8; background:#FFFBEB; color:#725A1C; border-radius:9px; padding:12px 15px; margin-bottom:15px; font-size:12px; line-height:1.55; }
+.nlc-dashboard-error { display:flex; align-items:center; justify-content:space-between; gap:12px; border-color:#F2C6C6; background:#FFF5F5; color:#9D3030; }
+.nlc-dashboard-error button { border:1px solid #E5B5B5; background:white; color:#9D3030; border-radius:6px; padding:6px 10px; cursor:pointer; }
+.nlc-dashboard-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px; margin-bottom:15px; }
+.nlc-dashboard-metric,.nlc-dashboard-panel { background:#fff; border:1px solid #E4E8EF; border-radius:12px; box-shadow:0 2px 9px rgba(23,36,58,.035); }
+.nlc-dashboard-metric { min-height:124px; padding:18px 19px 15px; }
+.nlc-dashboard-metric-label { color:#7C8797; font-size:11px; font-weight:500; }
+.nlc-dashboard-metric-value { color:#17243A; font:600 34px 'EB Garamond',Georgia,serif; margin-top:8px; line-height:1; }
+.nlc-dashboard-metric-value small { color:#8993A2; font:500 13px 'DM Sans',sans-serif; }
+.nlc-dashboard-metric-foot { color:#8A94A3; font-size:10px; margin-top:10px; }
+.nlc-dashboard-metric-alert { border-color:#EBCBCB; }
+.nlc-dashboard-metric-alert .nlc-dashboard-metric-value { color:#C84646; }
+.nlc-dashboard-overview-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:15px; }
+.nlc-dashboard-panel { padding:19px 20px; min-width:0; }
+.nlc-dashboard-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:18px; }
+.nlc-dashboard-panel-heading h2 { color:#202D42; font-size:14px; font-weight:700; letter-spacing:-.01em; }
+.nlc-dashboard-panel-heading p { color:#929BA9; font-size:10px; margin-top:4px; }
+.nlc-dashboard-panel-icon { color:#B9A36C; font-size:20px; }
+.nlc-dashboard-health-content,.nlc-dashboard-risk-content { display:flex; align-items:center; justify-content:space-around; gap:18px; min-height:145px; }
+.nlc-dashboard-score-ring,.nlc-dashboard-donut { width:128px; height:128px; border-radius:50%; display:grid; place-items:center; flex:0 0 auto; }
+.nlc-dashboard-score-ring > div,.nlc-dashboard-donut > div { width:94px; height:94px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.nlc-dashboard-score-ring strong,.nlc-dashboard-donut strong { color:#17243A; font:600 29px 'EB Garamond',Georgia,serif; line-height:1; }
+.nlc-dashboard-score-ring span,.nlc-dashboard-donut span { color:#8B95A4; font-size:9px; margin-top:5px; }
+.nlc-dashboard-health-details { flex:1; min-width:125px; }
+.nlc-dashboard-health-details div,.nlc-dashboard-legend div { display:flex; justify-content:space-between; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid #EFF1F4; color:#667184; font-size:11px; }
+.nlc-dashboard-health-details strong,.nlc-dashboard-legend strong { color:#25334A; font-size:12px; }
+.nlc-dashboard-panel-note { color:#8A94A3; font-size:10px; line-height:1.55; margin-top:14px; padding-top:11px; border-top:1px solid #F0F2F5; }
+.nlc-dashboard-legend { width:min(220px,52%); }
+.nlc-dashboard-legend span { display:flex; align-items:center; gap:8px; }
+.nlc-dashboard-legend i { display:inline-block; width:8px; height:8px; border-radius:50%; }
+.nlc-dashboard-empty { color:#8993A2; background:#F8FAFC; border:1px dashed #DCE2EA; border-radius:8px; padding:22px 16px; font-size:11px; line-height:1.6; }
+.nlc-dashboard-priority { margin-bottom:15px; }
+.nlc-dashboard-text-button { border:1px solid #E0E5EC; border-radius:6px; background:#fff; color:#506078; padding:7px 10px; font-size:10px; font-weight:600; white-space:nowrap; cursor:pointer; }
+.nlc-dashboard-action-row { width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 2px; border:0; border-bottom:1px solid #EEF0F3; background:transparent; text-align:left; cursor:pointer; }
+.nlc-dashboard-action-row:last-child { border-bottom:0; padding-bottom:2px; }
+.nlc-dashboard-action-row:hover .nlc-dashboard-action-copy strong { color:#8A6A16; }
+.nlc-dashboard-action-copy { min-width:0; display:flex; flex-direction:column; gap:4px; }
+.nlc-dashboard-action-copy strong { color:#25334A; font-size:12px; font-weight:600; }
+.nlc-dashboard-action-copy small { color:#8A94A3; font-size:10px; }
+.nlc-dashboard-due { color:#B07A0D; font-size:10px; font-weight:700; white-space:nowrap; }
+.nlc-dashboard-due.is-overdue { color:#C84646; }
+.nlc-dashboard-activity { margin-bottom:15px; }
+.nlc-dashboard-activity-row { display:flex; gap:11px; align-items:flex-start; padding:10px 1px; border-bottom:1px solid #EEF0F3; }
+.nlc-dashboard-activity-row:last-child { border-bottom:0; }
+.nlc-dashboard-activity-dot { width:7px; height:7px; flex:0 0 auto; margin-top:5px; border-radius:50%; background:#C8A84B; }
+.nlc-dashboard-activity-row div { display:flex; flex-direction:column; gap:4px; }
+.nlc-dashboard-activity-row strong { color:#354257; font-size:11px; font-weight:600; }
+.nlc-dashboard-activity-row small { color:#929BA9; font-size:9px; }
+.nlc-dashboard-client-note { padding:14px 16px; margin-bottom:15px; border:1px solid #E4E8EF; border-radius:9px; color:#687589; background:#fff; font-size:11px; line-height:1.6; }
+.nlc-dashboard-footer-note { display:flex; flex-direction:column; gap:5px; padding:13px 2px 5px; color:#657186; font-size:10px; }
+.nlc-dashboard-footer-note strong { color:#27364D; font-size:11px; }
+@media (max-width: 980px) { .nlc-dashboard-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 700px) {
+  .nlc-compliance-dashboard { padding:20px 14px 26px; }
+  .nlc-dashboard-heading { align-items:flex-start; flex-direction:column; margin-bottom:18px; }
+  .nlc-dashboard-primary { align-self:flex-start; }
+  .nlc-dashboard-overview-grid { grid-template-columns:1fr; }
+  .nlc-dashboard-panel { padding:16px; }
+  .nlc-dashboard-health-content,.nlc-dashboard-risk-content { justify-content:flex-start; gap:20px; }
+  .nlc-dashboard-score-ring,.nlc-dashboard-donut { width:112px; height:112px; }
+  .nlc-dashboard-score-ring > div,.nlc-dashboard-donut > div { width:82px; height:82px; }
+  .nlc-dashboard-action-row { align-items:flex-start; flex-direction:column; gap:6px; }
+  .nlc-dashboard-due { white-space:normal; }
+}
+@media (max-width: 390px) { .nlc-dashboard-metrics { grid-template-columns:1fr; } .nlc-dashboard-metric { min-height:108px; } }
