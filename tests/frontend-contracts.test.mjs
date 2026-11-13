@@ -286,3 +286,17 @@ test("dashboard never renders statutory risk distribution from evidence-review-o
   assert.match(page, /Statutory risk distribution is not released/);
   assert.match(page, /Evidence review signals do not establish default, breach or liability/);
 });
+
+
+test("SUPER_ADMIN portfolio console reactivates records, tracks per-company progress and withholds unreconciled PDFs", () => {
+  const page = read("app/dashboard/admin/portfolio-compliance/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(page, /role !== "SUPER_ADMIN"/);
+  assert.match(page, /portfolioComplianceApi\.reactivate\(selected, reason\.trim\(\)\)/);
+  assert.match(page, /portfolioComplianceApi\.evaluateOne\(companyId\)/);
+  assert.match(page, /setProgress\(\{ done: results\.length, total: companies\.length \}\)/);
+  assert.match(page, /row\.pdf_eligible/);
+  assert.match(page, /Download PDF/);
+  assert.match(page, /Statutory status and evidence are to remain unchanged/);
+  assert.match(api, /\/api\/v1\/portfolio\/compliance\/evaluate/);
+});
