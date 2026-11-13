@@ -256,3 +256,10 @@ test("rescue UI handles the product scoring release gate without implying counse
   assert.match(page, /Product scoring release is disabled/);
   assert.doesNotMatch(page, /withheld pending independent legal validation/);
 });
+
+
+test("dashboard treats the backend product-scoring-disabled KPI response as an expected withheld state", () => {
+  const page = read("app/dashboard/page.tsx");
+  assert.match(page, /Compliance risk aggregates are unavailable while product scoring is disabled\./);
+  assert.match(page, /setScoreReleasePending\(true\)/);
+});
