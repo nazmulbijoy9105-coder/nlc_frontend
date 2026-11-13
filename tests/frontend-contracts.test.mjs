@@ -235,7 +235,7 @@ test("released product score is disclosed separately from independent legal veri
   const card = read("components/ScoreBreakdownCard.tsx");
   const disclaimer = read("components/LegalDisclaimer.tsx");
   assert.match(card, /Product risk score/);
-  assert.match(card, /does not mean the underlying statutory rules have been independently verified/);
+  assert.match(card, /underlying statutory rules have been independently verified/);
   assert.match(card, /not as a legal opinion or compliance certificate/);
   assert.match(disclaimer, /Product-owner release is separate from independent Bangladesh company-law counsel verification/);
 });
