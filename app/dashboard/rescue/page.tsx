@@ -26,10 +26,10 @@ export default function RescuePage() {
       if (!Array.isArray(data)) throw new Error("The rescue service returned an unexpected response.");
       setPlans(data);
     } catch (err) {
-      const expectedLegalGate = err instanceof ApiError
+      const expectedProductGate = err instanceof ApiError
         && err.status === 503
-        && err.message.startsWith("Rescue plans are withheld until the underlying legal rules");
-      if (expectedLegalGate) setLegalReviewPending(true);
+        && err.message.includes("PRODUCT_SCORE_RELEASE_DISABLED");
+      if (expectedProductGate) setLegalReviewPending(true);
       else setError(err instanceof Error ? err.message : "Could not load rescue plans.");
     } finally {
       setLoading(false);
@@ -47,9 +47,9 @@ export default function RescuePage() {
   if (legalReviewPending) return (
     <div style={{padding:24}}>
       <div className="nlc-card" role="status" style={{maxWidth:760,margin:"24px auto"}}>
-        <div className="font-garamond" style={{fontSize:22,color:"var(--nlc-white)",marginBottom:8}}>Rescue assessment unavailable</div>
+        <div className="font-garamond" style={{fontSize:22,color:"var(--nlc-white)",marginBottom:8}}>Rescue generation unavailable</div>
         <p style={{fontSize:13,lineHeight:1.7,color:"var(--text2)"}}>
-          NLC has withheld RED/BLACK-based rescue plans pending independent legal validation.
+          Product scoring release is disabled, so RED/BLACK-triggered rescue generation is unavailable.
           No company default or legal liability is determined by this screen.
         </p>
       </div>
