@@ -271,7 +271,7 @@ test("compliance dashboard uses live scoped services and the responsive overview
   assert.match(page, /dashboardApi\.getStats\(\)/);
   assert.match(page, /dashboardApi\.upcomingDeadlines\(\)/);
   assert.match(page, /dashboardApi\.recentActivity\(\)/);
-  assert.match(page, /companiesApi\.list\(\)/);
+  assert.match(page, /companiesApi\.list\(page, pageSize\)/);
   assert.match(page, /Priority action queue/);
   assert.match(page, /Recent activity/);
   assert.match(styles, /\.nlc-dashboard-metrics/);
@@ -299,4 +299,18 @@ test("SUPER_ADMIN portfolio console reactivates records, tracks per-company prog
   assert.match(page, /Download PDF/);
   assert.match(page, /Statutory status and evidence are to remain unchanged/);
   assert.match(api, /\/api\/v1\/portfolio\/compliance\/evaluate/);
+});
+
+
+
+test("dashboard loads every authorised company page before reconciling portfolio KPIs", () => {
+  const page = read("app/dashboard/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(page, /async function loadAllAccessibleCompanies\(\): Promise<any\[]>/);
+  assert.match(page, /const pageSize = 100/);
+  assert.match(page, /companiesApi\.list\(page, pageSize\)/);
+  assert.match(page, /if \(batch\.length < pageSize\) return companies/);
+  assert.match(page, /const companiesPromise = loadAllAccessibleCompanies\(\)/);
+  assert.match(page, /value\.total_companies === accessibleCompanies\.length/);
+  assert.match(api, /list: \(page = 1, pageSize = 25\)/);
 });

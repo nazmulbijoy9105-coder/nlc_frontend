@@ -67,7 +67,7 @@ export const dashboardApi = {
 };
 
 export const companiesApi = {
-  list: () => api.get<any>("/api/v1/companies"),
+  list: (page = 1, pageSize = 25) => api.get<any>(`/api/v1/companies?page=${page}&page_size=${pageSize}`),
   get: (id: string) => api.get<any>("/api/v1/companies/" + id),
   create: (data: any) => api.post<any>("/api/v1/companies", data),
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
