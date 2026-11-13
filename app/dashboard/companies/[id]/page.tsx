@@ -172,10 +172,10 @@ export default function CompanyProfilePage() {
 
           {/* Flag Counts */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}}>
-            {[['BLACK', blackFlags.length || company.black_flags || 0, '#A855F7'],
-              ['RED', redFlags.length || company.red_flags || 0, '#B91C1C'],
-              ['YELLOW', yellowFlags.length || company.yellow_flags || 0, '#D97706'],
-              ['TOTAL', flags.length || company.active_flags || company.violation_count || 0, '#6B7280'],
+            {[['BLACK', band === 'NOT_EVALUATED' ? '—' : (blackFlags.length || company.black_flags || 0), '#A855F7'],
+              ['RED', band === 'NOT_EVALUATED' ? '—' : (redFlags.length || company.red_flags || 0), '#B91C1C'],
+              ['YELLOW', band === 'NOT_EVALUATED' ? '—' : (yellowFlags.length || company.yellow_flags || 0), '#D97706'],
+              ['TOTAL', band === 'NOT_EVALUATED' ? '—' : (flags.length || company.active_flags || company.violation_count || 0), '#6B7280'],
             ].map(([label,count,color]) => (
               <div key={label as string} className="nlc-card" style={{padding:'10px 12px',textAlign:'center'}}>
                 <div style={{fontSize:20,fontWeight:700,color:color as string,fontFamily:"'DM Serif Display',serif"}}>{count}</div>
