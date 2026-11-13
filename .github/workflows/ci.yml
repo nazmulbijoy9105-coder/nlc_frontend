@@ -20,3 +20,63 @@ jobs:
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
+
+      # Exercise the deployed frontend's same-origin API proxy and the live
+      # backend's browser CORS contract. This is separate from local build tests.
+      - name: Smoke-test deployed frontend against deployed backend
+        env:
+          NLC_FRONTEND_URL: https://nlc-frontend.vercel.app
+          NLC_BACKEND_URL: https://nlc-platform.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from "node:assert/strict";
+
+          const frontend = process.env.NLC_FRONTEND_URL.replace(/\/+$/, "");
+          const backend = process.env.NLC_BACKEND_URL.replace(/\/+$/, "");
+          const origin = frontend;
+          const healthPath = "/api/v1/health/live";
+
+          async function requestWithRetry(url, init = {}) {
+            let lastError;
+            for (let attempt = 1; attempt <= 5; attempt += 1) {
+              try {
+                const response = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+                if (response.ok) return response;
+                lastError = new Error(`${url} returned HTTP ${response.status}`);
+              } catch (error) {
+                lastError = error;
+              }
+              if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, attempt * 5000));
+            }
+            throw lastError;
+          }
+
+          const direct = await requestWithRetry(backend + healthPath, {
+            headers: { Accept: "application/json" },
+          });
+          const directBody = await direct.json();
+          assert.equal(directBody.status, "alive", "deployed backend liveness contract");
+
+          const preflight = await requestWithRetry(backend + healthPath, {
+            method: "OPTIONS",
+            headers: {
+              Origin: origin,
+              "Access-Control-Request-Method": "GET",
+              "Access-Control-Request-Headers": "authorization,content-type",
+            },
+          });
+          assert.equal(preflight.headers.get("access-control-allow-origin"), origin,
+            "backend must allow the deployed frontend origin");
+          assert.match(preflight.headers.get("access-control-allow-methods") || "", /GET/);
+          assert.match(preflight.headers.get("access-control-allow-headers") || "", /authorization/i);
+
+          const proxied = await requestWithRetry(
+            frontend + "/api/backend" + healthPath,
+            { headers: { Accept: "application/json" } },
+          );
+          const proxyBody = await proxied.json();
+          assert.equal(proxyBody.status, "alive",
+            "deployed frontend proxy must reach the deployed backend");
+
+          console.log("PASS: deployed backend liveness, frontend-origin CORS, and deployed frontend API proxy");
+          NODE
