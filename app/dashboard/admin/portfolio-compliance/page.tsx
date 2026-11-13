@@ -39,6 +39,7 @@ export default function PortfolioCompliancePage() {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<{total:number;validated:number;not_released:number;failed:number;pdf_eligible:number} | null>(null);
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
 
   const refreshInactive = useCallback(async () => {
     const rows = await portfolioComplianceApi.inactiveCompanies();
@@ -61,6 +62,8 @@ export default function PortfolioCompliancePage() {
     setLoading(true);
     setOutcomes([]);
     setSummary(null);
+    setProgress({ done: 0, total: 0 });
+    const results: Outcome[] = [];
     try {
       if (selected.length) {
         if (reason.trim().length < 10) throw new Error("Enter an audit reason of at least 10 characters.");
@@ -69,14 +72,37 @@ export default function PortfolioCompliancePage() {
         await refreshInactive();
       }
       setStage("evaluating");
-      const result = await portfolioComplianceApi.evaluateAll();
-      setOutcomes(result.results);
+      const companies = await companiesApi.list();
+      if (!Array.isArray(companies)) throw new Error("The authenticated company list was not returned.");
+      setProgress({ done: 0, total: companies.length });
+      for (const company of companies) {
+        const companyId = String(company.id || company.company_id || "");
+        const companyName = String(company.name || company.company_name || companyId);
+        if (!companyId) {
+          results.push({ company_id: companyName, company_name: companyName, status: "FAILED", pdf_eligible: false, error: "Company identifier missing." });
+        } else {
+          try {
+            const outcome = await portfolioComplianceApi.evaluateOne(companyId);
+            results.push(outcome);
+          } catch (e) {
+            results.push({
+              company_id: companyId,
+              company_name: companyName,
+              status: "FAILED",
+              pdf_eligible: false,
+              error: e instanceof Error ? e.message : "Evaluation request failed.",
+            });
+          }
+        }
+        setOutcomes([...results]);
+        setProgress({ done: results.length, total: companies.length });
+      }
       setSummary({
-        total: result.total,
-        validated: result.validated,
-        not_released: result.not_released,
-        failed: result.failed,
-        pdf_eligible: result.pdf_eligible,
+        total: results.length,
+        validated: results.filter((item) => item.status === "VALIDATED").length,
+        not_released: results.filter((item) => item.status === "NOT_RELEASED").length,
+        failed: results.filter((item) => ["FAILED", "VALIDATION_FAILED"].includes(item.status)).length,
+        pdf_eligible: results.filter((item) => item.pdf_eligible).length,
       });
       setStage("complete");
     } catch (e) {
@@ -130,7 +156,9 @@ export default function PortfolioCompliancePage() {
         <button type="button" disabled={loading} onClick={() => void runPortfolio()} style={{marginTop:14,padding:"11px 18px",borderRadius:8,background:loading?"#46566b":"#C9A84C",color:"#07172b",fontWeight:700,border:0,cursor:loading?"wait":"pointer"}}>
           {loading ? "Processing portfolio…" : "Reactivate selected & evaluate all active companies"}
         </button>
-        {loading && <div role="status" style={{marginTop:14,color:"#e2c46a",fontSize:13}}>{stage === "reactivating" ? "Writing audited reactivation events…" : "Evaluating companies and validating authoritative runs…"} This operation is in progress; keep this page open.</div>}
+        {loading && <div role="status" style={{marginTop:14,color:"#e2c46a",fontSize:13}}>{stage === "reactivating" ? "Writing audited reactivation events…" : `Evaluating companies and validating authoritative runs… ${progress.done}/${progress.total}`} This operation is in progress; keep this page open.
+          {stage === "evaluating" && <div style={{height:7,background:"#29415f",borderRadius:8,marginTop:9,overflow:"hidden"}}><div style={{height:"100%",width:progress.total ? `${(progress.done/progress.total)*100}%` : "0%",background:"#C9A84C",transition:"width .2s"}} /></div>}
+        </div>}
       </section>
 
       {error && <div role="alert" style={{padding:12,background:"#421f2a",border:"1px solid #9f3d4c",borderRadius:8,marginBottom:16}}>{error}</div>}
