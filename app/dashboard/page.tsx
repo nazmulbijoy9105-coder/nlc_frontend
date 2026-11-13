@@ -97,7 +97,7 @@ export default function DashboardPage() {
       const expectedLegalGate = kpisResult.reason instanceof ApiError
         && kpisResult.reason.status === 503
         && kpisResult.reason.message.startsWith(
-          "Compliance risk aggregates are unavailable while statutory score release is disabled",
+          "Compliance risk aggregates are unavailable while product scoring is disabled.",
         );
       if (!expectedLegalGate) {
         setLoadError((current) => current || (

@@ -116,7 +116,7 @@ export default function CompanyProfilePage() {
   const rescueSteps = rescuePlan?.steps || []
   const releasedScoreHistory = scoreHistory.filter((entry: any) =>
     entry.risk_band !== 'NOT_EVALUATED'
-    && entry.evaluation_status !== 'NOT_RELEASED_PENDING_INDEPENDENT_LEGAL_APPROVAL'
+    && !String(entry.evaluation_status || '').startsWith('NOT_EVALUATED')
     && typeof entry.score === 'number'
   )
 
@@ -134,7 +134,7 @@ export default function CompanyProfilePage() {
             </div>
             <div style={{display:'flex',gap:20,fontSize:11.5,color:'var(--text3)',fontFamily:"'JetBrains Mono', monospace"}}>
               <span>REG <strong style={{color:'var(--navy)'}}>{_v(company.registration_number)}</strong></span>
-              <span>SCORE <strong style={{color:bandColor}}>{score === null ? (band === 'NOT_EVALUATED' ? 'Pending legal approval' : 'Not evaluated') : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
+              <span>SCORE <strong style={{color:bandColor}}>{score === null ? (band === 'NOT_EVALUATED' ? 'Not released' : 'Not evaluated') : `${score}/100`}</strong>{compliance?.pre_override_score != null && compliance.pre_override_score !== score && score === 0 && <span style={{fontSize:10,color:'var(--text3)'}}> (underlying: {compliance.pre_override_score})</span>}</span>
               <span>EVALUATED <strong style={{color:'var(--navy)'}}>{_d(company.last_evaluated_at || compliance?.last_evaluated_at)}</strong></span>
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function CompanyProfilePage() {
       {actionError && <div role="alert" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #A94442',borderRadius:8,color:'#FCA5A5',fontSize:12}}>{actionError}</div>}
       {band === 'NOT_EVALUATED' && (
         <div role="status" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #D6B65A',borderRadius:10,background:'rgba(214,182,90,0.08)',color:'var(--text)',fontSize:12,lineHeight:1.6}}>
-          <strong>Authoritative compliance score not released.</strong> The legal-rule corpus is pending independent legal approval. Findings remain provisional, are not applied to a compliance score, and must not be treated as a legal certification.
+          <strong>Authoritative compliance score not released.</strong> Product scoring is not currently released for this evaluation. Review signals remain separate from a published score and must not be treated as a legal opinion or compliance certificate.
         </div>
       )}
 
@@ -172,10 +172,10 @@ export default function CompanyProfilePage() {
 
           {/* Flag Counts */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:16}}>
-            {[['BLACK', blackFlags.length || company.black_flags || 0, '#A855F7'],
-              ['RED', redFlags.length || company.red_flags || 0, '#B91C1C'],
-              ['YELLOW', yellowFlags.length || company.yellow_flags || 0, '#D97706'],
-              ['TOTAL', flags.length || company.active_flags || company.violation_count || 0, '#6B7280'],
+            {[['BLACK', band === 'NOT_EVALUATED' ? '—' : (blackFlags.length || company.black_flags || 0), '#A855F7'],
+              ['RED', band === 'NOT_EVALUATED' ? '—' : (redFlags.length || company.red_flags || 0), '#B91C1C'],
+              ['YELLOW', band === 'NOT_EVALUATED' ? '—' : (yellowFlags.length || company.yellow_flags || 0), '#D97706'],
+              ['TOTAL', band === 'NOT_EVALUATED' ? '—' : (flags.length || company.active_flags || company.violation_count || 0), '#6B7280'],
             ].map(([label,count,color]) => (
               <div key={label as string} className="nlc-card" style={{padding:'10px 12px',textAlign:'center'}}>
                 <div style={{fontSize:20,fontWeight:700,color:color as string,fontFamily:"'DM Serif Display',serif"}}>{count}</div>
@@ -214,7 +214,7 @@ export default function CompanyProfilePage() {
           <div className="nlc-card" style={{marginBottom:14}}>
             <div className="sec-lbl">Compliance Flags ({flags.length})</div>
             {flags.length === 0 ? (
-              <div style={{padding:20,textAlign:'center',color:'var(--text3)',fontSize:12}}>No active flags — company is compliant ✅</div>
+              <div style={{padding:20,textAlign:'center',color:'var(--text3)',fontSize:12}}>No active review findings were returned. This does not establish compliance.</div>
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {flags.map((f,i) => (

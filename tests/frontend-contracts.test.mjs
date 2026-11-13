@@ -239,3 +239,27 @@ test("released product score is disclosed separately from independent legal veri
   assert.match(card, /compliance certificate/);
   assert.match(disclaimer, /Product-owner release is separate from independent Bangladesh company-law counsel verification/);
 });
+
+
+test("company score UI distinguishes product release from independent legal review", () => {
+  const page = read("app/dashboard/companies/[id]/page.tsx");
+  assert.match(page, /Product scoring is not currently released for this evaluation/);
+  assert.match(page, /No active review findings were returned\. This does not establish compliance\./);
+  assert.match(page, /band === 'NOT_EVALUATED' \? '—'/);
+  assert.doesNotMatch(page, /Pending legal approval/);
+  assert.doesNotMatch(page, /pending independent legal approval/);
+});
+
+test("rescue UI handles the product scoring release gate without implying counsel approval controls it", () => {
+  const page = read("app/dashboard/rescue/page.tsx");
+  assert.match(page, /PRODUCT_SCORE_RELEASE_DISABLED/);
+  assert.match(page, /Product scoring release is disabled/);
+  assert.doesNotMatch(page, /withheld pending independent legal validation/);
+});
+
+
+test("dashboard treats the backend product-scoring-disabled KPI response as an expected withheld state", () => {
+  const page = read("app/dashboard/page.tsx");
+  assert.match(page, /Compliance risk aggregates are unavailable while product scoring is disabled\./);
+  assert.match(page, /setScoreReleasePending\(true\)/);
+});
