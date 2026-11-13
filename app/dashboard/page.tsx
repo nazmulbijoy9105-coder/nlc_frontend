@@ -25,6 +25,18 @@ function asArray(value: any): any[] {
   throw new Error("Dashboard service returned an unexpected list response.");
 }
 
+async function loadAllAccessibleCompanies(): Promise<any[]> {
+  const pageSize = 100;
+  const companies: any[] = [];
+  let page = 1;
+  while (true) {
+    const batch = asArray(await companiesApi.list(page, pageSize));
+    companies.push(...batch);
+    if (batch.length < pageSize) return companies;
+    page += 1;
+  }
+}
+
 function dateLabel(value: unknown): string {
   if (!value) return "Date unavailable";
   const parsed = new Date(String(value));
@@ -66,7 +78,7 @@ export default function DashboardPage() {
     setCalendarReleasePending(false);
     setDeadlines([]);
     setActivity([]);
-    const companiesPromise = companiesApi.list().then(asArray);
+    const companiesPromise = loadAllAccessibleCompanies();
     const kpisPromise = canViewPortfolioKpis
       ? dashboardApi.getStats().then((data: Kpis) => {
           if (!data || typeof data !== "object" || typeof data.total_companies !== "number") {
