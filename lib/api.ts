@@ -278,3 +278,41 @@ export const billingApi = {
   rejectPayment: (submissionId: string, reason: string) =>
     api.post<any>(`/api/v1/finance/payment-submissions/${submissionId}/reject`, { reason }),
 };
+
+
+export const portfolioComplianceApi = {
+  inactiveCompanies: () =>
+    api.get<Array<{
+      company_id: string;
+      company_name: string;
+      registration_number: string;
+      company_status: string;
+      is_dormant: boolean | null;
+      is_active: boolean;
+    }>>("/api/v1/portfolio/compliance/inactive"),
+  reactivate: (company_ids: string[], reason: string) =>
+    api.post<any>("/api/v1/portfolio/compliance/reactivate", { company_ids, reason }),
+  evaluateAll: () =>
+    api.post<{
+      total: number;
+      validated: number;
+      not_released: number;
+      failed: number;
+      pdf_eligible: number;
+      results: Array<{
+        company_id: string;
+        company_name: string;
+        status: string;
+        pdf_eligible: boolean;
+        evaluation_run_id?: string;
+        score?: number | null;
+        risk_band?: string | null;
+        score_hash?: string | null;
+        engine_version?: string | null;
+        scoring_spec_version?: string | null;
+        problems?: string[];
+        error?: string;
+      }>;
+      disclaimer: string;
+    }>("/api/v1/portfolio/compliance/evaluate-all", {}),
+};
