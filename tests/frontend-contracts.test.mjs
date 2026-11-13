@@ -300,3 +300,17 @@ test("SUPER_ADMIN portfolio console reactivates records, tracks per-company prog
   assert.match(page, /Statutory status and evidence are to remain unchanged/);
   assert.match(api, /\/api\/v1\/portfolio\/compliance\/evaluate/);
 });
+
+
+
+test("dashboard loads every authorised company page before reconciling portfolio KPIs", () => {
+  const page = read("app/dashboard/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(page, /async function loadAllAccessibleCompanies\(\): Promise<any\[]>/);
+  assert.match(page, /const pageSize = 100/);
+  assert.match(page, /companiesApi\.list\(page, pageSize\)/);
+  assert.match(page, /if \(batch\.length < pageSize\) return companies/);
+  assert.match(page, /const companiesPromise = loadAllAccessibleCompanies\(\)/);
+  assert.match(page, /value\.total_companies === accessibleCompanies\.length/);
+  assert.match(api, /list: \(page = 1, pageSize = 25\)/);
+});
