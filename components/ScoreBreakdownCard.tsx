@@ -92,7 +92,7 @@ export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProp
               marginBottom: 6,
             }}
           >
-            Compliance score
+            Product risk score
           </div>
           <div
             className="font-garamond"
@@ -127,6 +127,25 @@ export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProp
       <div style={{ fontSize: 12, color: "#d1d5db", marginBottom: 12 }}>
         Headline score uses <strong>category deductions</strong> only (capped).
         Module rows below are diagnostics and are not added together.
+      </div>
+      <div
+        role="note"
+        style={{
+          fontSize: 11,
+          lineHeight: 1.55,
+          color: "#fcd9a5",
+          border: "1px solid rgba(245, 158, 11, 0.35)",
+          borderRadius: 8,
+          padding: "9px 11px",
+          marginBottom: 14,
+          background: "rgba(120, 53, 15, 0.18)",
+        }}
+      >
+        Product-owner release enables this deterministic score only. It does not
+        mean the underlying statutory rules have been independently verified or
+        approved by Bangladesh company-law counsel. Treat findings as decision
+        support pending professional review, not as a legal opinion or
+        compliance certificate.
       </div>
 
       {deductionEntries.length > 0 ? (

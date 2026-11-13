@@ -229,3 +229,13 @@ test("billing workspace waits for authenticated role before protected API calls"
   assert.ok(guard >= 0 && guard < companyFetch && guard < planFetch);
   assert.ok(page.indexOf("if (!role)") < page.indexOf("if (loading)"));
 });
+
+
+test("released product score is disclosed separately from independent legal verification", () => {
+  const card = read("components/ScoreBreakdownCard.tsx");
+  const disclaimer = read("components/LegalDisclaimer.tsx");
+  assert.match(card, /Product risk score/);
+  assert.match(card, /underlying statutory rules have been independently verified/);
+  assert.match(card, /compliance certificate/);
+  assert.match(disclaimer, /Product-owner release is separate from independent Bangladesh company-law counsel verification/);
+});
