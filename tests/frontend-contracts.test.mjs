@@ -271,7 +271,7 @@ test("compliance dashboard uses live scoped services and the responsive overview
   assert.match(page, /dashboardApi\.getStats\(\)/);
   assert.match(page, /dashboardApi\.upcomingDeadlines\(\)/);
   assert.match(page, /dashboardApi\.recentActivity\(\)/);
-  assert.match(page, /companiesApi\.list\(\)/);
+  assert.match(page, /companiesApi\.list\(page, pageSize\)/);
   assert.match(page, /Priority action queue/);
   assert.match(page, /Recent activity/);
   assert.match(styles, /\.nlc-dashboard-metrics/);
