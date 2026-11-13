@@ -132,6 +132,9 @@ export default function DashboardPage() {
   const averageScore = evaluatedCompanies.length
     ? Math.round(evaluatedCompanies.reduce((sum, company) => sum + company.compliance_score, 0) / evaluatedCompanies.length)
     : null;
+  const statutoryScoreAvailable = !scoreReleasePending
+    && kpis?.dashboard_mode === "STATUTORY_RISK"
+    && kpis.statutory_risk_aggregates_available === true;
   const overdueDeadlines = deadlines.filter(item => typeof item.days_remaining === "number" && item.days_remaining < 0);
   const totalRiskItems = Math.max(0, Number(kpis?.green_count || 0)) +
     Math.max(0, Number(kpis?.yellow_count || 0)) + Math.max(0, Number(kpis?.red_black_count || 0));
@@ -159,7 +162,7 @@ export default function DashboardPage() {
           <h1>{portfolioName}</h1>
           <p>Compliance overview · {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
         </div>
-        <button type="button" className="nlc-dashboard-primary" onClick={() => router.push("/dashboard/reports")}>Reports &amp; analytics <span aria-hidden="true">↗</span></button>
+        <button type="button" className="nlc-dashboard-primary" onClick={() => router.push("/dashboard/companies")}>View companies <span aria-hidden="true">↗</span></button>
       </div>
 
       {kpiScopeWarning && <div role="status" className="nlc-dashboard-notice">{kpiScopeWarning}</div>}
@@ -168,8 +171,8 @@ export default function DashboardPage() {
       <section className="nlc-dashboard-metrics" aria-label="Compliance overview metrics">
         <article className="nlc-dashboard-metric nlc-dashboard-metric-score">
           <div className="nlc-dashboard-metric-label">Average released score</div>
-          <div className="nlc-dashboard-metric-value">{scoreReleasePending || averageScore === null ? "—" : <>{averageScore}<small> / 100</small></>}</div>
-          <div className="nlc-dashboard-metric-foot">{scoreReleasePending ? "Product scoring unavailable" : `${evaluatedCompanies.length} evaluated compan${evaluatedCompanies.length === 1 ? "y" : "ies"}`}</div>
+          <div className="nlc-dashboard-metric-value">{!statutoryScoreAvailable || averageScore === null ? "—" : <>{averageScore}<small> / 100</small></>}</div>
+          <div className="nlc-dashboard-metric-foot">{!statutoryScoreAvailable ? "Statutory score not released" : `${evaluatedCompanies.length} evaluated compan${evaluatedCompanies.length === 1 ? "y" : "ies"}`}</div>
         </article>
         <article className="nlc-dashboard-metric">
           <div className="nlc-dashboard-metric-label">Accessible companies</div>
@@ -193,21 +196,21 @@ export default function DashboardPage() {
           <div className="nlc-dashboard-panel-heading"><div><h2>Compliance health</h2><p>Released company scores only</p></div><span className="nlc-dashboard-panel-icon">◉</span></div>
           <div className="nlc-dashboard-health-content">
             <div className="nlc-dashboard-score-ring" style={{ background: averageScore === null || scoreReleasePending ? "conic-gradient(#E5E7EB 0 100%)" : `conic-gradient(#D99A18 0 ${averageScore}%, #E8EDF3 ${averageScore}% 100%)` }}>
-              <div><strong>{scoreReleasePending || averageScore === null ? "—" : averageScore}</strong><span>{averageScore === null || scoreReleasePending ? "not evaluated" : "of 100"}</span></div>
+              <div><strong>{!statutoryScoreAvailable || averageScore === null ? "—" : averageScore}</strong><span>{!statutoryScoreAvailable || averageScore === null ? "not released" : "of 100"}</span></div>
             </div>
             <div className="nlc-dashboard-health-details">
-              <div><span>GREEN</span><strong>{scoreReleasePending ? "—" : green ?? "—"}</strong></div>
-              <div><span>YELLOW</span><strong>{scoreReleasePending ? "—" : yellow ?? "—"}</strong></div>
-              <div><span>RED / BLACK</span><strong>{scoreReleasePending ? "—" : redBlack ?? "—"}</strong></div>
+              <div><span>GREEN</span><strong>{!statutoryScoreAvailable ? "—" : green ?? "—"}</strong></div>
+              <div><span>YELLOW</span><strong>{!statutoryScoreAvailable ? "—" : yellow ?? "—"}</strong></div>
+              <div><span>RED / BLACK</span><strong>{!statutoryScoreAvailable ? "—" : redBlack ?? "—"}</strong></div>
               <div><span>Not evaluated</span><strong>{kpiScopeWarning ? "—" : kpis?.not_evaluated_count ?? "—"}</strong></div>
             </div>
           </div>
-          <p className="nlc-dashboard-panel-note">{scoreReleasePending ? "Risk scores and statutory bands are withheld. Review signals do not establish default, breach or liability." : "Portfolio score is the mean of accessible company scores that have been evaluated and released. It is not a legal certification."}</p>
+          <p className="nlc-dashboard-panel-note">{!statutoryScoreAvailable ? "Statutory scores and risk bands are not released. Evidence review signals do not establish default, breach or liability." : "Portfolio score is the mean of accessible company scores that have been evaluated and released. It is not a legal certification."}</p>
         </article>
 
         <article className="nlc-dashboard-panel nlc-dashboard-risk">
-          <div className="nlc-dashboard-panel-heading"><div><h2>Risk distribution</h2><p>{scoreReleasePending ? "Unavailable while product scoring is withheld" : `${totalRiskItems} companies with evaluated bands`}</p></div><span className="nlc-dashboard-panel-icon">◌</span></div>
-          {scoreReleasePending ? <div className="nlc-dashboard-empty">Risk distribution is not currently available. Operational review signals remain separate.</div> : (
+          <div className="nlc-dashboard-panel-heading"><div><h2>Risk distribution</h2><p>{!statutoryScoreAvailable ? "Statutory risk aggregates not released" : `${totalRiskItems} companies with evaluated bands`}</p></div><span className="nlc-dashboard-panel-icon">◌</span></div>
+          {!statutoryScoreAvailable ? <div className="nlc-dashboard-empty">Statutory risk distribution is not released. {kpis?.active_review_items ?? 0} active review signals across {kpis?.companies_with_review_items ?? 0} companies are tracked separately and are not statutory risk bands.</div> : (
             <div className="nlc-dashboard-risk-content">
               <div className="nlc-dashboard-donut" style={{ background: distribution }}><div><strong>{totalRiskItems}</strong><span>evaluated</span></div></div>
               <div className="nlc-dashboard-legend">
