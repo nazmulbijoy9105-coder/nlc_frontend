@@ -292,6 +292,21 @@ export const portfolioComplianceApi = {
     }>>("/api/v1/portfolio/compliance/inactive"),
   reactivate: (company_ids: string[], reason: string) =>
     api.post<any>("/api/v1/portfolio/compliance/reactivate", { company_ids, reason }),
+  evaluateOne: (companyId: string) =>
+    api.post<{
+      company_id: string;
+      company_name: string;
+      status: string;
+      pdf_eligible: boolean;
+      evaluation_run_id?: string;
+      score?: number | null;
+      risk_band?: string | null;
+      score_hash?: string | null;
+      engine_version?: string | null;
+      scoring_spec_version?: string | null;
+      problems?: string[];
+      error?: string;
+    }>(`/api/v1/portfolio/compliance/evaluate/${encodeURIComponent(companyId)}`, {}),
   evaluateAll: () =>
     api.post<{
       total: number;
