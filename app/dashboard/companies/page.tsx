@@ -40,8 +40,11 @@ export default function CompaniesPage() {
         <thead><tr><th>Company</th><th>Reg. No.</th><th>Score</th><th>Band</th><th>Flags</th></tr></thead>
         <tbody>{companies.length===0?<tr><td colSpan={5} style={{textAlign:"center",padding:30,color:"var(--text3)"}}>No accessible companies were returned.</td></tr>:
           companies.map((company)=> {
-            const band=company.band??"NOT_EVALUATED";
-            const score=band==="NOT_EVALUATED"||company.compliance_score==null?"Not evaluated":company.compliance_score;
+            const released = company.evaluation_status === "EVALUATED"
+              && company.band !== "NOT_EVALUATED"
+              && typeof company.compliance_score === "number";
+            const band = released ? (company.band ?? "NOT_EVALUATED") : "NOT_EVALUATED";
+            const score = released ? company.compliance_score : "Not released";
             return <tr key={company.id}>
               <td><button type="button" onClick={()=>router.push(`/dashboard/companies/${company.id}`)} className="text-left font-semibold text-blue-700 underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2">{company.name||"Unknown"}</button></td>
               <td className="font-mono" style={{fontSize:11,color:"var(--text3)"}}>{company.registration_number||"—"}</td>
