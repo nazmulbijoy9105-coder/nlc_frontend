@@ -25,6 +25,7 @@ function bandColor(band: string | undefined): string {
 export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProps) {
   const withheld =
     !breakdown ||
+    breakdown.evaluation_status !== "EVALUATED" ||
     breakdown.risk_band === "NOT_EVALUATED" ||
     breakdown.final_score == null;
 
@@ -44,9 +45,10 @@ export default function ScoreBreakdownCard({ breakdown }: ScoreBreakdownCardProp
         }}
       >
         <Shield size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-        Score not published for this company. Missing evidence stays UNKNOWN and
-        does not count as a violation. High scores with low input coverage mean
-        incomplete data, not full compliance.
+        Score not published for this company. A score is shown only when the
+        latest evaluation is explicitly EVALUATED and reconciles with current
+        company data. Pending, stale, failed or unreleased results are withheld.
+        Missing evidence stays UNKNOWN and does not count as a violation.
       </div>
     );
   }
