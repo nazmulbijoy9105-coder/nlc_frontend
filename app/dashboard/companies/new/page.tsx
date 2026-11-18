@@ -66,6 +66,7 @@ export default function AddCompanyPage() {
         ...form,
         company_name: form.company_name.trim(),
         registration_number: form.registration_number.trim(),
+        incorporation_date: form.incorporation_date,
         registered_address: form.registered_address.trim(),
         financial_year_end: form.financial_year_end || undefined,
         trade_license_expiry: form.trade_license_expiry || undefined,

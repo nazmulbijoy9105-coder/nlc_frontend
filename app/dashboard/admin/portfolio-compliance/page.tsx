@@ -76,8 +76,8 @@ export default function PortfolioCompliancePage() {
       if (!Array.isArray(companies)) throw new Error("The authenticated company list was not returned.");
       setProgress({ done: 0, total: companies.length });
       for (const company of companies) {
-        const companyId = String(company.id || company.company_id || "");
-        const companyName = String(company.name || company.company_name || companyId);
+        const companyId = String(company.id || "");
+        const companyName = String(company.name || companyId);
         if (!companyId) {
           results.push({ company_id: companyName, company_name: companyName, status: "FAILED", pdf_eligible: false, error: "Company identifier missing." });
         } else {
