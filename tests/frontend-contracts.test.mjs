@@ -78,12 +78,15 @@ test("finance workspace exposes manual billing only through role-gated backend c
   assert.match(api, /complete\?company_id=/);
 });
 
-test("filings page consumes the registered portfolio endpoint contract", () => {
+test("filings page consumes the typed filingsApi portfolio abstraction", () => {
   const page = read("app/dashboard/filings/page.tsx");
-  assert.match(page, /\/api\/v1\/filings/);
+  const api = read("lib/api.ts");
+  assert.match(page, /filingsApi\.portfolio\(\)/);
   assert.match(page, /data\.agms/);
   assert.match(page, /data\.audits/);
   assert.match(page, /data\.annual_returns/);
+  assert.match(api, /portfolio: \(\) => api\.get<FilingPortfolioResponse>\("\/api\/v1\/filings"\)/);
+  assert.doesNotMatch(page, /api\.get\(|\/api\/v1\/filings/);
   assert.doesNotMatch(page, /listAGM\(\)\.catch|listAnnualReturn\(\)\.catch/);
 });
 
@@ -366,7 +369,9 @@ test("company, filing and document API methods use backend-shaped request and re
 test("permission-denied 403 responses remain permission errors and do not expire a valid session", () => {
   const transport = read("lib/api-transport.ts");
   assert.match(transport, /status === 401 \|\| \(status === 403/);
-  assert.match(transport, /not authenticated[\\s\\S]*invalid[\\s\\S]*expired[\\s\\S]*deactivated[\\s\\S]*role mismatch/);
+  assert.match(transport, /\["not authenticated", "invalid", "expired", "deactivated", "role mismatch"\]/);
+  assert.match(transport, /status === 401 \|\| \(status === 403/);
+  assert.match(transport, /if \(auth && expireSession\(path, response\.status, message\)\)/);
   assert.match(transport, /throw new ApiError\(message, response\.status\)/);
   assert.doesNotMatch(transport, /status === 403\)\s*\{/);
 });
