@@ -340,6 +340,6 @@ test("documents workspace loads portfolio records for clients without calling th
   assert.match(page, /role === "LEGAL_STAFF" \|\| role === "ADMIN_STAFF" \|\| role === "SUPER_ADMIN"/);
   assert.match(page, /canListTemplates \? documentsApi\.templates\(\) : Promise\.resolve\(\[\]\)/);
   assert.match(page, /if \(!roleLoaded \|\| !role\) return/);
-  assert.match(api, /list: \(\) => api\.get<any>\("\/api\/v1\/documents"\)/);
-  assert.match(api, /templates: \(\) => api\.get<any>\("\/api\/v1\/documents\/templates"\)/);
+  assert.match(api, /list: \(\) => api\.get<DocumentApiResponse\[]>\("\/api\/v1\/documents"\)/);
+  assert.match(api, /templates: \(\) => api\.get<DocumentTemplateResponse\[]>\("\/api\/v1\/documents\/templates"\)/);
 });
