@@ -3,6 +3,7 @@ import { ApiError } from "@/lib/api-errors";
 export { ApiError };
 import { API_BASE } from "@/lib/api-config";
 import { requestApiResponse, downloadAuthenticatedFile, uploadAuthenticatedFile } from "@/lib/api-transport";
+import type { CompanyApiResponse, CompanyCreateRequest, CompanyUpdateRequest, AGMCreateRequest, AuditCreateRequest, AnnualReturnCreateRequest, AGMRecord, AuditRecord, AnnualReturnRecord, FilingPortfolioResponse, DocumentApiResponse, DocumentTemplateResponse, DocumentGenerateRequest, DocumentGenerateResponse, ApiMessageResponse } from "@/types/api-contracts";
 
 type RequestOptions = { auth?: boolean };
 
@@ -67,36 +68,36 @@ export const dashboardApi = {
 };
 
 export const companiesApi = {
-  list: (page = 1, pageSize = 25) => api.get<any>(`/api/v1/companies?page=${page}&page_size=${pageSize}`),
-  get: (id: string) => api.get<any>("/api/v1/companies/" + id),
-  create: (data: any) => api.post<any>("/api/v1/companies", data),
+  list: (page = 1, pageSize = 25) => api.get<CompanyApiResponse[]>(`/api/v1/companies?page=${page}&page_size=${pageSize}`),
+  get: (id: string) => api.get<CompanyApiResponse>("/api/v1/companies/" + encodeURIComponent(id)),
+  create: (data: CompanyCreateRequest) => api.post<CompanyApiResponse>("/api/v1/companies", data),
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
   activity: (id: string) => api.get<Array<{ event_id: string; event_type: string; title: string; occurred_at: string; status: "pending" | "dispatched" | "attention_required" }>>("/api/v1/companies/" + encodeURIComponent(id) + "/activity"),
-  update: (id: string, data: any) => api.patch<any>("/api/v1/companies/" + id, data),
+  update: (id: string, data: CompanyUpdateRequest) => api.patch<CompanyApiResponse>("/api/v1/companies/" + encodeURIComponent(id), data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
   downloadPDF: (id: string) => downloadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(id) + "/compliance-pdf", "NLC_Compliance_Report_" + id + ".pdf"),
 };
 
 export const filingsApi = {
-  createAGM: (data: any) => api.post<any>("/api/v1/filings/agm", data),
-  createAudit: (data: any) => api.post<any>("/api/v1/filings/audit", data),
-  createReturn: (data: any) => api.post<any>("/api/v1/filings/annual-return", data),
-  agms: (companyId: string) => api.get<any>("/api/v1/filings/agm/" + companyId),
-  audits: (companyId: string) => api.get<any>("/api/v1/filings/audit/" + companyId),
-  annualReturns: (companyId: string) => api.get<any>("/api/v1/filings/annual-return/" + companyId),
-  portfolio: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
+  createAGM: (data: AGMCreateRequest) => api.post<AGMRecord>("/api/v1/filings/agm", data),
+  createAudit: (data: AuditCreateRequest) => api.post<AuditRecord>("/api/v1/filings/audit", data),
+  createReturn: (data: AnnualReturnCreateRequest) => api.post<AnnualReturnRecord>("/api/v1/filings/annual-return", data),
+  agms: (companyId: string) => api.get<AGMRecord[]>("/api/v1/filings/agm/" + encodeURIComponent(companyId)),
+  audits: (companyId: string) => api.get<AuditRecord[]>("/api/v1/filings/audit/" + encodeURIComponent(companyId)),
+  annualReturns: (companyId: string) => api.get<AnnualReturnRecord[]>("/api/v1/filings/annual-return/" + encodeURIComponent(companyId)),
+  portfolio: () => api.get<FilingPortfolioResponse>("/api/v1/filings"),
   listAGM: (companyId?: string) => companyId
     ? api.get<any>("/api/v1/filings/agm/" + encodeURIComponent(companyId))
-    : api.get<{ agms: any[] }>("/api/v1/filings").then((data) => data.agms),
+    : api.get<FilingPortfolioResponse>("/api/v1/filings").then((data) => data.agms),
   listAudit: (companyId?: string) => companyId
     ? api.get<any>("/api/v1/filings/audit/" + encodeURIComponent(companyId))
-    : api.get<{ audits: any[] }>("/api/v1/filings").then((data) => data.audits),
+    : api.get<FilingPortfolioResponse>("/api/v1/filings").then((data) => data.audits),
   listAnnualReturn: (companyId?: string) => companyId
     ? api.get<any>("/api/v1/filings/annual-return/" + encodeURIComponent(companyId))
-    : api.get<{ annual_returns: any[] }>("/api/v1/filings").then((data) => data.annual_returns),
+    : api.get<FilingPortfolioResponse>("/api/v1/filings").then((data) => data.annual_returns),
   listRegisters: (companyId: string) => api.get<any>("/api/v1/filings/statutory-register/" + encodeURIComponent(companyId)),
   list: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
 };
@@ -116,13 +117,13 @@ export const articlesApi = {
 };
 
 export const documentsApi = {
-  list: () => api.get<any>("/api/v1/documents"),
-  templates: () => api.get<any>("/api/v1/documents/templates"),
-  listByCompany: (companyId: string) => api.get<any>("/api/v1/documents/" + companyId),
-  generate: (data: any) => api.post<any>("/api/v1/documents/generate", data),
-  approve: (id: string, data: { approval_note?: string | null } = {}) => api.post<any>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/approve", data),
-  release: (id: string, data: { release_note?: string | null; notify_client?: boolean } = {}) => api.post<any>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/release", data),
-  detail: (id: string) => api.get<any>("/api/v1/documents/detail/" + id),
+  list: () => api.get<DocumentApiResponse[]>("/api/v1/documents"),
+  templates: () => api.get<DocumentTemplateResponse[]>("/api/v1/documents/templates"),
+  listByCompany: (companyId: string) => api.get<DocumentApiResponse[]>("/api/v1/documents/" + encodeURIComponent(companyId)),
+  generate: (data: DocumentGenerateRequest) => api.post<DocumentGenerateResponse>("/api/v1/documents/generate", data),
+  approve: (id: string, data: { approval_note?: string | null } = {}) => api.post<DocumentApiResponse>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/approve", data),
+  release: (id: string, data: { release_note?: string | null; notify_client?: boolean } = {}) => api.post<ApiMessageResponse>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/release", data),
+  detail: (id: string) => api.get<DocumentApiResponse>("/api/v1/documents/detail/" + encodeURIComponent(id)),
   downloadPdf: async (id: string) => {
     const result = await api.get<{ download_url: string; expires_in_seconds: number }>("/api/v1/documents/detail/" + encodeURIComponent(id) + "/pdf");
     if (!result?.download_url) throw new ApiError("The document download URL was not returned.", 502);
