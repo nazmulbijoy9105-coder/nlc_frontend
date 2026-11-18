@@ -343,3 +343,38 @@ test("documents workspace loads portfolio records for clients without calling th
   assert.match(api, /list: \(\) => api\.get<DocumentApiResponse\[]>\("\/api\/v1\/documents"\)/);
   assert.match(api, /templates: \(\) => api\.get<DocumentTemplateResponse\[]>\("\/api\/v1\/documents\/templates"\)/);
 });
+
+
+test("company, filing and document API methods use backend-shaped request and response types", () => {
+  const api = read("lib/api.ts");
+  const contracts = read("types/api-contracts.ts");
+  assert.match(api, /create: \(data: CompanyCreateRequest\) => api\.post<CompanyApiResponse>/);
+  assert.match(api, /update: \(id: string, data: CompanyUpdateRequest\) => api\.patch<CompanyApiResponse>/);
+  assert.match(api, /createAGM: \(data: AGMCreateRequest\) => api\.post<AGMRecord>/);
+  assert.match(api, /createAudit: \(data: AuditCreateRequest\) => api\.post<AuditRecord>/);
+  assert.match(api, /createReturn: \(data: AnnualReturnCreateRequest\) => api\.post<AnnualReturnRecord>/);
+  assert.match(api, /portfolio: \(\) => api\.get<FilingPortfolioResponse>/);
+  assert.match(api, /list: \(\) => api\.get<DocumentApiResponse\[]>/);
+  assert.match(api, /templates: \(\) => api\.get<DocumentTemplateResponse\[]>/);
+  assert.match(contracts, /interface CompanyApiResponse/);
+  assert.match(contracts, /interface AGMRecord/);
+  assert.match(contracts, /interface AnnualReturnRecord/);
+  assert.match(contracts, /interface DocumentApiResponse/);
+  assert.doesNotMatch(api, /create: \(data: any\)|update: \(id: string, data: any\)|createAGM: \(data: any\)|createAudit: \(data: any\)|createReturn: \(data: any\)/);
+});
+
+test("permission-denied 403 responses remain permission errors and do not expire a valid session", () => {
+  const transport = read("lib/api-transport.ts");
+  assert.match(transport, /status === 401 \|\| \(status === 403/);
+  assert.match(transport, /not authenticated.*invalid.*expired.*deactivated.*role mismatch/);
+  assert.match(transport, /throw new ApiError\(message, response\.status\)/);
+  assert.doesNotMatch(transport, /status === 403\)\s*\{/);
+});
+
+test("company-scoped document and filing calls retain explicit tenant identifiers", () => {
+  const api = read("lib/api.ts");
+  assert.match(api, /listByCompany: \(companyId: string\) => api\.get<DocumentApiResponse\[]>\("\/api\/v1\/documents\/" \+ encodeURIComponent\(companyId\)\)/);
+  assert.match(api, /agms: \(companyId: string\) => api\.get<AGMRecord\[]>\("\/api\/v1\/filings\/agm\/" \+ encodeURIComponent\(companyId\)\)/);
+  assert.match(api, /audits: \(companyId: string\) => api\.get<AuditRecord\[]>\("\/api\/v1\/filings\/audit\/" \+ encodeURIComponent\(companyId\)\)/);
+  assert.match(api, /annualReturns: \(companyId: string\) => api\.get<AnnualReturnRecord\[]>\("\/api\/v1\/filings\/annual-return\/" \+ encodeURIComponent\(companyId\)\)/);
+});
