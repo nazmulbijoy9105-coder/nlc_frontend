@@ -332,3 +332,14 @@ test("current score UI withholds pending, stale, failed and unreleased cached ba
   assert.match(profile, /evaluationStatus === 'FAILED'/);
   assert.match(profile, /entry\.evaluation_status === 'EVALUATED'/);
 });
+
+test("documents workspace loads portfolio records for clients without calling the staff-only template catalogue", () => {
+  const page = read("app/dashboard/documents/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(page, /useCurrentUserRole/);
+  assert.match(page, /role === "LEGAL_STAFF" \|\| role === "ADMIN_STAFF" \|\| role === "SUPER_ADMIN"/);
+  assert.match(page, /canListTemplates \? documentsApi\.templates\(\) : Promise\.resolve\(\[\]\)/);
+  assert.match(page, /if \(!roleLoaded \|\| !role\) return/);
+  assert.match(api, /list: \(\) => api\.get<any>\("\/api\/v1\/documents"\)/);
+  assert.match(api, /templates: \(\) => api\.get<any>\("\/api\/v1\/documents\/templates"\)/);
+});
