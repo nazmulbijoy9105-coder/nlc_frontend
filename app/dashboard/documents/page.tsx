@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, documentsApi } from "@/lib/api";
+import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
 function toArray(value: unknown, key: string): any[] {
   if (Array.isArray(value)) return value;
@@ -16,23 +17,26 @@ export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
+  const { role, loaded: roleLoaded } = useCurrentUserRole();
+  const canListTemplates = role === "LEGAL_STAFF" || role === "ADMIN_STAFF" || role === "SUPER_ADMIN";
 
   const load = useCallback(async () => {
+    if (!roleLoaded || !role) return;
     setLoading(true);
     setError(null);
     try {
       const [documentResponse, templateResponse] = await Promise.all([
         documentsApi.list(),
-        documentsApi.templates(),
+        canListTemplates ? documentsApi.templates() : Promise.resolve([]),
       ]);
       setDocs(toArray(documentResponse, "items"));
-      setTemplates(toArray(templateResponse, "templates"));
+      setTemplates(canListTemplates ? toArray(templateResponse, "templates") : []);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load documents.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canListTemplates, role, roleLoaded]);
 
   useEffect(() => { void Promise.resolve().then(load); }, [load, retry]);
 
