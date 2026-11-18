@@ -67,7 +67,7 @@ export default function DocumentsPage() {
                   <li key={template.template_name || index} style={{borderBottom:"1px solid var(--border)",paddingBottom:10}}>
                     <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{template.template_name || "Unnamed template"}</div>
                     {template.description && <p style={{fontSize:11,color:"var(--text3)",marginTop:4}}>{template.description}</p>}
-                    <span style={{fontSize:10,color:"var(--text3)"}}>{template.status || "Template metadata only"}</span>
+                    <span style={{fontSize:10,color:"var(--text3)"}}>{template.is_active ? "Active template" : "Inactive template"}</span>
                   </li>
                 ))}
               </ul>
