@@ -91,10 +91,23 @@ export default function CompanyProfilePage() {
     )
   }
 
-  const band = compliance?.risk_band || company.band || 'NOT_EVALUATED'
-  const score: number | null = band === 'NOT_EVALUATED'
-    ? null
-    : (compliance ? (compliance.current_score ?? null) : (company.compliance_score ?? null))
+  const rawBand = compliance?.risk_band || company.band || 'NOT_EVALUATED'
+  const evaluationStatus = compliance?.evaluation_status || company.evaluation_status || 'NOT_EVALUATED'
+  const scoreCandidate = compliance
+    ? (compliance.current_score ?? null)
+    : (company.compliance_score ?? null)
+  const scoreReleased = evaluationStatus === 'EVALUATED'
+    && rawBand !== 'NOT_EVALUATED'
+    && typeof scoreCandidate === 'number'
+  const band = scoreReleased ? rawBand : 'NOT_EVALUATED'
+  const score: number | null = scoreReleased ? scoreCandidate : null
+  const scoreStatusDetail = evaluationStatus === 'STALE'
+    ? 'Company data or evidence changed after the latest completed evaluation. Re-evaluate before relying on a previous score.'
+    : evaluationStatus === 'PENDING'
+      ? 'The latest evaluation is pending. Previous risk bands are withheld.'
+      : evaluationStatus === 'FAILED'
+        ? 'The latest evaluation failed. Previous risk bands are withheld.'
+        : 'Product scoring is not currently released for this evaluation. Review signals remain separate from a published score.'
   const bandColor = band==='GREEN'?'#1a7a52':band==='YELLOW'?'#D97706':band==='RED'?'#B91C1C':band==='NOT_EVALUATED'?'#6B7280':'#A855F7'
 
   const _v = (val: any) => val === null || val === undefined ? '—' : String(val)
@@ -115,8 +128,8 @@ export default function CompanyProfilePage() {
   const yellowFlags = flags.filter((f:any) => f.severity === 'YELLOW')
   const rescueSteps = rescuePlan?.steps || []
   const releasedScoreHistory = scoreHistory.filter((entry: any) =>
-    entry.risk_band !== 'NOT_EVALUATED'
-    && !String(entry.evaluation_status || '').startsWith('NOT_EVALUATED')
+    entry.evaluation_status === 'EVALUATED'
+    && entry.risk_band !== 'NOT_EVALUATED'
     && typeof entry.score === 'number'
   )
 
@@ -149,9 +162,9 @@ export default function CompanyProfilePage() {
 
       {loadError && <div role="alert" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #A94442',borderRadius:8,color:'#FCA5A5',fontSize:12}}>{loadError}</div>}
       {actionError && <div role="alert" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #A94442',borderRadius:8,color:'#FCA5A5',fontSize:12}}>{actionError}</div>}
-      {band === 'NOT_EVALUATED' && (
+      {!scoreReleased && (
         <div role="status" style={{margin:'12px 20px',padding:'12px 16px',border:'1px solid #D6B65A',borderRadius:10,background:'rgba(214,182,90,0.08)',color:'var(--text)',fontSize:12,lineHeight:1.6}}>
-          <strong>Authoritative compliance score not released.</strong> Product scoring is not currently released for this evaluation. Review signals remain separate from a published score and must not be treated as a legal opinion or compliance certificate.
+          <strong>Authoritative compliance score not released.</strong> {scoreStatusDetail} Review signals remain separate from a published score and must not be treated as a legal opinion or compliance certificate.
         </div>
       )}
 

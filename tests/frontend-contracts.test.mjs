@@ -314,3 +314,21 @@ test("dashboard loads every authorised company page before reconciling portfolio
   assert.match(page, /value\.total_companies === accessibleCompanies\.length/);
   assert.match(api, /list: \(page = 1, pageSize = 25\)/);
 });
+
+
+test("current score UI withholds pending, stale, failed and unreleased cached bands", () => {
+  const card = read("components/ScoreBreakdownCard.tsx");
+  const dashboard = read("app/dashboard/page.tsx");
+  const companies = read("app/dashboard/companies/page.tsx");
+  const profile = read("app/dashboard/companies/[id]/page.tsx");
+
+  assert.match(card, /breakdown\.evaluation_status !== "EVALUATED"/);
+  assert.match(dashboard, /company\.evaluation_status === "EVALUATED"/);
+  assert.match(companies, /company\.evaluation_status === "EVALUATED"/);
+  assert.match(companies, /const band = released \? \(company\.band/);
+  assert.match(profile, /evaluationStatus === 'EVALUATED'/);
+  assert.match(profile, /evaluationStatus === 'STALE'/);
+  assert.match(profile, /evaluationStatus === 'PENDING'/);
+  assert.match(profile, /evaluationStatus === 'FAILED'/);
+  assert.match(profile, /entry\.evaluation_status === 'EVALUATED'/);
+});

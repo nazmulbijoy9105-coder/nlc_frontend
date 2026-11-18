@@ -59,6 +59,7 @@ Do not set `NEXT_PUBLIC_API_BASE_PATH` to a Render origin. Keep server-only cred
 ## Score and data presentation
 
 - The 85-rule catalogue is a product inventory; it is not proof that every rule has independent counsel verification.
+- Company scores and risk bands are rendered only when the API explicitly reports `evaluation_status=EVALUATED`; pending, stale, failed, unknown or unreleased states are withheld. Historical entries remain labelled as history, not current company status.
 - `category_deductions` is the authoritative additive input for the headline score.
 - Module/category diagnostics are descriptive only. Never add them again to category deductions.
 - Preserve the API's evaluation status and risk band. A null score or `NOT_EVALUATED` is not GREEN and must not be replaced by a sample score.

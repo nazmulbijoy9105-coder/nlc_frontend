@@ -139,7 +139,9 @@ export default function DashboardPage() {
   useEffect(() => { if (roleLoaded) void Promise.resolve().then(loadData); }, [roleLoaded, loadData]);
 
   const evaluatedCompanies = useMemo(() => companyList.filter(company =>
-    company.band !== "NOT_EVALUATED" && typeof company.compliance_score === "number"
+    company.evaluation_status === "EVALUATED"
+    && company.band !== "NOT_EVALUATED"
+    && typeof company.compliance_score === "number"
   ), [companyList]);
   const averageScore = evaluatedCompanies.length
     ? Math.round(evaluatedCompanies.reduce((sum, company) => sum + company.compliance_score, 0) / evaluatedCompanies.length)
