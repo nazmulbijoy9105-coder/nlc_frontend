@@ -17,6 +17,8 @@ export default function CompanyProfilePage() {
   const [compliance, setCompliance] = useState<any>(null)
   const [rescuePlan, setRescuePlan] = useState<any>(null)
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
+  const [ruleCoverage, setRuleCoverage] = useState<any>(null)
+  const [coverageError, setCoverageError] = useState<string | null>(null)
   const [activity, setActivity] = useState<any[]>([])
   const [activityError, setActivityError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,14 +35,17 @@ export default function CompanyProfilePage() {
     setCompliance(null);
     setRescuePlan(null);
     setScoreHistory([]);
+    setRuleCoverage(null);
+    setCoverageError(null);
     setActivity([]);
     setActivityError(null);
     const results = await Promise.allSettled([
       companiesApi.get(id), companiesApi.violations(id), companiesApi.modules(id),
       rescueApi.getActive(id), companiesApi.scoreHistory(id), companiesApi.activity(id),
+      companiesApi.ruleCoverage(id),
     ]);
     if (requestId !== loadRequest.current) return;
-    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult] = results;
+    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult, coverageResult] = results;
     if (companyResult.status === "rejected") {
       const error = companyResult.reason;
       setLoadError(error instanceof ApiError && error.status === 403
@@ -66,6 +71,8 @@ export default function CompanyProfilePage() {
     }
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) setScoreHistory(historyResult.value);
     else setLoadError((current) => current || "Score history could not be retrieved.");
+    if (coverageResult.status === "fulfilled") setRuleCoverage(coverageResult.value);
+    else setCoverageError("Live rule coverage could not be retrieved. Applicability is not inferred from missing data.");
     if (activityResult.status === "fulfilled" && Array.isArray(activityResult.value)) setActivity(activityResult.value);
     else setActivityError("Company activity is temporarily unavailable.");
     setLoading(false);
@@ -128,7 +135,7 @@ export default function CompanyProfilePage() {
   const yellowFlags = flags.filter((f:any) => f.severity === 'YELLOW')
   const rescueSteps = rescuePlan?.steps || []
   const releasedScoreHistory = scoreHistory.filter((entry: any) =>
-    entry.evaluation_status === 'EVALUATED'
+    (entry.evaluation_status === 'COMPLETED' || entry.evaluation_status === 'EVALUATED')
     && entry.risk_band !== 'NOT_EVALUATED'
     && typeof entry.score === 'number'
   )
@@ -280,6 +287,60 @@ export default function CompanyProfilePage() {
             </div>
           )}
 
+          {/* Live six-state rule coverage */}
+          <div className="nlc-card" style={{marginBottom:14}}>
+            <div className="sec-lbl">Live Rule Coverage</div>
+            {ruleCoverage?.report ? (
+              <>
+                <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',marginBottom:10}}>
+                  <span style={{fontSize:11,color:'var(--text3)'}}>
+                    Evaluation: {ruleCoverage.evaluation_status || 'No evaluation snapshot'}
+                  </span>
+                  <span style={{fontSize:10,fontWeight:700,color:ruleCoverage.report.validation_status === 'PASS' ? '#16845B' : '#B91C1C'}}>
+                    {ruleCoverage.report.validation_status === 'PASS' ? 'INVARIANTS PASS' : 'INVARIANT FAILURE'}
+                  </span>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8}}>
+                  {([
+                    ['Registered', ruleCoverage.report.summary?.registered],
+                    ['Implemented', ruleCoverage.report.summary?.implemented],
+                    ['Active', ruleCoverage.report.summary?.active],
+                    ['Applicable', ruleCoverage.report.summary?.applicable],
+                    ['Evaluated', ruleCoverage.report.summary?.evaluated],
+                    ['Deferred', ruleCoverage.report.summary?.deferred],
+                  ] as Array<[string, number | null | undefined]>).map(([label,value]) => (
+                    <div key={label} style={{padding:'9px 10px',background:'var(--surface)',borderRadius:6,border:'1px solid var(--border)'}}>
+                      <div style={{fontSize:18,fontWeight:700,color:'var(--navy)'}}>{typeof value === 'number' ? value : '—'}</div>
+                      <div style={{fontSize:9,color:'var(--text3)',letterSpacing:'.04em'}}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                {ruleCoverage.report.applicability_summary && (
+                  <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:'var(--text2)',marginBottom:7}}>Applicability states</div>
+                    <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:10,color:'var(--text3)'}}>
+                      <span>Applicable: <strong>{ruleCoverage.report.applicability_summary.APPLICABLE}</strong></span>
+                      <span>Not applicable: <strong>{ruleCoverage.report.applicability_summary.NOT_APPLICABLE}</strong></span>
+                      <span>Unknown: <strong>{ruleCoverage.report.applicability_summary.UNKNOWN}</strong></span>
+                    </div>
+                  </div>
+                )}
+                {ruleCoverage.report.validation_violations?.length > 0 && (
+                  <ul style={{marginTop:10,paddingLeft:18,color:'#B91C1C',fontSize:10}}>
+                    {ruleCoverage.report.validation_violations.map((item:string,index:number) => <li key={index}>{item}</li>)}
+                  </ul>
+                )}
+                <p style={{fontSize:10,color:'var(--text3)',lineHeight:1.6,marginTop:10}}>
+                  UNKNOWN and NOT_EVALUATED are not compliance findings. Missing outcomes never establish compliance or non-compliance. Product scoring is separate from independent counsel verification.
+                </p>
+              </>
+            ) : (
+              <div role="status" style={{fontSize:11,color:'var(--text3)',padding:'10px 0',lineHeight:1.6}}>
+                {coverageError || 'Live coverage has not been collected.'} No missing applicability state is inferred.
+              </div>
+            )}
+          </div>
+
           {/* Score History */}
           {scoreHistory.length > 0 && (
             <div className="nlc-card" style={{marginBottom:14}}>
@@ -298,7 +359,7 @@ export default function CompanyProfilePage() {
                 </div>
               ) : (
                 <div style={{fontSize:12,color:'var(--text3)',padding:'12px 0',lineHeight:1.6}}>
-                  Numerical history is withheld because independent legal approval is pending. Historical snapshots remain preserved but are not presented as current authoritative scores.
+                  No released monthly score snapshots are available. Product scoring release and independent statutory verification are separate controls; missing history is not evidence of compliance.
                 </div>
               )}
             </div>
