@@ -92,6 +92,7 @@ export const companiesApi = {
       outcome_rule_ids_count: number;
       missing_canonical_rule_ids: string[];
       unmapped_outcome_rule_ids: string[];
+      duplicate_outcome_rule_ids: string[];
       outcome_rule_id_parity: boolean;
       applicability_state_counts: Record<string, number>;
       outcome_state_counts: Record<string, number>;
