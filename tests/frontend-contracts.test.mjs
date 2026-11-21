@@ -210,6 +210,18 @@ test("company profile renders the authenticated six-state rule coverage contract
   assert.match(page, /No missing applicability state is inferred/);
 });
 
+test("per-run evaluation history is displayed separately from monthly score snapshots", () => {
+  const page = read("app/dashboard/companies/[id]/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(api, /evaluationRuns: \(id: string\).*evaluation-runs/s);
+  assert.match(page, /companiesApi\.evaluationRuns\(id\)/);
+  assert.match(page, /Evaluation Run History/);
+  assert.match(page, /rule_outcomes_count/);
+  assert.match(page, /fact_provenance_count/);
+  assert.match(page, /Monthly score snapshots are a separate append-only trend/);
+  assert.match(page, /This history is product decision support, not independent counsel approval/);
+});
+
 test("score history recognises backend COMPLETED snapshots without conflating counsel verification", () => {
   const page = read("app/dashboard/companies/[id]/page.tsx");
   assert.match(page, /entry\.evaluation_status === 'COMPLETED' \|\| entry\.evaluation_status === 'EVALUATED'/);
