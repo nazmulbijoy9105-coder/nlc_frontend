@@ -88,6 +88,11 @@ export const companiesApi = {
       engine_version: string;
       rule_catalogue_count: number | null;
       rule_outcomes_count: number | null;
+      canonical_rule_count: number;
+      outcome_rule_ids_count: number;
+      missing_canonical_rule_ids: string[];
+      unmapped_outcome_rule_ids: string[];
+      outcome_rule_id_parity: boolean;
       applicability_state_counts: Record<string, number>;
       outcome_state_counts: Record<string, number>;
       verification_status_counts: Record<string, number>;
