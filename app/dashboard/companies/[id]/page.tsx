@@ -416,6 +416,11 @@ export default function CompanyProfilePage() {
                         Unmapped historical IDs preserved outside the current registry: {run.unmapped_outcome_rule_ids.join(', ')}
                       </div>
                     )}
+                    {(run.duplicate_outcome_rule_ids?.length ?? 0) > 0 && (
+                      <div style={{marginTop:3,fontSize:9,color:'#B91C1C',lineHeight:1.5}}>
+                        Duplicate historical outcome IDs: {run.duplicate_outcome_rule_ids.join(', ')}
+                      </div>
+                    )}
                     <div style={{marginTop:5,fontSize:9,color:(run.evidence_reference_count ?? 0) > 0 && (run.unattributed_profile_record_count ?? 0) === 0 ? 'var(--text3)' : '#B45309',lineHeight:1.5}}>
                       Evidence provenance: {run.evidence_reference_count ?? 0} evidence references · {run.unattributed_profile_record_count ?? 0} unattributed profile records
                     </div>
