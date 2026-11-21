@@ -74,7 +74,57 @@ export const companiesApi = {
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
-  scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
+  scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + encodeURIComponent(id) + "/score-history"),
+  evaluationRuns: (id: string) => api.get<{
+    company_id: string;
+    items: Array<{
+      evaluation_run_id: string;
+      calculated_at: string;
+      evaluation_status: string;
+      score_available: boolean;
+      score: number | null;
+      risk_band: string;
+      score_withheld_reason: string | null;
+      engine_version: string;
+      rule_catalogue_count: number | null;
+      rule_outcomes_count: number | null;
+      canonical_rule_count: number;
+      outcome_rule_ids_count: number;
+      missing_canonical_rule_ids: string[];
+      unmapped_outcome_rule_ids: string[];
+      outcome_rule_id_parity: boolean;
+      applicability_state_counts: Record<string, number>;
+      outcome_state_counts: Record<string, number>;
+      verification_status_counts: Record<string, number>;
+      rule_outcomes_hash: string | null;
+      fact_provenance_count: number | null;
+      score_hash: string;
+    }>;
+  }>("/api/v1/companies/" + encodeURIComponent(id) + "/evaluation-runs"),
+  ruleCoverage: (id: string) => api.get<{
+    company_id: string;
+    evaluation_run_id: string | null;
+    evaluation_status: string | null;
+    evaluation_calculated_at: string | null;
+    report: {
+      summary: {
+        registered: number;
+        implemented: number;
+        active: number | null;
+        applicable: number | null;
+        evaluated: number | null;
+        deferred: number;
+      };
+      validation_status: "PASS" | "FAILED";
+      validation_violations: string[];
+      applicability_summary: {
+        APPLICABLE: number;
+        NOT_APPLICABLE: number;
+        UNKNOWN: number;
+      } | null;
+      applicability_semantics: string;
+    };
+  }>("/api/v1/companies/" + encodeURIComponent(id) + "/rule-coverage"),
   activity: (id: string) => api.get<Array<{ event_id: string; event_type: string; title: string; occurred_at: string; status: "pending" | "dispatched" | "attention_required" }>>("/api/v1/companies/" + encodeURIComponent(id) + "/activity"),
   update: (id: string, data: CompanyUpdateRequest) => api.patch<CompanyApiResponse>("/api/v1/companies/" + encodeURIComponent(id), data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),

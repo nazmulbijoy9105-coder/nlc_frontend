@@ -17,6 +17,10 @@ export default function CompanyProfilePage() {
   const [compliance, setCompliance] = useState<any>(null)
   const [rescuePlan, setRescuePlan] = useState<any>(null)
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
+  const [ruleCoverage, setRuleCoverage] = useState<any>(null)
+  const [coverageError, setCoverageError] = useState<string | null>(null)
+  const [evaluationRuns, setEvaluationRuns] = useState<any[]>([])
+  const [evaluationRunsError, setEvaluationRunsError] = useState<string | null>(null)
   const [activity, setActivity] = useState<any[]>([])
   const [activityError, setActivityError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,14 +37,19 @@ export default function CompanyProfilePage() {
     setCompliance(null);
     setRescuePlan(null);
     setScoreHistory([]);
+    setRuleCoverage(null);
+    setCoverageError(null);
+    setEvaluationRuns([]);
+    setEvaluationRunsError(null);
     setActivity([]);
     setActivityError(null);
     const results = await Promise.allSettled([
       companiesApi.get(id), companiesApi.violations(id), companiesApi.modules(id),
       rescueApi.getActive(id), companiesApi.scoreHistory(id), companiesApi.activity(id),
+      companiesApi.ruleCoverage(id), companiesApi.evaluationRuns(id),
     ]);
     if (requestId !== loadRequest.current) return;
-    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult] = results;
+    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult, coverageResult, evaluationRunsResult] = results;
     if (companyResult.status === "rejected") {
       const error = companyResult.reason;
       setLoadError(error instanceof ApiError && error.status === 403
@@ -66,6 +75,13 @@ export default function CompanyProfilePage() {
     }
     if (historyResult.status === "fulfilled" && Array.isArray(historyResult.value)) setScoreHistory(historyResult.value);
     else setLoadError((current) => current || "Score history could not be retrieved.");
+    if (coverageResult.status === "fulfilled") setRuleCoverage(coverageResult.value);
+    else setCoverageError("Live rule coverage could not be retrieved. Applicability is not inferred from missing data.");
+    if (evaluationRunsResult.status === "fulfilled" && Array.isArray(evaluationRunsResult.value?.items)) {
+      setEvaluationRuns(evaluationRunsResult.value.items);
+    } else {
+      setEvaluationRunsError("Per-evaluation history could not be retrieved.");
+    }
     if (activityResult.status === "fulfilled" && Array.isArray(activityResult.value)) setActivity(activityResult.value);
     else setActivityError("Company activity is temporarily unavailable.");
     setLoading(false);
@@ -128,7 +144,7 @@ export default function CompanyProfilePage() {
   const yellowFlags = flags.filter((f:any) => f.severity === 'YELLOW')
   const rescueSteps = rescuePlan?.steps || []
   const releasedScoreHistory = scoreHistory.filter((entry: any) =>
-    entry.evaluation_status === 'EVALUATED'
+    (entry.evaluation_status === 'COMPLETED' || entry.evaluation_status === 'EVALUATED')
     && entry.risk_band !== 'NOT_EVALUATED'
     && typeof entry.score === 'number'
   )
@@ -280,6 +296,60 @@ export default function CompanyProfilePage() {
             </div>
           )}
 
+          {/* Live six-state rule coverage */}
+          <div className="nlc-card" style={{marginBottom:14}}>
+            <div className="sec-lbl">Live Rule Coverage</div>
+            {ruleCoverage?.report ? (
+              <>
+                <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',marginBottom:10}}>
+                  <span style={{fontSize:11,color:'var(--text3)'}}>
+                    Evaluation: {ruleCoverage.evaluation_status || 'No evaluation snapshot'}
+                  </span>
+                  <span style={{fontSize:10,fontWeight:700,color:ruleCoverage.report.validation_status === 'PASS' ? '#16845B' : '#B91C1C'}}>
+                    {ruleCoverage.report.validation_status === 'PASS' ? 'INVARIANTS PASS' : 'INVARIANT FAILURE'}
+                  </span>
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8}}>
+                  {([
+                    ['Registered', ruleCoverage.report.summary?.registered],
+                    ['Implemented', ruleCoverage.report.summary?.implemented],
+                    ['Active', ruleCoverage.report.summary?.active],
+                    ['Applicable', ruleCoverage.report.summary?.applicable],
+                    ['Evaluated', ruleCoverage.report.summary?.evaluated],
+                    ['Deferred', ruleCoverage.report.summary?.deferred],
+                  ] as Array<[string, number | null | undefined]>).map(([label,value]) => (
+                    <div key={label} style={{padding:'9px 10px',background:'var(--surface)',borderRadius:6,border:'1px solid var(--border)'}}>
+                      <div style={{fontSize:18,fontWeight:700,color:'var(--navy)'}}>{typeof value === 'number' ? value : '—'}</div>
+                      <div style={{fontSize:9,color:'var(--text3)',letterSpacing:'.04em'}}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                {ruleCoverage.report.applicability_summary && (
+                  <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid var(--border)'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:'var(--text2)',marginBottom:7}}>Applicability states</div>
+                    <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:10,color:'var(--text3)'}}>
+                      <span>Applicable: <strong>{ruleCoverage.report.applicability_summary.APPLICABLE}</strong></span>
+                      <span>Not applicable: <strong>{ruleCoverage.report.applicability_summary.NOT_APPLICABLE}</strong></span>
+                      <span>Unknown: <strong>{ruleCoverage.report.applicability_summary.UNKNOWN}</strong></span>
+                    </div>
+                  </div>
+                )}
+                {ruleCoverage.report.validation_violations?.length > 0 && (
+                  <ul style={{marginTop:10,paddingLeft:18,color:'#B91C1C',fontSize:10}}>
+                    {ruleCoverage.report.validation_violations.map((item:string,index:number) => <li key={index}>{item}</li>)}
+                  </ul>
+                )}
+                <p style={{fontSize:10,color:'var(--text3)',lineHeight:1.6,marginTop:10}}>
+                  UNKNOWN and NOT_EVALUATED are not compliance findings. Missing outcomes never establish compliance or non-compliance. Product scoring is separate from independent counsel verification.
+                </p>
+              </>
+            ) : (
+              <div role="status" style={{fontSize:11,color:'var(--text3)',padding:'10px 0',lineHeight:1.6}}>
+                {coverageError || 'Live coverage has not been collected.'} No missing applicability state is inferred.
+              </div>
+            )}
+          </div>
+
           {/* Score History */}
           {scoreHistory.length > 0 && (
             <div className="nlc-card" style={{marginBottom:14}}>
@@ -298,11 +368,72 @@ export default function CompanyProfilePage() {
                 </div>
               ) : (
                 <div style={{fontSize:12,color:'var(--text3)',padding:'12px 0',lineHeight:1.6}}>
-                  Numerical history is withheld because independent legal approval is pending. Historical snapshots remain preserved but are not presented as current authoritative scores.
+                  No released monthly score snapshots are available. Product scoring release and independent statutory verification are separate controls; missing history is not evidence of compliance.
                 </div>
               )}
             </div>
           )}
+
+          {/* Immutable per-evaluation history */}
+          <div className="nlc-card" style={{marginBottom:14}}>
+            <div className="sec-lbl">Evaluation Run History</div>
+            {evaluationRuns.length > 0 ? (
+              <div style={{display:'flex',flexDirection:'column',gap:9}}>
+                {evaluationRuns.slice(0,6).map((run:any) => (
+                  <div key={run.evaluation_run_id} style={{padding:'10px 12px',background:'var(--surface)',borderRadius:6,border:'1px solid var(--border)'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'center'}}>
+                      <strong style={{fontSize:11,color:'var(--navy)'}}>{_d(run.calculated_at)}</strong>
+                      <span style={{fontSize:9,fontWeight:700,color:run.score_available ? '#16845B' : '#6B7280'}}>
+                        {run.score_available ? run.risk_band : run.evaluation_status.replaceAll('_',' ')}
+                      </span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',gap:10,marginTop:6,fontSize:10,color:'var(--text3)'}}>
+                      <span>Engine {run.engine_version}</span>
+                      <span>{run.score_available ? `${run.score}/100` : 'Score withheld'}</span>
+                    </div>
+                    <div style={{marginTop:5,fontSize:9,color:'var(--text3)'}}>
+                      {run.rule_outcomes_count ?? '—'} rule outcomes · {run.fact_provenance_count ?? '—'} provenance records
+                    </div>
+                    <div style={{marginTop:5,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>
+                      Applicability: {Object.entries(run.applicability_state_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'UNKNOWN — not collected'}
+                    </div>
+                    <div style={{marginTop:3,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>
+                      Outcomes: {Object.entries(run.outcome_state_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'not collected'}
+                    </div>
+                    <div style={{marginTop:3,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>
+                      Legal verification: {Object.entries(run.verification_status_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'not collected'}
+                    </div>
+                    <div style={{marginTop:5,fontSize:9,color:run.outcome_rule_id_parity ? '#16845B' : '#B45309',lineHeight:1.5}}>
+                      Canonical ID reconciliation: {run.canonical_rule_count ?? '—'} canonical · {run.outcome_rule_ids_count ?? '—'} outcome IDs · {run.outcome_rule_id_parity ? 'EXACT MATCH' : (run.missing_canonical_rule_ids?.length ?? 0) === 0 ? 'LEGACY EXTRA IDS PRESERVED' : 'REVIEW REQUIRED'}
+                    </div>
+                    {(run.missing_canonical_rule_ids?.length ?? 0) > 0 && (
+                      <div style={{marginTop:3,fontSize:9,color:'#B91C1C',lineHeight:1.5}}>
+                        Missing canonical outcomes ({run.missing_canonical_rule_ids.length}): {run.missing_canonical_rule_ids.slice(0,5).join(', ')}{run.missing_canonical_rule_ids.length > 5 ? '…' : ''}
+                      </div>
+                    )}
+                    {(run.unmapped_outcome_rule_ids?.length ?? 0) > 0 && (
+                      <div style={{marginTop:3,fontSize:9,color:'#B45309',lineHeight:1.5}}>
+                        Unmapped historical IDs preserved outside the current registry: {run.unmapped_outcome_rule_ids.join(', ')}
+                      </div>
+                    )}
+                    {!run.score_available && run.score_withheld_reason && (
+                      <div style={{marginTop:5,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>{run.score_withheld_reason}</div>
+                    )}
+                    <div style={{marginTop:5,fontSize:8,color:'var(--text3)',fontFamily:'monospace'}}>
+                      Run {String(run.evaluation_run_id).slice(0,8)} · hash {String(run.score_hash).slice(0,12)}…
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div role="status" style={{fontSize:11,color:'var(--text3)',padding:'10px 0'}}>
+                {evaluationRunsError || 'No per-evaluation records are available.'}
+              </div>
+            )}
+            <p style={{fontSize:10,color:'var(--text3)',lineHeight:1.6,marginTop:10}}>
+              Per-run evaluations are immutable records. Monthly score snapshots are a separate append-only trend. A later evaluation does not rewrite an earlier NOT_RELEASED monthly snapshot. Legacy runs without an explicit applicability field are shown as UNKNOWN. This history is product decision support, not independent counsel approval.
+            </p>
+          </div>
 
           {/* Disclaimer */}
           {compliance?.disclaimer && (
