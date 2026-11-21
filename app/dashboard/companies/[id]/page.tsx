@@ -394,6 +394,15 @@ export default function CompanyProfilePage() {
                     <div style={{marginTop:5,fontSize:9,color:'var(--text3)'}}>
                       {run.rule_outcomes_count ?? '—'} rule outcomes · {run.fact_provenance_count ?? '—'} provenance records
                     </div>
+                    <div style={{marginTop:5,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>
+                      Applicability: {Object.entries(run.applicability_state_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'UNKNOWN — not collected'}
+                    </div>
+                    <div style={{marginTop:3,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>
+                      Outcomes: {Object.entries(run.outcome_state_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'not collected'}
+                    </div>
+                    <div style={{marginTop:3,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>
+                      Legal verification: {Object.entries(run.verification_status_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'not collected'}
+                    </div>
                     {!run.score_available && run.score_withheld_reason && (
                       <div style={{marginTop:5,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>{run.score_withheld_reason}</div>
                     )}
@@ -409,7 +418,7 @@ export default function CompanyProfilePage() {
               </div>
             )}
             <p style={{fontSize:10,color:'var(--text3)',lineHeight:1.6,marginTop:10}}>
-              Per-run evaluations are immutable records. Monthly score snapshots are a separate append-only trend. A later evaluation does not rewrite an earlier NOT_RELEASED monthly snapshot. This history is product decision support, not independent counsel approval.
+              Per-run evaluations are immutable records. Monthly score snapshots are a separate append-only trend. A later evaluation does not rewrite an earlier NOT_RELEASED monthly snapshot. Legacy runs without an explicit applicability field are shown as UNKNOWN. This history is product decision support, not independent counsel approval.
             </p>
           </div>
 
