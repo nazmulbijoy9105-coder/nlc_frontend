@@ -404,7 +404,7 @@ export default function CompanyProfilePage() {
                       Legal verification: {Object.entries(run.verification_status_counts || {}).map(([state,count]) => `${state} ${count}`).join(' · ') || 'not collected'}
                     </div>
                     <div style={{marginTop:5,fontSize:9,color:run.outcome_rule_id_parity ? '#16845B' : '#B45309',lineHeight:1.5}}>
-                      Canonical ID reconciliation: {run.canonical_rule_count ?? '—'} canonical · {run.outcome_rule_ids_count ?? '—'} outcome IDs · {run.outcome_rule_id_parity ? 'EXACT MATCH' : 'REVIEW REQUIRED'}
+                      Canonical ID reconciliation: {run.canonical_rule_count ?? '—'} canonical · {run.outcome_rule_ids_count ?? '—'} outcome IDs · {run.outcome_rule_id_parity ? 'EXACT MATCH' : (run.missing_canonical_rule_ids?.length ?? 0) === 0 ? 'LEGACY EXTRA IDS PRESERVED' : 'REVIEW REQUIRED'}
                     </div>
                     {(run.missing_canonical_rule_ids?.length ?? 0) > 0 && (
                       <div style={{marginTop:3,fontSize:9,color:'#B91C1C',lineHeight:1.5}}>
