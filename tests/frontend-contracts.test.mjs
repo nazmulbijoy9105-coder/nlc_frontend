@@ -223,6 +223,7 @@ test("per-run evaluation history is displayed separately from monthly score snap
   assert.match(page, /Canonical ID reconciliation/);
   assert.match(page, /LEGACY EXTRA IDS PRESERVED/);
   assert.match(page, /unmapped_outcome_rule_ids/);
+  assert.match(page, /duplicate_outcome_rule_ids/);
   assert.match(page, /missing_canonical_rule_ids/);
   assert.match(page, /evidence_reference_count/);
   assert.match(page, /unattributed_profile_record_count/);
