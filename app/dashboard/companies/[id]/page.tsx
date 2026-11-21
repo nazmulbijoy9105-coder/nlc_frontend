@@ -19,6 +19,8 @@ export default function CompanyProfilePage() {
   const [scoreHistory, setScoreHistory] = useState<any[]>([])
   const [ruleCoverage, setRuleCoverage] = useState<any>(null)
   const [coverageError, setCoverageError] = useState<string | null>(null)
+  const [evaluationRuns, setEvaluationRuns] = useState<any[]>([])
+  const [evaluationRunsError, setEvaluationRunsError] = useState<string | null>(null)
   const [activity, setActivity] = useState<any[]>([])
   const [activityError, setActivityError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -37,15 +39,17 @@ export default function CompanyProfilePage() {
     setScoreHistory([]);
     setRuleCoverage(null);
     setCoverageError(null);
+    setEvaluationRuns([]);
+    setEvaluationRunsError(null);
     setActivity([]);
     setActivityError(null);
     const results = await Promise.allSettled([
       companiesApi.get(id), companiesApi.violations(id), companiesApi.modules(id),
       rescueApi.getActive(id), companiesApi.scoreHistory(id), companiesApi.activity(id),
-      companiesApi.ruleCoverage(id),
+      companiesApi.ruleCoverage(id), companiesApi.evaluationRuns(id),
     ]);
     if (requestId !== loadRequest.current) return;
-    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult, coverageResult] = results;
+    const [companyResult, flagsResult, complianceResult, rescueResult, historyResult, activityResult, coverageResult, evaluationRunsResult] = results;
     if (companyResult.status === "rejected") {
       const error = companyResult.reason;
       setLoadError(error instanceof ApiError && error.status === 403
@@ -73,6 +77,11 @@ export default function CompanyProfilePage() {
     else setLoadError((current) => current || "Score history could not be retrieved.");
     if (coverageResult.status === "fulfilled") setRuleCoverage(coverageResult.value);
     else setCoverageError("Live rule coverage could not be retrieved. Applicability is not inferred from missing data.");
+    if (evaluationRunsResult.status === "fulfilled" && Array.isArray(evaluationRunsResult.value?.items)) {
+      setEvaluationRuns(evaluationRunsResult.value.items);
+    } else {
+      setEvaluationRunsError("Per-evaluation history could not be retrieved.");
+    }
     if (activityResult.status === "fulfilled" && Array.isArray(activityResult.value)) setActivity(activityResult.value);
     else setActivityError("Company activity is temporarily unavailable.");
     setLoading(false);
@@ -364,6 +373,45 @@ export default function CompanyProfilePage() {
               )}
             </div>
           )}
+
+          {/* Immutable per-evaluation history */}
+          <div className="nlc-card" style={{marginBottom:14}}>
+            <div className="sec-lbl">Evaluation Run History</div>
+            {evaluationRuns.length > 0 ? (
+              <div style={{display:'flex',flexDirection:'column',gap:9}}>
+                {evaluationRuns.slice(0,6).map((run:any) => (
+                  <div key={run.evaluation_run_id} style={{padding:'10px 12px',background:'var(--surface)',borderRadius:6,border:'1px solid var(--border)'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'center'}}>
+                      <strong style={{fontSize:11,color:'var(--navy)'}}>{_d(run.calculated_at)}</strong>
+                      <span style={{fontSize:9,fontWeight:700,color:run.score_available ? '#16845B' : '#6B7280'}}>
+                        {run.score_available ? run.risk_band : run.evaluation_status.replaceAll('_',' ')}
+                      </span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',gap:10,marginTop:6,fontSize:10,color:'var(--text3)'}}>
+                      <span>Engine {run.engine_version}</span>
+                      <span>{run.score_available ? `${run.score}/100` : 'Score withheld'}</span>
+                    </div>
+                    <div style={{marginTop:5,fontSize:9,color:'var(--text3)'}}>
+                      {run.rule_outcomes_count ?? '—'} rule outcomes · {run.fact_provenance_count ?? '—'} provenance records
+                    </div>
+                    {!run.score_available && run.score_withheld_reason && (
+                      <div style={{marginTop:5,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>{run.score_withheld_reason}</div>
+                    )}
+                    <div style={{marginTop:5,fontSize:8,color:'var(--text3)',fontFamily:'monospace'}}>
+                      Run {String(run.evaluation_run_id).slice(0,8)} · hash {String(run.score_hash).slice(0,12)}…
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div role="status" style={{fontSize:11,color:'var(--text3)',padding:'10px 0'}}>
+                {evaluationRunsError || 'No per-evaluation records are available.'}
+              </div>
+            )}
+            <p style={{fontSize:10,color:'var(--text3)',lineHeight:1.6,marginTop:10}}>
+              Per-run evaluations are immutable records. Monthly score snapshots are a separate append-only trend. A later evaluation does not rewrite an earlier NOT_RELEASED monthly snapshot. This history is product decision support, not independent counsel approval.
+            </p>
+          </div>
 
           {/* Disclaimer */}
           {compliance?.disclaimer && (
