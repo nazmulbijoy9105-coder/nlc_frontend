@@ -88,6 +88,9 @@ export const companiesApi = {
       engine_version: string;
       rule_catalogue_count: number | null;
       rule_outcomes_count: number | null;
+      applicability_state_counts: Record<string, number>;
+      outcome_state_counts: Record<string, number>;
+      verification_status_counts: Record<string, number>;
       rule_outcomes_hash: string | null;
       fact_provenance_count: number | null;
       score_hash: string;
