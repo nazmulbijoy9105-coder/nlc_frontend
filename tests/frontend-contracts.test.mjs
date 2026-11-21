@@ -218,6 +218,9 @@ test("per-run evaluation history is displayed separately from monthly score snap
   assert.match(page, /Evaluation Run History/);
   assert.match(page, /rule_outcomes_count/);
   assert.match(page, /fact_provenance_count/);
+  assert.match(api, /applicability_state_counts/);
+  assert.match(page, /applicability_state_counts/);
+  assert.match(page, /Legacy runs without an explicit applicability field are shown as UNKNOWN/);
   assert.match(page, /Monthly score snapshots are a separate append-only trend/);
   assert.match(page, /This history is product decision support, not independent counsel approval/);
 });
