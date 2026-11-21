@@ -416,6 +416,14 @@ export default function CompanyProfilePage() {
                         Unmapped historical IDs preserved outside the current registry: {run.unmapped_outcome_rule_ids.join(', ')}
                       </div>
                     )}
+                    <div style={{marginTop:5,fontSize:9,color:(run.evidence_reference_count ?? 0) > 0 && (run.unattributed_profile_record_count ?? 0) === 0 ? 'var(--text3)' : '#B45309',lineHeight:1.5}}>
+                      Evidence provenance: {run.evidence_reference_count ?? 0} evidence references · {run.unattributed_profile_record_count ?? 0} unattributed profile records
+                    </div>
+                    {!run.evidence_reference_present && (
+                      <div style={{marginTop:3,fontSize:9,color:'#B45309',lineHeight:1.5}}>
+                        No evidence references are bound to this run snapshot. Treat legacy profile facts as unverified; do not infer compliance or a breach.
+                      </div>
+                    )}
                     {!run.score_available && run.score_withheld_reason && (
                       <div style={{marginTop:5,fontSize:9,color:'var(--text3)',lineHeight:1.5}}>{run.score_withheld_reason}</div>
                     )}
