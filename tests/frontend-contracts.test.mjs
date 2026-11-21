@@ -224,6 +224,9 @@ test("per-run evaluation history is displayed separately from monthly score snap
   assert.match(page, /LEGACY EXTRA IDS PRESERVED/);
   assert.match(page, /unmapped_outcome_rule_ids/);
   assert.match(page, /missing_canonical_rule_ids/);
+  assert.match(page, /evidence_reference_count/);
+  assert.match(page, /unattributed_profile_record_count/);
+  assert.match(page, /No evidence references are bound to this run snapshot/);
   assert.match(page, /Legacy runs without an explicit applicability field are shown as UNKNOWN/);
   assert.match(page, /Monthly score snapshots are a separate append-only trend/);
   assert.match(page, /This history is product decision support, not independent counsel approval/);
