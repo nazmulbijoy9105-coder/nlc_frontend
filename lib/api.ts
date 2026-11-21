@@ -74,7 +74,31 @@ export const companiesApi = {
   modules: (id: string) => api.get<any>("/api/v1/companies/" + id + "/compliance"),
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
-  scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + id + "/score-history"),
+  scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + encodeURIComponent(id) + "/score-history"),
+  ruleCoverage: (id: string) => api.get<{
+    company_id: string;
+    evaluation_run_id: string | null;
+    evaluation_status: string | null;
+    evaluation_calculated_at: string | null;
+    report: {
+      summary: {
+        registered: number;
+        implemented: number;
+        active: number | null;
+        applicable: number | null;
+        evaluated: number | null;
+        deferred: number;
+      };
+      validation_status: "PASS" | "FAILED";
+      validation_violations: string[];
+      applicability_summary: {
+        APPLICABLE: number;
+        NOT_APPLICABLE: number;
+        UNKNOWN: number;
+      } | null;
+      applicability_semantics: string;
+    };
+  }>("/api/v1/companies/" + encodeURIComponent(id) + "/rule-coverage"),
   activity: (id: string) => api.get<Array<{ event_id: string; event_type: string; title: string; occurred_at: string; status: "pending" | "dispatched" | "attention_required" }>>("/api/v1/companies/" + encodeURIComponent(id) + "/activity"),
   update: (id: string, data: CompanyUpdateRequest) => api.patch<CompanyApiResponse>("/api/v1/companies/" + encodeURIComponent(id), data),
   delete: (id: string) => api.delete<any>("/api/v1/companies/" + id),
