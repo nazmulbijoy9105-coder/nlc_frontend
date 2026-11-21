@@ -87,6 +87,7 @@ export const companiesApi = {
       score_withheld_reason: string | null;
       engine_version: string;
       rule_catalogue_count: number | null;
+      catalogue_count_matches_canonical: boolean;
       rule_outcomes_count: number | null;
       canonical_rule_count: number;
       outcome_rule_ids_count: number;
