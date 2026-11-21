@@ -198,6 +198,24 @@ test("dashboard does not withhold released risk metrics because some companies r
   assert.doesNotMatch(page, /setScoreReleasePending\(!scopeMatches \|\| Number\(value\.not_evaluated_count/);
 });
 
+test("company profile renders the authenticated six-state rule coverage contract", () => {
+  const page = read("app/dashboard/companies/[id]/page.tsx");
+  const api = read("lib/api.ts");
+  assert.match(api, /ruleCoverage: \(id: string\).*rule-coverage/s);
+  assert.match(page, /companiesApi\.ruleCoverage\(id\)/);
+  assert.match(page, /summary\?\.registered/);
+  assert.match(page, /summary\?\.implemented/);
+  assert.match(page, /applicability_summary/);
+  assert.match(page, /UNKNOWN and NOT_EVALUATED are not compliance findings/);
+  assert.match(page, /No missing applicability state is inferred/);
+});
+
+test("score history recognises backend COMPLETED snapshots without conflating counsel verification", () => {
+  const page = read("app/dashboard/companies/[id]/page.tsx");
+  assert.match(page, /entry\.evaluation_status === 'COMPLETED' \|\| entry\.evaluation_status === 'EVALUATED'/);
+  assert.match(page, /Product scoring release and independent statutory verification are separate controls/);
+});
+
 test("rule manager does not equate product-owner attestation with independent legal verification", () => {
   const page = read("app/dashboard/rules/page.tsx");
   assert.match(page, /Product-owner attestation authorizes product release but does not constitute independent legal verification/);
