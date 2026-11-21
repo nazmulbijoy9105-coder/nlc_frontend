@@ -75,6 +75,24 @@ export const companiesApi = {
   violations: (id: string) => api.get<any>("/api/v1/companies/" + id + "/flags"),
   evaluate: (id: string) => api.post<any>("/api/v1/companies/" + id + "/evaluate"),
   scoreHistory: (id: string) => api.get<any>("/api/v1/companies/" + encodeURIComponent(id) + "/score-history"),
+  evaluationRuns: (id: string) => api.get<{
+    company_id: string;
+    items: Array<{
+      evaluation_run_id: string;
+      calculated_at: string;
+      evaluation_status: string;
+      score_available: boolean;
+      score: number | null;
+      risk_band: string;
+      score_withheld_reason: string | null;
+      engine_version: string;
+      rule_catalogue_count: number | null;
+      rule_outcomes_count: number | null;
+      rule_outcomes_hash: string | null;
+      fact_provenance_count: number | null;
+      score_hash: string;
+    }>;
+  }>("/api/v1/companies/" + encodeURIComponent(id) + "/evaluation-runs"),
   ruleCoverage: (id: string) => api.get<{
     company_id: string;
     evaluation_run_id: string | null;
