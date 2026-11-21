@@ -98,6 +98,10 @@ export const companiesApi = {
       verification_status_counts: Record<string, number>;
       rule_outcomes_hash: string | null;
       fact_provenance_count: number | null;
+      fact_provenance_record_type_counts: Record<string, number>;
+      unattributed_profile_record_count: number;
+      evidence_reference_count: number;
+      evidence_reference_present: boolean;
       score_hash: string;
     }>;
   }>("/api/v1/companies/" + encodeURIComponent(id) + "/evaluation-runs"),
