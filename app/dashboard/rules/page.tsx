@@ -75,7 +75,7 @@ export default function RulesPage() {
         ))}
       </div>
       <div role="note" style={{padding:"12px 14px",marginBottom:16,border:"1px solid #FDE68A",borderLeft:"3px solid #D97706",borderRadius:8,background:"#FFFBEB",color:"#78350F",fontSize:12,lineHeight:1.55}}>
-        <strong>ILRMF release status:</strong> {activeCount}/85 catalogue entries active; {scoringCount}/82 score-bearing rules enabled. The three informational entries are excluded from deductions. Runtime deductions require a confirmed, applicable violation; UNKNOWN facts do not reduce scores. Product-owner attestation authorizes product release but does not constitute independent legal verification. {pendingCount} rule(s) remain pending independent legal/source review.
+        <strong>ILRMF release status:</strong> {activeCount}/85 catalogue entries active; {scoringCount}/85 rules enabled for product assessment and scoring. Runtime deductions require a confirmed, applicable violation; UNKNOWN facts do not reduce scores. Product-owner attestation authorizes product release but does not constitute independent legal verification. {pendingCount} rule(s) remain pending independent legal/source review.
       </div>
       <div className="nlc-card">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>

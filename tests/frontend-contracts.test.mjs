@@ -188,7 +188,7 @@ test("rule manager displays the active 85-rule catalogue separately from scoring
   const page = read("app/dashboard/rules/page.tsx");
   assert.match(page, /rule\.is_active/);
   assert.match(page, /rule\.product_scoring_enabled/);
-  assert.match(page, /82 score-bearing rules enabled/);
+  assert.match(page, /85 rules enabled for product assessment and scoring/);
   assert.match(page, /UNKNOWN facts do not reduce scores/);
 });
 
