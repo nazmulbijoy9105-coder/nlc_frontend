@@ -155,6 +155,10 @@ export default function FinancePage() {
 
   useEffect(() => { companyIdRef.current = companyId }, [companyId])
 
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
+
+  useEffect(() => { companyIdRef.current = companyId }, [companyId])
+
   useEffect(() => {
     let active = true
     void Promise.resolve().then(async () => {
