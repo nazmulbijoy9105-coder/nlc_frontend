@@ -156,7 +156,7 @@ export default function PortfolioCompliancePage() {
 
       <section style={{background:"#10243d",border:"1px solid #29415f",borderRadius:12,padding:20,marginBottom:20}}>
         <h2 style={{fontSize:17,fontWeight:650,marginBottom:8}}>Inactive platform records ({inactive.length})</h2>
-        <p style={{fontSize:12,color:"#aab7c8",marginBottom:12}}>Only the platform is_active flag is changed. company_status, dormant status, statutory facts, evidence and historical runs are preserved.</p>
+        <p style={{fontSize:12,color:"#aab7c8",marginBottom:12}}>Statutory status and evidence are to remain unchanged. Only the platform is_active flag is changed; company_status, dormant status, statutory facts and historical runs are preserved.</p>
         {inactive.length === 0 ? <p style={{color:"#aab7c8"}}>No inactive records found.</p> : inactive.map((row) => (
           <label key={row.company_id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderTop:"1px solid #29415f",fontSize:13}}>
             <input type="checkbox" checked={selected.includes(row.company_id)} onChange={() => toggle(row.company_id)} />
