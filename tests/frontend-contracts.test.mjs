@@ -426,3 +426,17 @@ test("company-scoped document and filing calls retain explicit tenant identifier
   assert.match(api, /audits: \(companyId: string\) => api\.get<AuditRecord\[]>\("\/api\/v1\/filings\/audit\/" \+ encodeURIComponent\(companyId\)\)/);
   assert.match(api, /annualReturns: \(companyId: string\) => api\.get<AnnualReturnRecord\[]>\("\/api\/v1\/filings\/annual-return\/" \+ encodeURIComponent\(companyId\)\)/);
 });
+
+
+test("portfolio reactivation is opt-in, reasoned and explicitly confirmed", () => {
+  const page = read("app/dashboard/admin/portfolio-compliance/page.tsx");
+  assert.match(page, /useState<string\[\]>\(\[\]\)/);
+  assert.match(page, /useState\(""\)/);
+  assert.match(page, /reason\.trim\(\)\.length < 10/);
+  assert.match(page, /window\.confirm\(/);
+  assert.match(page, /if \(!confirmed\)/);
+  assert.match(page, /platform access only/);
+  assert.doesNotMatch(page, /setSelected\(rows\.map/);
+  assert.match(page, /let cancelled = false/);
+  assert.match(page, /return \(\) => \{\s*cancelled = true;/);
+});
