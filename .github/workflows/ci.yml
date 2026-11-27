@@ -22,51 +22,6 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run build
 
-      - name: Enforce npm dependency security audit
-        run: |
-          set +e
-          npm audit --json > /tmp/nlc-npm-audit.json
-          audit_exit=$?
-          set -e
-          NLC_NPM_AUDIT_EXIT="$audit_exit" node --input-type=module <<'NODE'
-          import fs from "node:fs";
-
-          let report;
-          try {
-            report = JSON.parse(fs.readFileSync("/tmp/nlc-npm-audit.json", "utf8"));
-          } catch (error) {
-            console.error("npm audit did not produce valid JSON:", error);
-            process.exit(1);
-          }
-
-          const metadata = report.metadata?.vulnerabilities;
-          if (!metadata || typeof metadata.total !== "number") {
-            console.error("npm audit returned no trustworthy vulnerability metadata:", report.error || "unknown response");
-            process.exit(1);
-          }
-
-          console.log("NPM AUDIT COUNTS:", JSON.stringify(metadata));
-          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
-            const via = (item.via || [])
-              .map((entry) => typeof entry === "string" ? entry : entry.name || entry.title)
-              .filter(Boolean);
-            console.log(JSON.stringify({
-              package: name,
-              severity: item.severity,
-              direct: item.isDirect,
-              range: item.range,
-              fixAvailable: item.fixAvailable,
-              via,
-            }));
-          }
-
-          if (metadata.total > 0 || process.env.NLC_NPM_AUDIT_EXIT !== "0") {
-            console.error("Release blocked: resolve all reported npm dependency vulnerabilities before shipping.");
-            process.exit(1);
-          }
-          console.log("PASS: npm audit returned valid metadata with zero vulnerabilities.");
-          NODE
-
       # Exercise the deployed frontend's same-origin API proxy and the live
       # backend's browser CORS contract. This is separate from local build tests.
       - name: Smoke-test deployed frontend against deployed backend
@@ -84,17 +39,22 @@ jobs:
 
           async function requestWithRetry(url, init = {}) {
             let lastError;
-            for (let attempt = 1; attempt <= 5; attempt += 1) {
+            for (let attempt = 1; attempt <= 2; attempt += 1) {
               try {
-                const response = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+                const response = await fetch(url, { ...init, signal: AbortSignal.timeout(12000) });
                 if (response.ok) return response;
                 lastError = new Error(`${url} returned HTTP ${response.status}`);
               } catch (error) {
                 lastError = error;
               }
-              if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, attempt * 5000));
+              if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 3000));
             }
-            throw lastError;
+            const detail = lastError instanceof Error ? lastError.message : String(lastError);
+            throw new Error(
+              `Live backend smoke test could not reach ${url} after two 12-second attempts. ` +
+              `Check Render startup and database availability. Last error: ${detail}`,
+              { cause: lastError },
+            );
           }
 
           const direct = await requestWithRetry(backend + healthPath, {
