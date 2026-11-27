@@ -440,3 +440,13 @@ test("portfolio reactivation is opt-in, reasoned and explicitly confirmed", () =
   assert.match(page, /let cancelled = false/);
   assert.match(page, /return \(\) => \{\s*cancelled = true;/);
 });
+
+
+test("legal-basis provenance effect avoids synchronous state updates", () => {
+  const page = read("app/dashboard/legal-basis/page.tsx");
+  const effect = page.match(/useEffect\(\(\) => \{\s*if \(!selectedRuleId\) return;([\s\S]*?)\}, \[selectedRuleId\]\);/);
+  assert.ok(effect, "selected-rule provenance effect must exist");
+  assert.match(effect[1], /rulesApi\.provenance\(selectedRuleId\)/);
+  assert.doesNotMatch(effect[1], /^\s*set(?:LoadingSource|SourceError|Provenance)\(/m);
+  assert.match(page, /const handleSelectRule = \(ruleId: string\) =>/);
+});
