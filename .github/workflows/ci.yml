@@ -16,18 +16,29 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Report npm audit findings without hiding build/test results
+      - name: Enforce npm dependency security audit
         run: |
-          npm audit --json > /tmp/nlc-npm-audit.json || true
-          node --input-type=module <<'NODE'
+          set +e
+          npm audit --json > /tmp/nlc-npm-audit.json
+          audit_exit=$?
+          set -e
+          NLC_NPM_AUDIT_EXIT="$audit_exit" node --input-type=module <<'NODE'
           import fs from "node:fs";
 
-          const report = JSON.parse(fs.readFileSync("/tmp/nlc-npm-audit.json", "utf8"));
-          const metadata = report.metadata?.vulnerabilities;
-          if (!metadata) {
-            console.log("npm audit did not return vulnerability metadata:", report.error || "unknown response");
-            process.exit(0);
+          let report;
+          try {
+            report = JSON.parse(fs.readFileSync("/tmp/nlc-npm-audit.json", "utf8"));
+          } catch (error) {
+            console.error("npm audit did not produce valid JSON:", error);
+            process.exit(1);
           }
+
+          const metadata = report.metadata?.vulnerabilities;
+          if (!metadata || typeof metadata.total !== "number") {
+            console.error("npm audit returned no trustworthy vulnerability metadata:", report.error || "unknown response");
+            process.exit(1);
+          }
+
           console.log("NPM AUDIT COUNTS:", JSON.stringify(metadata));
           for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
             const via = (item.via || [])
@@ -42,6 +53,12 @@ jobs:
               via,
             }));
           }
+
+          if (metadata.total > 0 || process.env.NLC_NPM_AUDIT_EXIT !== "0") {
+            console.error("Release blocked: resolve all reported npm dependency vulnerabilities before shipping.");
+            process.exit(1);
+          }
+          console.log("PASS: npm audit returned valid metadata with zero vulnerabilities.");
           NODE
       - run: npm run test:contracts
       - run: npm run lint
