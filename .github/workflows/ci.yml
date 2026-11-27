@@ -17,6 +17,11 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - run: npm run test:contracts
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm run build
+
       - name: Enforce npm dependency security audit
         run: |
           set +e
@@ -61,10 +66,6 @@ jobs:
           }
           console.log("PASS: npm audit returned valid metadata with zero vulnerabilities.");
           NODE
-      - run: npm run test:contracts
-      - run: npm run lint
-      - run: npx tsc --noEmit
-      - run: npm run build
 
       # Exercise the deployed frontend's same-origin API proxy and the live
       # backend's browser CORS contract. This is separate from local build tests.
