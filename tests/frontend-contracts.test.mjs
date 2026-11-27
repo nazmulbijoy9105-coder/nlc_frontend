@@ -460,3 +460,10 @@ test("frontend release workflow fails closed on npm audit errors, missing metada
   assert.doesNotMatch(workflow, /npm audit --json[^\n]*\|\| true/);
   assert.doesNotMatch(workflow, /did not return trustworthy vulnerability metadata:[\s\S]{0,160}process\.exit\(0\)/);
 });
+
+
+test("frontend does not expose unavailable Articles verification or document-upload API routes", () => {
+  const api = read("lib/api.ts");
+  assert.doesNotMatch(api, /export const articlesApi/);
+  assert.doesNotMatch(api, /articles-verification|articles-document/);
+});
