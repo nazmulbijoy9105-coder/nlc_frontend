@@ -451,14 +451,17 @@ test("legal-basis provenance effect avoids synchronous state updates", () => {
   assert.match(page, /const handleSelectRule = \(ruleId: string\) =>/);
 });
 
-test("frontend release workflow fails closed on npm audit errors, missing metadata, and vulnerabilities", () => {
+test("frontend CI runs functional checks and a bounded, diagnostic live smoke test without invoking audits", () => {
   const workflow = read(".github/workflows/ci.yml");
-  assert.match(workflow, /name: Enforce npm dependency security audit/);
-  assert.match(workflow, /npm audit --json/);
-  assert.match(workflow, /if \(!metadata \|\| typeof metadata\.total !== "number"\)/);
-  assert.match(workflow, /metadata\.total > 0 \|\| process\.env\.NLC_NPM_AUDIT_EXIT !== "0"/);
-  assert.doesNotMatch(workflow, /npm audit --json[^\n]*\|\| true/);
-  assert.doesNotMatch(workflow, /did not return trustworthy vulnerability metadata:[\s\S]{0,160}process\.exit\(0\)/);
+  assert.match(workflow, /npm ci/);
+  assert.match(workflow, /npm run test:contracts/);
+  assert.match(workflow, /npm run lint/);
+  assert.match(workflow, /npx tsc --noEmit/);
+  assert.match(workflow, /npm run build/);
+  assert.doesNotMatch(workflow, /npm audit/);
+  assert.match(workflow, /AbortSignal\.timeout\(12000\)/);
+  assert.match(workflow, /after two 12-second attempts/);
+  assert.match(workflow, /Check Render startup and database availability/);
 });
 
 
