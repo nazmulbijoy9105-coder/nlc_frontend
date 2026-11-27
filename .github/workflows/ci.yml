@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,33 +17,6 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
-      - name: Report npm audit findings without hiding build/test results
-        run: |
-          npm audit --json > /tmp/nlc-npm-audit.json || true
-          node --input-type=module <<'NODE'
-          import fs from "node:fs";
-
-          const report = JSON.parse(fs.readFileSync("/tmp/nlc-npm-audit.json", "utf8"));
-          const metadata = report.metadata?.vulnerabilities;
-          if (!metadata) {
-            console.log("npm audit did not return vulnerability metadata:", report.error || "unknown response");
-            process.exit(0);
-          }
-          console.log("NPM AUDIT COUNTS:", JSON.stringify(metadata));
-          for (const [name, item] of Object.entries(report.vulnerabilities || {})) {
-            const via = (item.via || [])
-              .map((entry) => typeof entry === "string" ? entry : entry.name || entry.title)
-              .filter(Boolean);
-            console.log(JSON.stringify({
-              package: name,
-              severity: item.severity,
-              direct: item.isDirect,
-              range: item.range,
-              fixAvailable: item.fixAvailable,
-              via,
-            }));
-          }
-          NODE
       - run: npm run test:contracts
       - run: npm run lint
       - run: npx tsc --noEmit
@@ -65,17 +39,22 @@ jobs:
 
           async function requestWithRetry(url, init = {}) {
             let lastError;
-            for (let attempt = 1; attempt <= 5; attempt += 1) {
+            for (let attempt = 1; attempt <= 2; attempt += 1) {
               try {
-                const response = await fetch(url, { ...init, signal: AbortSignal.timeout(20000) });
+                const response = await fetch(url, { ...init, signal: AbortSignal.timeout(12000) });
                 if (response.ok) return response;
                 lastError = new Error(`${url} returned HTTP ${response.status}`);
               } catch (error) {
                 lastError = error;
               }
-              if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, attempt * 5000));
+              if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 3000));
             }
-            throw lastError;
+            const detail = lastError instanceof Error ? lastError.message : String(lastError);
+            throw new Error(
+              `Live backend smoke test could not reach ${url} after two 12-second attempts. ` +
+              `Check Render startup and database availability. Last error: ${detail}`,
+              { cause: lastError },
+            );
           }
 
           const direct = await requestWithRetry(backend + healthPath, {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { companiesApi, portfolioComplianceApi } from "@/lib/api";
 import { useCurrentUserRole } from "@/lib/use-current-user-role";
 
@@ -32,7 +32,7 @@ export default function PortfolioCompliancePage() {
   const { role, loaded } = useCurrentUserRole();
   const [inactive, setInactive] = useState<InactiveCompany[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [reason, setReason] = useState("Restore platform access for the six previously deactivated company records. Statutory status and evidence are to remain unchanged.");
+  const [reason, setReason] = useState("");
   const [outcomes, setOutcomes] = useState<Outcome[]>([]);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<"idle" | "reactivating" | "evaluating" | "complete">("idle");
@@ -41,17 +41,28 @@ export default function PortfolioCompliancePage() {
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
-  const refreshInactive = useCallback(async () => {
+  useEffect(() => {
+    if (!loaded || role !== "SUPER_ADMIN") return;
+
+    let cancelled = false;
+    portfolioComplianceApi.inactiveCompanies()
+      .then((rows) => {
+        if (!cancelled) setInactive(rows);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load inactive companies.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loaded, role]);
+
+  const refreshInactive = async () => {
     const rows = await portfolioComplianceApi.inactiveCompanies();
     setInactive(rows);
-    setSelected(rows.map((row) => row.company_id));
-  }, []);
-
-  useEffect(() => {
-    if (loaded && role === "SUPER_ADMIN") {
-      void refreshInactive().catch((e) => setError(e instanceof Error ? e.message : "Could not load inactive companies."));
-    }
-  }, [loaded, role, refreshInactive]);
+    setSelected((current) => current.filter((id) => rows.some((row) => row.company_id === id)));
+  };
 
   const toggle = (id: string) => setSelected((current) =>
     current.includes(id) ? current.filter((value) => value !== id) : [...current, id]
@@ -67,6 +78,13 @@ export default function PortfolioCompliancePage() {
     try {
       if (selected.length) {
         if (reason.trim().length < 10) throw new Error("Enter an audit reason of at least 10 characters.");
+        const confirmed = window.confirm(
+          `Reactivate ${selected.length} selected platform record(s)? This changes platform access only; it must not change statutory status, dormant status, evidence or historical evaluations.`,
+        );
+        if (!confirmed) {
+          setStage("idle");
+          return;
+        }
         setStage("reactivating");
         await portfolioComplianceApi.reactivate(selected, reason.trim());
         await refreshInactive();
@@ -138,7 +156,7 @@ export default function PortfolioCompliancePage() {
 
       <section style={{background:"#10243d",border:"1px solid #29415f",borderRadius:12,padding:20,marginBottom:20}}>
         <h2 style={{fontSize:17,fontWeight:650,marginBottom:8}}>Inactive platform records ({inactive.length})</h2>
-        <p style={{fontSize:12,color:"#aab7c8",marginBottom:12}}>Only the platform is_active flag is changed. company_status, dormant status, statutory facts, evidence and historical runs are preserved.</p>
+        <p style={{fontSize:12,color:"#aab7c8",marginBottom:12}}>Statutory status and evidence are to remain unchanged. Only the platform is_active flag is changed; company_status, dormant status, statutory facts and historical runs are preserved.</p>
         {inactive.length === 0 ? <p style={{color:"#aab7c8"}}>No inactive records found.</p> : inactive.map((row) => (
           <label key={row.company_id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderTop:"1px solid #29415f",fontSize:13}}>
             <input type="checkbox" checked={selected.includes(row.company_id)} onChange={() => toggle(row.company_id)} />

@@ -52,6 +52,9 @@ export default function LegalBasisPage() {
         if (!Array.isArray(rows)) throw new Error("The rule catalogue returned an unexpected response.");
         setRules(rows);
         setSelectedRuleId(rows[0]?.rule_id || "");
+        setLoadingSource(Boolean(rows[0]?.rule_id));
+        setSourceError(null);
+        setProvenance(null);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not load the rule catalogue.");
@@ -62,12 +65,17 @@ export default function LegalBasisPage() {
     return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (!selectedRuleId) return;
-    let cancelled = false;
+  const handleSelectRule = (ruleId: string) => {
+    if (ruleId === selectedRuleId) return;
+    setSelectedRuleId(ruleId);
     setLoadingSource(true);
     setSourceError(null);
     setProvenance(null);
+  };
+
+  useEffect(() => {
+    if (!selectedRuleId) return;
+    let cancelled = false;
     void rulesApi.provenance(selectedRuleId)
       .then((value) => {
         if (!cancelled) setProvenance(value as ProvenanceResponse);
@@ -129,7 +137,7 @@ export default function LegalBasisPage() {
                 <button
                   type="button"
                   key={rule.rule_id}
-                  onClick={() => setSelectedRuleId(rule.rule_id)}
+                  onClick={() => handleSelectRule(rule.rule_id)}
                   aria-pressed={active}
                   style={{
                     textAlign: "left", border: active ? "1px solid #C9A84C" : "1px solid var(--border)",

@@ -426,3 +426,47 @@ test("company-scoped document and filing calls retain explicit tenant identifier
   assert.match(api, /audits: \(companyId: string\) => api\.get<AuditRecord\[]>\("\/api\/v1\/filings\/audit\/" \+ encodeURIComponent\(companyId\)\)/);
   assert.match(api, /annualReturns: \(companyId: string\) => api\.get<AnnualReturnRecord\[]>\("\/api\/v1\/filings\/annual-return\/" \+ encodeURIComponent\(companyId\)\)/);
 });
+
+
+test("portfolio reactivation is opt-in, reasoned and explicitly confirmed", () => {
+  const page = read("app/dashboard/admin/portfolio-compliance/page.tsx");
+  assert.match(page, /useState<string\[\]>\(\[\]\)/);
+  assert.match(page, /useState\(""\)/);
+  assert.match(page, /reason\.trim\(\)\.length < 10/);
+  assert.match(page, /window\.confirm\(/);
+  assert.match(page, /if \(!confirmed\)/);
+  assert.match(page, /platform access only/);
+  assert.doesNotMatch(page, /setSelected\(rows\.map/);
+  assert.match(page, /let cancelled = false/);
+  assert.match(page, /return \(\) => \{\s*cancelled = true;/);
+});
+
+
+test("legal-basis provenance effect avoids synchronous state updates", () => {
+  const page = read("app/dashboard/legal-basis/page.tsx");
+  const effect = page.match(/useEffect\(\(\) => \{\s*if \(!selectedRuleId\) return;([\s\S]*?)\}, \[selectedRuleId\]\);/);
+  assert.ok(effect, "selected-rule provenance effect must exist");
+  assert.match(effect[1], /rulesApi\.provenance\(selectedRuleId\)/);
+  assert.doesNotMatch(effect[1], /^\s*set(?:LoadingSource|SourceError|Provenance)\(/m);
+  assert.match(page, /const handleSelectRule = \(ruleId: string\) =>/);
+});
+
+test("frontend CI runs functional checks and a bounded, diagnostic live smoke test without invoking audits", () => {
+  const workflow = read(".github/workflows/ci.yml");
+  assert.match(workflow, /npm ci/);
+  assert.match(workflow, /npm run test:contracts/);
+  assert.match(workflow, /npm run lint/);
+  assert.match(workflow, /npx tsc --noEmit/);
+  assert.match(workflow, /npm run build/);
+  assert.doesNotMatch(workflow, /npm audit/);
+  assert.match(workflow, /AbortSignal\.timeout\(12000\)/);
+  assert.match(workflow, /after two 12-second attempts/);
+  assert.match(workflow, /Check Render startup and database availability/);
+});
+
+
+test("frontend does not expose unavailable Articles verification or document-upload API routes", () => {
+  const api = read("lib/api.ts");
+  assert.doesNotMatch(api, /export const articlesApi/);
+  assert.doesNotMatch(api, /articles-verification|articles-document/);
+});

@@ -158,20 +158,6 @@ export const filingsApi = {
   list: () => api.get<{ agms: any[]; audits: any[]; annual_returns: any[] }>("/api/v1/filings"),
 };
 
-export const articlesApi = {
-  list: (companyId: string) =>
-    api.get<any>("/api/v1/companies/" + companyId + "/articles-verification"),
-  submit: (companyId: string, documentId: string) =>
-    api.post<any>("/api/v1/companies/" + companyId + "/articles-verification", { document_id: documentId }),
-  review: (companyId: string, verificationId: string, data: any) =>
-    api.post<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/review", data),
-  revoke: (companyId: string, verificationId: string, reason: string) =>
-    api.post<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/revoke", { reason }),
-  events: (companyId: string, verificationId: string) =>
-    api.get<any>("/api/v1/companies/" + companyId + "/articles-verification/" + verificationId + "/events"),
-  upload: (companyId: string, file: File) => uploadAuthenticatedFile("/api/v1/companies/" + encodeURIComponent(companyId) + "/articles-document", file),
-};
-
 export const documentsApi = {
   list: () => api.get<DocumentApiResponse[]>("/api/v1/documents"),
   templates: () => api.get<DocumentTemplateResponse[]>("/api/v1/documents/templates"),
