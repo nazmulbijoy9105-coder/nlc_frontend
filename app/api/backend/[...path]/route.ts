@@ -115,12 +115,14 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
       } finally {
         reader.releaseLock();
       }
-      body = new Uint8Array(total);
+      const buffer = new ArrayBuffer(total);
+      const view = new Uint8Array(buffer);
       let offset = 0;
       for (const chunk of chunks) {
-        body.set(chunk, offset);
+        view.set(chunk, offset);
         offset += chunk.byteLength;
       }
+      body = buffer;
     }
   }
 
