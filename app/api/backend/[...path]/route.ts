@@ -52,6 +52,19 @@ function forwardedRequestHeaders(request: NextRequest, path: string): Headers {
 function forwardedResponseHeaders(response: Response): Headers {
   const headers = new Headers(response.headers);
   for (const header of HOP_BY_HOP_HEADERS) headers.delete(header);
+  // The API cookie is scoped to /api/v1/auth on the backend. Rewrite its path
+  // to the corresponding same-origin Next proxy path before returning it to
+  // the browser, otherwise the browser would not send it back to /api/backend.
+  const cookies = typeof headers.getSetCookie === "function" ? headers.getSetCookie() : [];
+  if (cookies.length) {
+    headers.delete("set-cookie");
+    for (const cookie of cookies) {
+      headers.append(
+        "set-cookie",
+        cookie.replace(/;\\s*path=\\/api\\/v1\\/auth(?=;|$)/i, "; Path=/api/backend/api/v1/auth"),
+      );
+    }
+  }
   headers.set("cache-control", "no-store");
   return headers;
 }
