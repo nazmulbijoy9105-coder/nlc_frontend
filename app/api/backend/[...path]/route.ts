@@ -14,6 +14,7 @@ const PUBLIC_AUTH_PATHS = new Set([
   "api/v1/auth/login",
   "api/v1/auth/signup",
   "api/v1/auth/refresh",
+  "api/v1/auth/verify-2fa",
 ]);
 
 type RouteContext = { params: Promise<{ path?: string[] }> | { path?: string[] } };
