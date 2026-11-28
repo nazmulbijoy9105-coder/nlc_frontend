@@ -450,3 +450,12 @@ test("refresh credentials are backend-managed HttpOnly cookies, never browser-re
     assert.match(page, /setTokens\(access_token|setTokens\(res\.access_token/);
   }
 });
+
+
+test("proxy forwards the refresh cookie only to refresh and logout, never as a general cookie jar", () => {
+  const proxy = read("app/api/backend/[...path]/route.ts");
+  assert.match(proxy, /headers\.delete\("cookie"\)/);
+  assert.match(proxy, /path === "api\/v1\/auth\/refresh" \|\| path === "api\/v1\/auth\/logout"/);
+  assert.match(proxy, /headers\.set\("cookie", `nlc_refresh_token=\$\{refreshCookie\}`\)/);
+  assert.doesNotMatch(proxy, /headers\.set\("cookie", request\.headers\.get\("cookie"\)/);
+});
