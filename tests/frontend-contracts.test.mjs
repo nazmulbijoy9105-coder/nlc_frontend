@@ -426,3 +426,28 @@ test("company-scoped document and filing calls retain explicit tenant identifier
   assert.match(api, /audits: \(companyId: string\) => api\.get<AuditRecord\[]>\("\/api\/v1\/filings\/audit\/" \+ encodeURIComponent\(companyId\)\)/);
   assert.match(api, /annualReturns: \(companyId: string\) => api\.get<AnnualReturnRecord\[]>\("\/api\/v1\/filings\/annual-return\/" \+ encodeURIComponent\(companyId\)\)/);
 });
+
+
+test("refresh credentials are backend-managed HttpOnly cookies, never browser-readable tokens", () => {
+  const auth = read("lib/auth.ts");
+  const proxy = read("app/api/backend/[...path]/route.ts");
+  const api = read("lib/api.ts");
+  const login = read("app/page.tsx");
+  const verify = read("app/verify/page.tsx");
+  const signup = read("app/signup/page.tsx");
+
+  assert.match(auth, /credentials: 'include'/);
+  assert.match(auth, /setTokens\(data\.access_token\)/);
+  assert.match(auth, /getRefreshToken = \(\): string => ''/);
+  assert.doesNotMatch(auth, /localStorage\.(getItem|setItem)\(LEGACY_REFRESH_TOKEN/);
+  assert.doesNotMatch(auth, /Cookies\.set\(LEGACY_REFRESH_TOKEN/);
+  assert.match(proxy, /request\.cookies\.get\("nlc_refresh_token"\)/);
+  assert.match(proxy, /path === "api\/v1\/auth\/refresh"/);
+  assert.match(proxy, /Path=\/api\/backend\/api\/v1\/auth/);
+  assert.match(proxy, /api\/v1\/auth\/verify-2fa/);
+  assert.match(api, /logout: \(\) => api\.post\("\/api\/v1\/auth\/logout", \{\}\)/);
+  for (const page of [login, verify, signup]) {
+    assert.doesNotMatch(page, /res\.refresh_token|refresh_token\s*\}/);
+    assert.match(page, /setTokens\(access_token|setTokens\(res\.access_token/);
+  }
+});
