@@ -19,24 +19,23 @@ async function errorMessage(response: Response): Promise<string> {
     ).filter(Boolean).join("; ") || fallback;
     return fallback;
   }
-  return (await response.text().catch(() => "")) || fallback;
+  // Avoid exposing upstream framework traces and infrastructure details.
+  return fallback;
 }
 
 function isAuthEndpoint(path: string): boolean {
   return path.startsWith("/api/v1/auth/");
 }
 
-function expireSession(path: string, status: number, message: string): boolean {
-  const normalized = message.toLowerCase();
-  const expired = status === 401 || (status === 403 &&
-    ["not authenticated", "invalid", "expired", "deactivated", "role mismatch"].some((term) => normalized.includes(term)));
+function expireSession(path: string, status: number): boolean {
+  // A 403 means authenticated but not authorized; it must not destroy a session.
+  const expired = status === 401;
   if (expired && typeof window !== "undefined" && !isAuthEndpoint(path)) {
     clearAuth();
     if (window.location.pathname !== "/") window.location.replace("/");
   }
   return expired;
 }
-
 /**
  * The single browser HTTP transport for JSON, multipart and binary requests.
  * Callers supply serialization and response decoding; authentication, credentials,
@@ -61,7 +60,7 @@ export async function requestApiResponse(
       throw new ApiError("Authentication service is temporarily unavailable. Please retry.", 503);
     }
     if (!token) {
-      expireSession(path, 401, "not authenticated");
+      expireSession(path, 401);
       throw new ApiError("Your session has expired. Please sign in again.", 401);
     }
     headers.set("Authorization", `Bearer ${token}`);
@@ -98,7 +97,7 @@ export async function requestApiResponse(
       }
 
       const message = await errorMessage(response);
-      if (auth && expireSession(path, response.status, message)) {
+      if (auth && expireSession(path, response.status)) {
         throw new ApiError("Your session has expired. Please sign in again.", response.status);
       }
       if (retryRead && !transientRetried && [502, 503, 504].includes(response.status)) {

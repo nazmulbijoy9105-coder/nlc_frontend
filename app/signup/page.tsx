@@ -17,8 +17,8 @@ export default function SignupPage() {
     setLoading(true); setError('')
     try {
       const res = await authApi.signup(email, password, fullName)
-      if (res.access_token && res.refresh_token) {
-        setTokens(res.access_token, res.refresh_token)
+      if (res.access_token) {
+        setTokens(res.access_token)
         if (res.user) setUser(res.user)
         router.push('/dashboard')
       }

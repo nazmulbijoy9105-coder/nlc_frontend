@@ -31,11 +31,11 @@ export default function VerifyPage() {
     setLoading(true); setError('')
     try {
       const res = await authApi.verify2FA(temp_token, totp_code)
-      const { access_token, refresh_token, user } = res
-      if (!access_token || !refresh_token) {
-        throw new Error('The server did not issue a complete authenticated session.')
+      const { access_token, user } = res
+      if (!access_token) {
+        throw new Error('The server did not issue an authenticated session.')
       }
-      setTokens(access_token, refresh_token)
+      setTokens(access_token)
       clearTempToken()
       setUser(user as Record<string, unknown>)
       router.push('/dashboard')

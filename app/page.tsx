@@ -19,8 +19,8 @@ export default function LoginPage() {
       if (res.requires_2fa && res.temp_token) {
         setTempToken(res.temp_token)
         router.push('/verify')
-      } else if (res.access_token && res.refresh_token) {
-        setTokens(res.access_token, res.refresh_token)
+      } else if (res.access_token) {
+        setTokens(res.access_token)
         if (res.user) setUser(res.user)
         router.push('/dashboard')
       } else {

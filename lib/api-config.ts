@@ -5,4 +5,11 @@ const configuredBase =
 
 const configuredProxy = process.env.NEXT_PUBLIC_API_BASE_PATH;
 
-export const API_BASE = (configuredBase || configuredProxy || "/api/backend").replace(/\/+$/, "");
+// Production authentication must remain same-origin so the backend's
+// HttpOnly SameSite=Strict refresh cookie can be set and returned through
+// the fixed Next.js gateway. Direct backend URLs are development-only.
+export const API_BASE = (
+  process.env.NODE_ENV === "production"
+    ? "/api/backend"
+    : configuredProxy || configuredBase || "/api/backend"
+).replace(/\/+$/, "");

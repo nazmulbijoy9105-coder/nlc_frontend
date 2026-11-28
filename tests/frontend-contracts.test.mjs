@@ -411,12 +411,11 @@ test("company, filing and document API methods use backend-shaped request and re
 
 test("permission-denied 403 responses remain permission errors and do not expire a valid session", () => {
   const transport = read("lib/api-transport.ts");
-  assert.match(transport, /status === 401 \|\| \(status === 403/);
-  assert.match(transport, /\["not authenticated", "invalid", "expired", "deactivated", "role mismatch"\]/);
-  assert.match(transport, /status === 401 \|\| \(status === 403/);
-  assert.match(transport, /if \(auth && expireSession\(path, response\.status, message\)\)/);
+  assert.match(transport, /const expired = status === 401/);
+  assert.match(transport, /if \(expired && typeof window !== "undefined" && !isAuthEndpoint\(path\)\)/);
+  assert.match(transport, /if \(auth && expireSession\(path, response\.status\)\)/);
   assert.match(transport, /throw new ApiError\(message, response\.status\)/);
-  assert.doesNotMatch(transport, /status === 403\)\s*\{/);
+  assert.doesNotMatch(transport, /status === 403/);
 });
 
 test("company-scoped document and filing calls retain explicit tenant identifiers", () => {
@@ -425,4 +424,46 @@ test("company-scoped document and filing calls retain explicit tenant identifier
   assert.match(api, /agms: \(companyId: string\) => api\.get<AGMRecord\[]>\("\/api\/v1\/filings\/agm\/" \+ encodeURIComponent\(companyId\)\)/);
   assert.match(api, /audits: \(companyId: string\) => api\.get<AuditRecord\[]>\("\/api\/v1\/filings\/audit\/" \+ encodeURIComponent\(companyId\)\)/);
   assert.match(api, /annualReturns: \(companyId: string\) => api\.get<AnnualReturnRecord\[]>\("\/api\/v1\/filings\/annual-return\/" \+ encodeURIComponent\(companyId\)\)/);
+});
+
+
+test("refresh credentials are backend-managed HttpOnly cookies, never browser-readable tokens", () => {
+  const auth = read("lib/auth.ts");
+  const proxy = read("app/api/backend/[...path]/route.ts");
+  const api = read("lib/api.ts");
+  const login = read("app/page.tsx");
+  const verify = read("app/verify/page.tsx");
+  const signup = read("app/signup/page.tsx");
+
+  assert.match(auth, /credentials: 'include'/);
+  assert.match(auth, /setTokens\(data\.access_token\)/);
+  assert.match(auth, /getRefreshToken = \(\): string => ''/);
+  assert.doesNotMatch(auth, /localStorage\.(getItem|setItem)\(LEGACY_REFRESH_TOKEN/);
+  assert.doesNotMatch(auth, /Cookies\.set\(LEGACY_REFRESH_TOKEN/);
+  assert.match(proxy, /request\.cookies\.get\("nlc_refresh_token"\)/);
+  assert.match(proxy, /path === "api\/v1\/auth\/refresh"/);
+  assert.match(proxy, /Path=\/api\/backend\/api\/v1\/auth/);
+  assert.match(proxy, /api\/v1\/auth\/verify-2fa/);
+  assert.match(api, /logout: \(\) => api\.post\("\/api\/v1\/auth\/logout", \{\}\)/);
+  for (const page of [login, verify, signup]) {
+    assert.doesNotMatch(page, /res\.refresh_token|refresh_token\s*\}/);
+    assert.match(page, /setTokens\(access_token|setTokens\(res\.access_token/);
+  }
+});
+
+
+test("proxy forwards the refresh cookie only to refresh and logout, never as a general cookie jar", () => {
+  const proxy = read("app/api/backend/[...path]/route.ts");
+  assert.match(proxy, /headers\.delete\("cookie"\)/);
+  assert.match(proxy, /path === "api\/v1\/auth\/refresh" \|\| path === "api\/v1\/auth\/logout"/);
+  assert.match(proxy, /headers\.set\("cookie", `nlc_refresh_token=\$\{refreshCookie\}`\)/);
+  assert.doesNotMatch(proxy, /headers\.set\("cookie", request\.headers\.get\("cookie"\)/);
+});
+
+
+test("production browser API traffic uses the same-origin proxy for SameSite refresh cookies", () => {
+  const config = read("lib/api-config.ts");
+  assert.match(config, /process\.env\.NODE_ENV === "production"/);
+  assert.match(config, /\? "\/api\/backend"/);
+  assert.match(config, /configuredProxy \|\| configuredBase/);
 });
