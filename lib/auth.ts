@@ -7,6 +7,13 @@ const TEMP_TOKEN = 'nlc_temp_token'
 const USER_KEY = 'nlc_user'
 export const AUTH_STATE_CHANGE_EVENT = 'nlc:auth-state-change'
 
+// One-time cleanup of refresh credentials written by pre-migration releases.
+// The new backend cookie is HttpOnly and has a different, proxy-scoped path.
+if (typeof window !== 'undefined') {
+  localStorage.removeItem(LEGACY_REFRESH_TOKEN)
+  Cookies.remove(LEGACY_REFRESH_TOKEN, { path: '/' })
+}
+
 export class AuthRefreshError extends Error {
   constructor(public readonly status: number) {
     super("Authentication service is temporarily unavailable.")
