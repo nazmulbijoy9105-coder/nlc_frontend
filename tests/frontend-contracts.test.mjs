@@ -459,3 +459,11 @@ test("proxy forwards the refresh cookie only to refresh and logout, never as a g
   assert.match(proxy, /headers\.set\("cookie", `nlc_refresh_token=\$\{refreshCookie\}`\)/);
   assert.doesNotMatch(proxy, /headers\.set\("cookie", request\.headers\.get\("cookie"\)/);
 });
+
+
+test("production browser API traffic uses the same-origin proxy for SameSite refresh cookies", () => {
+  const config = read("lib/api-config.ts");
+  assert.match(config, /process\.env\.NODE_ENV === "production"/);
+  assert.match(config, /\? "\/api\/backend"/);
+  assert.match(config, /configuredProxy \|\| configuredBase/);
+});
