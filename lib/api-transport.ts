@@ -19,7 +19,48 @@ async function errorMessage(response: Response): Promise<string> {
     ).filter(Boolean).join("; ") || fallback;
     return fallback;
   }
-  return (await response.text().catch(() => "")) || fallback;
+  // Non-JSON upstream bodies may contain framework traces or infrastructure details.
+  // Never surface them to the browser UI.
+  return fallback;
+}
+
+function isAuthEndpoint(path: string): boolean {
+  return path.startsWith("/api/v1/auth/");
+}
+
+function expireSession(path: string, status: number): boolean {
+  // Authorization failures (403) do not mean the user's session has expired.
+  // Only an authentication failure may clear credentials and redirect to login.
+  const expired = status === 401;
+  if (expired && typeof window !== "undefined" && !isAuthEndpoint(path)) {
+    clearAuth();
+    if (window.location.pathname !== "/") window.location.replace("/");
+  }
+  return expired;
+}port { clearAuth, getValidAccessToken, refreshToken } from "@/lib/auth";
+import { API_BASE } from "@/lib/api-config";
+import { ApiError } from "@/lib/api-errors";
+
+export type TransportOptions = {
+  auth?: boolean;
+  retryRead?: boolean;
+};
+
+async function errorMessage(response: Response): Promise<string> {
+  const fallback = `HTTP ${response.status}`;
+  const type = response.headers.get("content-type") || "";
+  if (type.includes("application/json")) {
+    const payload = await response.json().catch(() => null);
+    const detail = payload?.detail ?? payload?.message ?? payload?.error;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) return detail.map((entry) =>
+      typeof entry === "string" ? entry : [entry?.loc?.join?.("."), entry?.msg || entry?.message].filter(Boolean).join(": ")
+    ).filter(Boolean).join("; ") || fallback;
+    return fallback;
+  }
+  // Non-JSON upstream bodies may contain framework traces or infrastructure details.
+  // Never surface them to the browser UI.
+  return fallback;
 }
 
 function isAuthEndpoint(path: string): boolean {
@@ -61,7 +102,7 @@ export async function requestApiResponse(
       throw new ApiError("Authentication service is temporarily unavailable. Please retry.", 503);
     }
     if (!token) {
-      expireSession(path, 401, "not authenticated");
+      expireSession(path, 401);
       throw new ApiError("Your session has expired. Please sign in again.", 401);
     }
     headers.set("Authorization", `Bearer ${token}`);
@@ -98,7 +139,7 @@ export async function requestApiResponse(
       }
 
       const message = await errorMessage(response);
-      if (auth && expireSession(path, response.status, message)) {
+      if (auth && expireSession(path, response.status)) {
         throw new ApiError("Your session has expired. Please sign in again.", response.status);
       }
       if (retryRead && !transientRetried && [502, 503, 504].includes(response.status)) {
