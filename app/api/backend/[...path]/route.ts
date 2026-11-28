@@ -25,7 +25,7 @@ function backendBaseUrl(): string {
   if (parsed.protocol !== "https:" && process.env.NODE_ENV === "production") {
     throw new Error("Backend URL must use HTTPS in production");
   }
-  return parsed.toString().replace(/\\/+$/, "");
+  return parsed.toString().replace(/\/+$/, "");
 }
 
 function buildBackendUrl(request: NextRequest, pathSegments: string[] = []): string {
@@ -62,7 +62,7 @@ function forwardedResponseHeaders(response: Response): Headers {
     for (const cookie of cookies) {
       headers.append(
         "set-cookie",
-        cookie.replace(/;\\s*path=\\/api\\/v1\\/auth(?=;|$)/i, "; Path=/api/backend/api/v1/auth"),
+        cookie.replace(/;\s*path=\/api\/v1\/auth(?=;|$)/i, "; Path=/api/backend/api/v1/auth"),
       );
     }
   }
@@ -87,7 +87,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
 
   const publicAuth = PUBLIC_AUTH_PATHS.has(path);
   const authorization = request.headers.get("authorization");
-  if (!publicAuth && !/^Bearer\\s+/i.test(authorization || "")) {
+  if (!/^Bearer\s+/i.test(authorization || "")) {
     return Response.json({ detail: "Authentication required" }, { status: 401 });
   }
 
@@ -138,7 +138,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
       statusText: upstream.statusText,
       headers: forwardedResponseHeaders(upstream),
     });
-  } catch {
+  } catch (error) {
     return Response.json(
       { detail: "Unable to reach backend API" },
       { status: 502, headers: { "cache-control": "no-store" } },
