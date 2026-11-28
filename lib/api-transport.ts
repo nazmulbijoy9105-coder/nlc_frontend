@@ -19,7 +19,8 @@ async function errorMessage(response: Response): Promise<string> {
     ).filter(Boolean).join("; ") || fallback;
     return fallback;
   }
-  // Avoid exposing upstream framework traces and infrastructure details.\n  return fallback;
+  // Avoid exposing upstream framework traces and infrastructure details.
+  return fallback;
 }
 
 function isAuthEndpoint(path: string): boolean {
