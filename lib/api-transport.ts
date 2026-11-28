@@ -19,9 +19,7 @@ async function errorMessage(response: Response): Promise<string> {
     ).filter(Boolean).join("; ") || fallback;
     return fallback;
   }
-  // Non-JSON upstream bodies may contain framework traces or infrastructure details.
-  // Never surface them to the browser UI.
-  return fallback;
+  return (await response.text().catch(() => "")) || fallback;
 }
 
 function isAuthEndpoint(path: string): boolean {
@@ -29,55 +27,14 @@ function isAuthEndpoint(path: string): boolean {
 }
 
 function expireSession(path: string, status: number): boolean {
-  // Authorization failures (403) do not mean the user's session has expired.
-  // Only an authentication failure may clear credentials and redirect to login.
+  // A 403 means authenticated but not authorized; it must not destroy a session.
   const expired = status === 401;
   if (expired && typeof window !== "undefined" && !isAuthEndpoint(path)) {
     clearAuth();
     if (window.location.pathname !== "/") window.location.replace("/");
   }
   return expired;
-}port { clearAuth, getValidAccessToken, refreshToken } from "@/lib/auth";
-import { API_BASE } from "@/lib/api-config";
-import { ApiError } from "@/lib/api-errors";
-
-export type TransportOptions = {
-  auth?: boolean;
-  retryRead?: boolean;
-};
-
-async function errorMessage(response: Response): Promise<string> {
-  const fallback = `HTTP ${response.status}`;
-  const type = response.headers.get("content-type") || "";
-  if (type.includes("application/json")) {
-    const payload = await response.json().catch(() => null);
-    const detail = payload?.detail ?? payload?.message ?? payload?.error;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) return detail.map((entry) =>
-      typeof entry === "string" ? entry : [entry?.loc?.join?.("."), entry?.msg || entry?.message].filter(Boolean).join(": ")
-    ).filter(Boolean).join("; ") || fallback;
-    return fallback;
-  }
-  // Non-JSON upstream bodies may contain framework traces or infrastructure details.
-  // Never surface them to the browser UI.
-  return fallback;
 }
-
-function isAuthEndpoint(path: string): boolean {
-  return path.startsWith("/api/v1/auth/");
-}
-
-function expireSession(path: string, status: number, message: string): boolean {
-  const normalized = message.toLowerCase();
-  const expired = status === 401 || (status === 403 &&
-    ["not authenticated", "invalid", "expired", "deactivated", "role mismatch"].some((term) => normalized.includes(term)));
-  if (expired && typeof window !== "undefined" && !isAuthEndpoint(path)) {
-    clearAuth();
-    if (window.location.pathname !== "/") window.location.replace("/");
-  }
-  return expired;
-}
-
 /**
  * The single browser HTTP transport for JSON, multipart and binary requests.
  * Callers supply serialization and response decoding; authentication, credentials,
