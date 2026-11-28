@@ -411,12 +411,11 @@ test("company, filing and document API methods use backend-shaped request and re
 
 test("permission-denied 403 responses remain permission errors and do not expire a valid session", () => {
   const transport = read("lib/api-transport.ts");
-  assert.match(transport, /status === 401 \|\| \(status === 403/);
-  assert.match(transport, /\["not authenticated", "invalid", "expired", "deactivated", "role mismatch"\]/);
-  assert.match(transport, /status === 401 \|\| \(status === 403/);
-  assert.match(transport, /if \(auth && expireSession\(path, response\.status, message\)\)/);
+  assert.match(transport, /const expired = status === 401/);
+  assert.match(transport, /if \(expired && typeof window !== "undefined" && !isAuthEndpoint\(path\)\)/);
+  assert.match(transport, /if \(auth && expireSession\(path, response\.status\)\)/);
   assert.match(transport, /throw new ApiError\(message, response\.status\)/);
-  assert.doesNotMatch(transport, /status === 403\)\s*\{/);
+  assert.doesNotMatch(transport, /status === 403/);
 });
 
 test("company-scoped document and filing calls retain explicit tenant identifiers", () => {
