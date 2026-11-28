@@ -1,4 +1,3 @@
-import { getRefreshToken } from "@/lib/auth";
 import { ApiError } from "@/lib/api-errors";
 export { ApiError };
 import { API_BASE } from "@/lib/api-config";
@@ -57,7 +56,7 @@ export const authApi = {
   confirm2FA: (totp_code: string) =>
     api.post<any>("/api/v1/auth/2fa/confirm", { totp_code }),
   me: () => api.get<any>("/api/v1/auth/me"),
-  logout: () => api.post("/api/v1/auth/logout", { refresh_token: getRefreshToken() }),
+  logout: () => api.post("/api/v1/auth/logout", {}),
 };
 
 export const dashboardApi = {
