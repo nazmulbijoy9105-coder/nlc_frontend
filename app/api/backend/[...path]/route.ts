@@ -34,10 +34,16 @@ function buildBackendUrl(request: NextRequest, pathSegments: string[] = []): str
   return url.toString();
 }
 
-function forwardedRequestHeaders(request: NextRequest): Headers {
+function forwardedRequestHeaders(request: NextRequest, path: string): Headers {
   const headers = new Headers(request.headers);
   for (const header of HOP_BY_HOP_HEADERS) headers.delete(header);
+  // Only the backend-owned refresh credential may cross this fixed proxy.
+  // Never forward unrelated browser cookies to the API service.
+  const refreshCookie = request.cookies.get("nlc_refresh_token")?.value;
   headers.delete("cookie");
+  if (refreshCookie && (path === "api/v1/auth/refresh" || path === "api/v1/auth/logout")) {
+    headers.set("cookie", `nlc_refresh_token=${refreshCookie}`);
+  }
   headers.set("x-forwarded-host", request.nextUrl.host);
   headers.set("x-forwarded-proto", request.nextUrl.protocol.replace(":", ""));
   return headers;
@@ -86,7 +92,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
   try {
     const upstream = await fetch(buildBackendUrl(request, segments), {
       method,
-      headers: forwardedRequestHeaders(request),
+      headers: forwardedRequestHeaders(request, path),
       body,
       cache: "no-store",
       redirect: "manual",
