@@ -20,7 +20,7 @@ const PUBLIC_AUTH_PATHS = new Set([
 type RouteContext = { params: Promise<{ path?: string[] }> | { path?: string[] } };
 
 function backendBaseUrl(): string {
-  const raw = process.env.NLC_BACKEND_URL || process.env.API_URL || DEFAULT_BACKEND_URL;
+  const raw = process.env.NLC_BACKEND_URL || process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_BACKEND_URL;
   const parsed = new URL(raw);
   if (parsed.protocol !== "https:" && process.env.NODE_ENV === "production") {
     throw new Error("Backend URL must use HTTPS in production");
@@ -77,7 +77,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
   const method = request.method.toUpperCase();
 
   // This route is a fixed-backend API gateway, never a general-purpose proxy.
-  if (!path.startsWith("api/v1/") || path.includes("..") || path.includes("\\\\")) {
+  if (!path.startsWith("api/v1/") || path.includes("..") || path.includes("\\")) {
     return Response.json({ detail: "Not found" }, { status: 404 });
   }
   if (!["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].includes(method)) {
@@ -87,7 +87,7 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
 
   const publicAuth = PUBLIC_AUTH_PATHS.has(path);
   const authorization = request.headers.get("authorization");
-  if (!publicAuth && !authorization?.startsWith("Bearer ")) {
+  if (!publicAuth && !/^Bearer\\s+/i.test(authorization || "")) {
     return Response.json({ detail: "Authentication required" }, { status: 401 });
   }
 
@@ -97,9 +97,30 @@ async function proxy(request: NextRequest, context: RouteContext): Promise<Respo
     if (declaredLength > MAX_BODY_BYTES) {
       return Response.json({ detail: "Request body too large" }, { status: 413 });
     }
-    body = await request.arrayBuffer();
-    if (body.byteLength > MAX_BODY_BYTES) {
-      return Response.json({ detail: "Request body too large" }, { status: 413 });
+    if (request.body) {
+      const reader = request.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          total += value.byteLength;
+          if (total > MAX_BODY_BYTES) {
+            await reader.cancel();
+            return Response.json({ detail: "Request body too large" }, { status: 413 });
+          }
+          chunks.push(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      body = new Uint8Array(total);
+      let offset = 0;
+      for (const chunk of chunks) {
+        body.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
     }
   }
 
